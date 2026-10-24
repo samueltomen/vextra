@@ -2,10 +2,12 @@ import { Button, Input } from '@heroui/react'
 import { useForm } from '@tanstack/react-form'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { Activity, ArrowRight, LockKeyhole, Mail } from 'lucide-react'
+import { Activity, ArrowRight, LockKeyhole, Mail, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 
 import { ApiError } from '../../../api/client.ts'
+import { DEMO_ACCOUNT } from '../../../demo/demo-account.ts'
+import { enableDemoMode } from '../../../demo/demo-mode.ts'
 import { readFieldError } from '../../../lib/read-field-error.ts'
 import { getCurrentAccount, signIn, signUp } from '../api/account-api.ts'
 import { CURRENT_ACCOUNT_QUERY_KEY } from '../query/use-current-account.ts'
@@ -224,6 +226,8 @@ function AuthForm({ mode }: Readonly<{ mode: AuthMode }>) {
 
 export function LoginPage() {
   const [mode, setMode] = useState<AuthMode>('signin')
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
 
   return (
     <main className="grid min-h-dvh bg-canvas lg:grid-cols-[minmax(0,1fr)_minmax(28rem,0.8fr)]">
@@ -308,6 +312,30 @@ export function LoginPage() {
           </div>
 
           <AuthForm key={mode} mode={mode} />
+
+          {import.meta.env.DEV ? (
+            <div className="mt-8 border-t border-line pt-6">
+              <Button
+                className="min-h-11 w-full border-line text-muted"
+                onPress={() => {
+                  enableDemoMode()
+                  queryClient.setQueryData(
+                    CURRENT_ACCOUNT_QUERY_KEY,
+                    DEMO_ACCOUNT,
+                  )
+                  void navigate({ to: '/' })
+                }}
+                radius="md"
+                startContent={<Sparkles aria-hidden="true" size={16} />}
+                variant="bordered"
+              >
+                Explorer la démo locale
+              </Button>
+              <p className="mt-2 text-center text-xs leading-5 text-muted">
+                Données fictives, aucun appel API ni accès Supabase.
+              </p>
+            </div>
+          ) : null}
         </div>
       </section>
     </main>

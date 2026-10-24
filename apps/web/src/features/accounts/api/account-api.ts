@@ -4,6 +4,8 @@ import type {
 } from '@cronping/contracts'
 
 import { ApiError, apiRequest } from '../../../api/client.ts'
+import { DEMO_ACCOUNT } from '../../../demo/demo-account.ts'
+import { disableDemoMode, isDemoModeEnabled } from '../../../demo/demo-mode.ts'
 import type { CurrentAccount } from '../model/account.ts'
 
 export type SignInInput = Readonly<{
@@ -17,6 +19,10 @@ export type SignUpResult = Readonly<{
 }>
 
 export async function getCurrentAccount(): Promise<CurrentAccount | null> {
+  if (isDemoModeEnabled()) {
+    return DEMO_ACCOUNT
+  }
+
   try {
     const response =
       await apiRequest<AuthenticatedSessionResponse>('/api/auth/me')
@@ -32,6 +38,10 @@ export async function getCurrentAccount(): Promise<CurrentAccount | null> {
 }
 
 export async function signIn(input: SignInInput): Promise<CurrentAccount> {
+  if (isDemoModeEnabled()) {
+    return DEMO_ACCOUNT
+  }
+
   const response = await apiRequest<AuthenticatedSessionResponse>(
     '/api/auth/login',
     {
@@ -44,6 +54,13 @@ export async function signIn(input: SignInInput): Promise<CurrentAccount> {
 }
 
 export async function signUp(input: SignInInput): Promise<SignUpResult> {
+  if (isDemoModeEnabled()) {
+    return {
+      requiresEmailConfirmation: false,
+      user: DEMO_ACCOUNT.user,
+    }
+  }
+
   const response = await apiRequest<SignUpResponse>('/api/auth/signup', {
     body: JSON.stringify(input),
     method: 'POST',
@@ -53,5 +70,10 @@ export async function signUp(input: SignInInput): Promise<SignUpResult> {
 }
 
 export async function signOut(): Promise<void> {
+  if (isDemoModeEnabled()) {
+    disableDemoMode()
+    return
+  }
+
   await apiRequest<void>('/api/auth/logout', { method: 'POST' })
 }

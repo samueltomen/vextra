@@ -42,13 +42,22 @@ dashboard.
 ```bash
 pnpm install
 cp apps/web/.env.example apps/web/.env.local
-cp apps/api/.dev.vars.example apps/api/.dev.vars
+pnpm setup:local
 ```
 
 Renseigner ensuite dans `apps/api/.dev.vars` la clé publishable Supabase
 locale et deux secrets indépendants d'au moins 32 octets :
 `SESSION_ENCRYPTION_KEY` et `PING_TOKEN_PEPPER`. Ces valeurs restent côté
 Worker et ne doivent jamais recevoir le préfixe `VITE_`.
+
+`pnpm setup:local` lit les clés du Supabase local et génère
+`apps/api/.dev.vars` avec des secrets aléatoires. Le fichier est ignoré par Git
+et reçoit les permissions `0600`. Si le fichier existe déjà, la commande
+refuse de l'écraser sans `--force`.
+
+Pour vérifier uniquement l'UX sans Supabase, ouvrir
+`http://localhost:5173/?demo=1`. Ce mode est limité au développement et
+n'effectue aucun appel API.
 
 `SUPABASE_SERVICE_ROLE_KEY` est uniquement requis par le handler planifié pour
 exécuter la RPC interne du checker. Il ne doit jamais être exposé à la SPA.
