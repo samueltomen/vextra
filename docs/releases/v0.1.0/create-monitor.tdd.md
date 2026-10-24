@@ -19,10 +19,10 @@ d'exécution.
 | 5   | Une erreur métier empêche la génération et la persistance      | `create-monitor.test.ts` application  | PASS     |
 | 6   | Le token contient 256 bits aléatoires et son hash HMAC-SHA-256 | `crypto-monitor-token.test.ts`        | PASS     |
 | 7   | Deux moniteurs reçoivent des tokens différents                 | `crypto-monitor-token.test.ts`        | PASS     |
-| 8   | L'API exige une identité authentifiée                          | `create-monitor-route.test.ts`        | PASS     |
-| 9   | L'API retourne `201`, `Location` et le token une seule fois    | `create-monitor-route.test.ts`        | PASS     |
-| 10  | Un `tenantId` client provoque une erreur de validation         | `create-monitor-route.test.ts`        | PASS     |
-| 11  | Les erreurs internes ne fuient aucun détail fournisseur        | `create-monitor-route.test.ts`        | PASS     |
+| 8   | L'API exige une identité authentifiée                          | `monitor-routes.test.ts`              | PASS     |
+| 9   | L'API retourne `201`, `Location` et le token une seule fois    | `monitor-routes.test.ts`              | PASS     |
+| 10  | Un `tenantId` client provoque une erreur de validation         | `monitor-routes.test.ts`              | PASS     |
+| 11  | Les erreurs internes ne fuient aucun détail fournisseur        | `monitor-routes.test.ts`              | PASS     |
 | 12  | L'adapter Supabase ne reçoit jamais le token brut              | `supabase-monitor-repository.test.ts` | PASS     |
 | 13  | Deux utilisateurs ne voient pas les données de l'autre tenant  | `supabase/tests/tenant_isolation.sql` | PASS     |
 

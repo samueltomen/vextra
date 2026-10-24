@@ -4,15 +4,15 @@ import { summarizeMonitors, type MonitorView } from './monitor.ts'
 
 function monitor(status: MonitorView['status']): MonitorView {
   return {
-    id: status,
-    tenantId: 'tenant-demo',
-    localLabel: status,
-    intervalMinutes: 5,
-    graceMinutes: 2,
-    status,
-    lastHeartbeatAtMs: null,
     alertAtMs: 0,
-    channel: 'email',
+    createdAtMs: 0,
+    graceMinutes: 2,
+    id: status,
+    incidentOpenedAtMs: null,
+    intervalMinutes: 5,
+    localLabel: status,
+    lastHeartbeatAtMs: null,
+    status,
   }
 }
 

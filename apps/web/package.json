@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json"
   },
   "dependencies": {
+    "@cronping/contracts": "workspace:*",
     "@heroui/react": "2.8.5",
     "@heroui/theme": "2.4.23",
     "@tanstack/react-form": "1.28.4",

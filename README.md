@@ -19,14 +19,15 @@ Le dépôt contient le socle de la V1 :
 - création automatique d'un tenant personnel et de son propriétaire à
   l'inscription ;
 - tokens du design system ;
-- prototype UI local avec dashboard, création et détail d'un moniteur ;
+- UI connectée avec connexion, dashboard, création et détail d'un moniteur ;
 - configuration TypeScript stricte, Prettier, ESLint et Vitest ;
 - garde-fou interdisant Bootstrap.
 
-Le prototype UI utilise encore des données locales simulées. L'API
-d'authentification et le pipeline de création côté serveur sont prêts ; leur
-branchement au dashboard sera réalisé dans l'étape suivante du
-[plan MVP](docs/plans/cronping-mvp.md).
+Le flux normal utilise désormais l'API et Supabase. Seuls les libellés choisis
+par l'utilisateur restent dans `localStorage` ; le serveur ne reçoit que
+l'intervalle et la marge techniques. Les états `?state=loading`, `?state=empty`
+et `?state=error` restent disponibles en développement pour prévisualiser le
+dashboard.
 
 ## Prérequis
 
@@ -65,9 +66,15 @@ Routes d'authentification :
 - `POST /api/auth/logout` ;
 - `GET /api/auth/me`.
 
-La création authentifiée d'un moniteur est exposée par
-`POST /api/monitors`. Le tenant est toujours résolu côté serveur depuis la
-session ; un `tenantId` envoyé par le navigateur est rejeté.
+Les moniteurs utilisent :
+
+- `GET /api/monitors` pour la liste ;
+- `GET /api/monitors/:monitorId` pour le détail ;
+- `POST /api/monitors` pour la création.
+
+Le tenant est toujours résolu côté serveur depuis la session ; un `tenantId`
+envoyé par le navigateur est rejeté. Un libellé local n'est jamais inclus dans
+une requête API.
 
 La session est chiffrée avec AES-GCM et transmise uniquement via
 `__Host-cronping_session`, avec `HttpOnly`, `Secure`, `SameSite=Strict` et
@@ -96,10 +103,11 @@ Le contrôle anti-Bootstrap peut être exécuté seul :
 pnpm check:no-bootstrap
 ```
 
-## Prototype UI
+## Interface
 
 ```text
 /                       Dashboard et résumé des statuts
+/login                  Connexion et inscription
 /monitors/new           Création d'un moniteur
 /monitors/:monitorId    Détail et commande heartbeat
 ```

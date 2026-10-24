@@ -51,11 +51,14 @@ describe('CreateMonitorPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('allows selecting Discord and cancelling the form', async () => {
+  it('shows the privacy guarantee and allows cancelling the form', async () => {
     await renderApp('/monitors/new')
 
-    fireEvent.click(await screen.findByLabelText('Discord'))
-    expect(screen.getByLabelText('Discord')).toBeChecked()
+    expect(
+      await screen.findByText(
+        'Aucun script, log ou commande cron ne sera enregistré.',
+      ),
+    ).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
     expect(

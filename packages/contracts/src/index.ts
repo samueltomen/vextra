@@ -26,3 +26,16 @@ export type {
   CreateMonitorRequest,
   CreateMonitorResponse,
 } from './monitoring/create-monitor.ts'
+
+export {
+  listMonitorsResponseSchema,
+  monitorIdSchema,
+  monitorResponseSchema,
+  monitorStateSchema,
+} from './monitoring/monitor-state.ts'
+
+export type {
+  ListMonitorsResponse,
+  MonitorResponse,
+  MonitorState,
+} from './monitoring/monitor-state.ts'

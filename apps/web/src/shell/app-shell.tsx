@@ -1,6 +1,29 @@
-import { Link, Outlet, useRouterState } from '@tanstack/react-router'
-import { Activity, Bell, LayoutDashboard, Plus, Settings } from 'lucide-react'
+import { Button } from '@heroui/react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  Link,
+  Navigate,
+  Outlet,
+  useNavigate,
+  useRouterState,
+} from '@tanstack/react-router'
+import {
+  Activity,
+  Bell,
+  LayoutDashboard,
+  LogOut,
+  Plus,
+  RefreshCw,
+  Settings,
+} from 'lucide-react'
 import type { ReactNode } from 'react'
+
+import { signOut } from '../features/accounts/api/account-api.ts'
+import type { CurrentAccount } from '../features/accounts/model/account.ts'
+import {
+  CURRENT_ACCOUNT_QUERY_KEY,
+  useCurrentAccount,
+} from '../features/accounts/query/use-current-account.ts'
 
 function NavLink({
   children,
@@ -32,7 +55,38 @@ function NavLink({
   )
 }
 
-export function AppShell() {
+function FullPageStatus({
+  description,
+  title,
+}: Readonly<{ description: string; title: string }>) {
+  return (
+    <main
+      aria-live="polite"
+      className="grid min-h-dvh place-items-center bg-canvas px-4"
+      role="status"
+    >
+      <div className="w-full max-w-md rounded-xl border border-line bg-surface p-8 text-center">
+        <span className="mx-auto grid size-12 place-items-center rounded-lg bg-ink text-white">
+          <Activity aria-hidden="true" size={23} />
+        </span>
+        <h1 className="mt-5 text-xl font-semibold">{title}</h1>
+        <p className="mt-2 text-sm leading-6 text-muted">{description}</p>
+      </div>
+    </main>
+  )
+}
+
+function AppFrame({
+  account,
+  children,
+  isLoggingOut,
+  onLogout,
+}: Readonly<{
+  account: CurrentAccount
+  children: ReactNode
+  isLoggingOut: boolean
+  onLogout: () => void
+}>) {
   return (
     <div className="min-h-dvh bg-canvas text-ink lg:grid lg:grid-cols-[232px_1fr]">
       <a
@@ -78,10 +132,27 @@ export function AppShell() {
         </div>
 
         <div className="mt-4 rounded-lg border border-line bg-canvas px-3 py-3">
-          <p className="text-sm font-medium">Compte pilote</p>
-          <p className="mt-1 text-xs leading-5 text-muted">
-            Données d&apos;interface locales, aucun script transmis.
+          <p
+            className="truncate text-sm font-medium"
+            title={account.user.email}
+          >
+            {account.user.email}
           </p>
+          <p className="mt-1 text-xs leading-5 text-muted">
+            Session sécurisée. Aucun contenu de script transmis.
+          </p>
+          <Button
+            className="mt-3 min-h-10 w-full justify-start text-muted"
+            isLoading={isLoggingOut}
+            onPress={onLogout}
+            radius="md"
+            startContent={
+              isLoggingOut ? undefined : <LogOut aria-hidden="true" size={16} />
+            }
+            variant="light"
+          >
+            Se déconnecter
+          </Button>
         </div>
       </aside>
 
@@ -111,6 +182,15 @@ export function AppShell() {
             >
               <Plus aria-hidden="true" size={20} />
             </Link>
+            <button
+              aria-label="Se déconnecter"
+              className="grid size-11 place-items-center rounded-lg text-muted hover:bg-surface hover:text-ink disabled:opacity-50"
+              disabled={isLoggingOut}
+              onClick={onLogout}
+              type="button"
+            >
+              <LogOut aria-hidden="true" size={19} />
+            </button>
           </nav>
         </header>
 
@@ -118,9 +198,88 @@ export function AppShell() {
           className="mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8 lg:py-10"
           id="main-content"
         >
-          <Outlet />
+          {children}
         </main>
       </div>
     </div>
+  )
+}
+
+export function AppShell() {
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
+  const accountQuery = useCurrentAccount()
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const logout = useMutation({
+    mutationFn: signOut,
+    onSuccess: async () => {
+      queryClient.setQueryData(CURRENT_ACCOUNT_QUERY_KEY, null)
+      queryClient.removeQueries({ queryKey: ['monitors'] })
+      await navigate({ replace: true, to: '/login' })
+    },
+  })
+
+  if (pathname === '/login') {
+    if (accountQuery.isPending) {
+      return (
+        <FullPageStatus
+          description="Vérification de votre cookie de session."
+          title="Chargement de CronPing"
+        />
+      )
+    }
+
+    if (accountQuery.data) {
+      return <Navigate replace to="/" />
+    }
+
+    return <Outlet />
+  }
+
+  if (accountQuery.isPending) {
+    return (
+      <FullPageStatus
+        description="Nous vérifions votre session avant d’ouvrir le dashboard."
+        title="Chargement de la session"
+      />
+    )
+  }
+
+  if (accountQuery.isError) {
+    return (
+      <main className="grid min-h-dvh place-items-center bg-canvas px-4">
+        <div className="w-full max-w-md rounded-xl border border-danger-border bg-danger-bg p-8 text-center text-danger">
+          <h1 className="text-xl font-semibold">Session indisponible</h1>
+          <p className="mt-2 text-sm leading-6">
+            Le serveur n’a pas pu vérifier votre session.
+          </p>
+          <Button
+            className="mt-5 border-danger-border text-danger"
+            onPress={() => void accountQuery.refetch()}
+            radius="md"
+            startContent={<RefreshCw aria-hidden="true" size={16} />}
+            variant="bordered"
+          >
+            Réessayer
+          </Button>
+        </div>
+      </main>
+    )
+  }
+
+  if (!accountQuery.data) {
+    return <Navigate replace to="/login" />
+  }
+
+  return (
+    <AppFrame
+      account={accountQuery.data}
+      isLoggingOut={logout.isPending}
+      onLogout={() => logout.mutate()}
+    >
+      <Outlet />
+    </AppFrame>
   )
 }

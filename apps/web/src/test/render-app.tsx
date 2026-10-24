@@ -8,8 +8,21 @@ import {
 import { render } from '@testing-library/react'
 
 import { routeTree } from '../routeTree.gen.ts'
+import {
+  installApiMock,
+  TEST_MONITOR_LABELS,
+  type ApiMockOptions,
+} from './api-mock.ts'
 
-export async function renderApp(initialPath = '/') {
+export async function renderApp(
+  initialPath = '/',
+  apiOptions: ApiMockOptions = {},
+) {
+  installApiMock(apiOptions)
+  window.localStorage.setItem(
+    'cronping.monitor-labels.v1',
+    JSON.stringify(TEST_MONITOR_LABELS),
+  )
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },

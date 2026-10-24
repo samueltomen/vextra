@@ -10,7 +10,7 @@ describe('MonitorDetailPage', () => {
       configurable: true,
       value: { writeText },
     })
-    await renderApp('/monitors/sync-stripe')
+    await renderApp('/monitors/20000000-0000-4000-8000-000000000002')
 
     expect(
       await screen.findByRole('heading', {
@@ -33,7 +33,7 @@ describe('MonitorDetailPage', () => {
   })
 
   it('shows a healthy monitor without an open incident', async () => {
-    await renderApp('/monitors/backup-postgres')
+    await renderApp('/monitors/20000000-0000-4000-8000-000000000001')
 
     expect(
       await screen.findByRole('heading', {
@@ -48,7 +48,7 @@ describe('MonitorDetailPage', () => {
   })
 
   it('shows a safe not-found state', async () => {
-    await renderApp('/monitors/unknown')
+    await renderApp('/monitors/20000000-0000-4000-8000-000000000099')
 
     expect(
       await screen.findByRole('heading', { name: 'Moniteur introuvable' }),
