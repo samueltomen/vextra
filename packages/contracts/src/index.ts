@@ -39,3 +39,13 @@ export type {
   MonitorResponse,
   MonitorState,
 } from './monitoring/monitor-state.ts'
+
+export {
+  listMonitorIncidentsResponseSchema,
+  monitorIncidentSchema,
+} from './monitoring/monitor-incident.ts'
+
+export type {
+  ListMonitorIncidentsResponse,
+  MonitorIncident,
+} from './monitoring/monitor-incident.ts'
