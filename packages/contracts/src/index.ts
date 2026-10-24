@@ -49,3 +49,7 @@ export type {
   ListMonitorIncidentsResponse,
   MonitorIncident,
 } from './monitoring/monitor-incident.ts'
+
+export { rotateMonitorTokenResponseSchema } from './monitoring/rotate-token.ts'
+
+export type { RotateMonitorTokenResponse } from './monitoring/rotate-token.ts'
