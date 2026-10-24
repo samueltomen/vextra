@@ -7,6 +7,16 @@ import type {
 
 import { ApiError, apiRequest } from '../../../api/client.ts'
 import {
+  createDemoMonitor,
+  deleteDemoMonitor,
+  getDemoMonitor,
+  listDemoIncidents,
+  listDemoMonitors,
+  pauseDemoMonitor,
+  resumeDemoMonitor,
+} from '../../../demo/demo-monitoring-store.ts'
+import { isDemoModeEnabled } from '../../../demo/demo-mode.ts'
+import {
   getLocalMonitorLabel,
   getLocalMonitorLabels,
   saveLocalMonitorLabel,
@@ -59,6 +69,10 @@ function fallbackLabel(monitorId: string): string {
 }
 
 export async function listMonitors(): Promise<readonly MonitorView[]> {
+  if (isDemoModeEnabled()) {
+    return listDemoMonitors()
+  }
+
   const response = await apiRequest<ListMonitorsResponse>('/api/monitors')
   const labels = getLocalMonitorLabels()
 
@@ -70,6 +84,10 @@ export async function listMonitors(): Promise<readonly MonitorView[]> {
 export async function getMonitor(
   monitorId: string,
 ): Promise<MonitorView | null> {
+  if (isDemoModeEnabled()) {
+    return getDemoMonitor(monitorId)
+  }
+
   try {
     const response = await apiRequest<MonitorResponse>(
       `/api/monitors/${encodeURIComponent(monitorId)}`,
@@ -91,6 +109,10 @@ export async function getMonitor(
 export async function createMonitor(
   draft: CreateMonitorDraft,
 ): Promise<CreatedMonitor> {
+  if (isDemoModeEnabled()) {
+    return createDemoMonitor(draft)
+  }
+
   const response = await apiRequest<CreateMonitorResponse>('/api/monitors', {
     body: JSON.stringify({
       graceSeconds: Math.round(draft.graceMinutes * 60),
@@ -119,6 +141,10 @@ export async function createMonitor(
 }
 
 export async function pauseMonitor(monitorId: string): Promise<void> {
+  if (isDemoModeEnabled()) {
+    return pauseDemoMonitor(monitorId)
+  }
+
   await apiRequest<void>(
     `/api/monitors/${encodeURIComponent(monitorId)}/pause`,
     { method: 'POST' },
@@ -126,6 +152,10 @@ export async function pauseMonitor(monitorId: string): Promise<void> {
 }
 
 export async function resumeMonitor(monitorId: string): Promise<void> {
+  if (isDemoModeEnabled()) {
+    return resumeDemoMonitor(monitorId)
+  }
+
   await apiRequest<void>(
     `/api/monitors/${encodeURIComponent(monitorId)}/resume`,
     { method: 'POST' },
@@ -133,6 +163,10 @@ export async function resumeMonitor(monitorId: string): Promise<void> {
 }
 
 export async function deleteMonitor(monitorId: string): Promise<void> {
+  if (isDemoModeEnabled()) {
+    return deleteDemoMonitor(monitorId)
+  }
+
   await apiRequest<void>(`/api/monitors/${encodeURIComponent(monitorId)}`, {
     method: 'DELETE',
   })
@@ -141,6 +175,10 @@ export async function deleteMonitor(monitorId: string): Promise<void> {
 export async function listMonitorIncidents(
   monitorId: string,
 ): Promise<readonly MonitorIncidentView[]> {
+  if (isDemoModeEnabled()) {
+    return listDemoIncidents(monitorId)
+  }
+
   const response = await apiRequest<ListMonitorIncidentsResponse>(
     `/api/monitors/${encodeURIComponent(monitorId)}/incidents`,
   )

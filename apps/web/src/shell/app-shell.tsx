@@ -24,6 +24,7 @@ import {
   CURRENT_ACCOUNT_QUERY_KEY,
   useCurrentAccount,
 } from '../features/accounts/query/use-current-account.ts'
+import { isDemoModeEnabled } from '../demo/demo-mode.ts'
 
 function NavLink({
   children,
@@ -79,11 +80,13 @@ function FullPageStatus({
 function AppFrame({
   account,
   children,
+  demoMode,
   isLoggingOut,
   onLogout,
 }: Readonly<{
   account: CurrentAccount
   children: ReactNode
+  demoMode: boolean
   isLoggingOut: boolean
   onLogout: () => void
 }>) {
@@ -139,7 +142,9 @@ function AppFrame({
             {account.user.email}
           </p>
           <p className="mt-1 text-xs leading-5 text-muted">
-            Session sécurisée. Aucun contenu de script transmis.
+            {demoMode
+              ? 'Mode démo local, données fictives.'
+              : 'Session sécurisée. Aucun contenu de script transmis.'}
           </p>
           <Button
             className="mt-3 min-h-10 w-full justify-start text-muted"
@@ -151,12 +156,17 @@ function AppFrame({
             }
             variant="light"
           >
-            Se déconnecter
+            {demoMode ? 'Quitter la démo' : 'Se déconnecter'}
           </Button>
         </div>
       </aside>
 
       <div className="min-w-0">
+        {demoMode ? (
+          <div className="border-b border-action/20 bg-action-soft px-4 py-2 text-center text-xs font-medium text-action">
+            Mode démo local · aucune requête API ni donnée Supabase
+          </div>
+        ) : null}
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-line bg-canvas/95 px-4 backdrop-blur-sm lg:hidden">
           <Link className="flex items-center gap-2 font-semibold" to="/">
             <span className="grid size-8 place-items-center rounded-md bg-ink text-white">
@@ -183,7 +193,7 @@ function AppFrame({
               <Plus aria-hidden="true" size={20} />
             </Link>
             <button
-              aria-label="Se déconnecter"
+              aria-label={demoMode ? 'Quitter la démo' : 'Se déconnecter'}
               className="grid size-11 place-items-center rounded-lg text-muted hover:bg-surface hover:text-ink disabled:opacity-50"
               disabled={isLoggingOut}
               onClick={onLogout}
@@ -210,6 +220,7 @@ export function AppShell() {
     select: (state) => state.location.pathname,
   })
   const accountQuery = useCurrentAccount()
+  const demoMode = isDemoModeEnabled()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const logout = useMutation({
@@ -276,6 +287,7 @@ export function AppShell() {
   return (
     <AppFrame
       account={accountQuery.data}
+      demoMode={demoMode}
       isLoggingOut={logout.isPending}
       onLogout={() => logout.mutate()}
     >
