@@ -11,19 +11,13 @@ import {
 import { useState } from 'react'
 
 import { getMonitor } from '../api/monitoring-api.ts'
-import { formatRelativeTime, statusLabel } from '../model/monitor-format.ts'
+import {
+  formatDateTime,
+  formatFrequency,
+  formatRelativeTime,
+  statusLabel,
+} from '../model/monitor-format.ts'
 import { StatusBadge } from './status-badge.tsx'
-
-function formatDate(timestampMs: number | null): string {
-  if (timestampMs === null) {
-    return 'Aucun heartbeat reçu'
-  }
-
-  return new Intl.DateTimeFormat('fr-FR', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(timestampMs)
-}
 
 export function MonitorDetailPage({
   monitorId,
@@ -109,7 +103,9 @@ export function MonitorDetailPage({
         </div>
         <div className="text-sm sm:text-right">
           <p className="text-muted">Prochaine échéance</p>
-          <p className="mt-1 font-semibold">{formatDate(monitor.alertAtMs)}</p>
+          <p className="mt-1 font-semibold">
+            {formatDateTime(monitor.alertAtMs)}
+          </p>
           <p className="mt-1 text-xs text-muted">
             {formatRelativeTime(monitor.alertAtMs)}
           </p>
@@ -168,7 +164,7 @@ export function MonitorDetailPage({
                 <p className="font-medium">Incident ouvert</p>
                 <p className="mt-1 text-sm text-muted">
                   Aucun heartbeat reçu après l&apos;échéance du{' '}
-                  {formatDate(monitor.alertAtMs)}.
+                  {formatDateTime(monitor.alertAtMs)}.
                 </p>
               </div>
             ) : (
@@ -186,9 +182,7 @@ export function MonitorDetailPage({
               <div className="flex justify-between gap-4">
                 <dt className="text-muted">Fréquence</dt>
                 <dd className="font-medium">
-                  {monitor.intervalMinutes >= 1_440
-                    ? `${monitor.intervalMinutes / 1_440} j`
-                    : `${monitor.intervalMinutes} min`}
+                  {formatFrequency(monitor.intervalMinutes)}
                 </dd>
               </div>
               <div className="flex justify-between gap-4">
@@ -198,7 +192,7 @@ export function MonitorDetailPage({
               <div className="flex justify-between gap-4">
                 <dt className="text-muted">Créé le</dt>
                 <dd className="font-medium">
-                  {formatDate(monitor.createdAtMs)}
+                  {formatDateTime(monitor.createdAtMs)}
                 </dd>
               </div>
               <div className="flex justify-between gap-4">

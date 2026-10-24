@@ -1,5 +1,7 @@
 export type MonitorStatus = 'healthy' | 'late' | 'paused' | 'pending'
 
+export type StatusFilter = 'all' | MonitorStatus
+
 export type MonitorView = Readonly<{
   alertAtMs: number
   createdAtMs: number

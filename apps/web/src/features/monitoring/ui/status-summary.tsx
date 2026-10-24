@@ -1,6 +1,6 @@
 import { CircleCheck, CirclePause, Clock3, TriangleAlert } from 'lucide-react'
 
-import type { MonitorSummary } from '../model/monitor.ts'
+import type { MonitorSummary, StatusFilter } from '../model/monitor.ts'
 
 const ITEMS = [
   {
@@ -30,8 +30,14 @@ const ITEMS = [
 ] as const
 
 export function StatusSummary({
+  activeFilter,
+  onSelect,
   summary,
-}: Readonly<{ summary: MonitorSummary }>) {
+}: Readonly<{
+  activeFilter: StatusFilter
+  onSelect: (filter: StatusFilter) => void
+  summary: MonitorSummary
+}>) {
   return (
     <section
       aria-label="Résumé des statuts"
@@ -41,18 +47,27 @@ export function StatusSummary({
         const Icon = item.icon
 
         return (
-          <div
-            className="rounded-xl border border-line bg-surface p-4"
+          <button
+            aria-pressed={activeFilter === item.key}
+            className={`rounded-xl border bg-surface p-4 text-left transition-colors hover:border-border-strong ${
+              activeFilter === item.key
+                ? 'border-action ring-1 ring-action'
+                : 'border-line'
+            }`}
             key={item.key}
+            onClick={() =>
+              onSelect(activeFilter === item.key ? 'all' : item.key)
+            }
+            type="button"
           >
             <div className={`flex items-center gap-2 ${item.className}`}>
               <Icon aria-hidden="true" size={17} />
               <span className="text-sm font-medium">{item.label}</span>
             </div>
-            <p className="mt-3 text-3xl font-semibold tracking-tight">
+            <p className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">
               {summary[item.key]}
             </p>
-          </div>
+          </button>
         )
       })}
     </section>
