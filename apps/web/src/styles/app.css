@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+@import './tokens.css';
+@plugin '../../hero.ts';
+@source '../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
+
+@theme inline {
+  --color-action: var(--cp-color-action);
+  --color-canvas: var(--cp-color-canvas);
+  --color-healthy: var(--cp-color-healthy-fg);
+  --color-healthy-bg: var(--cp-color-healthy-bg);
+  --color-healthy-border: var(--cp-color-healthy-border);
+  --color-ink: var(--cp-color-text);
+  --color-line: var(--cp-color-border-subtle);
+  --color-muted: var(--cp-color-text-muted);
+  --font-mono: var(--cp-font-mono);
+  --font-sans: var(--cp-font-sans);
+}
+
+@layer base {
+  * {
+    border-color: var(--cp-color-border-subtle);
+  }
+
+  html {
+    background: var(--cp-color-canvas);
+    color: var(--cp-color-text);
+    font-family: var(--cp-font-sans);
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-width: 320px;
+    margin: 0;
+  }
+
+  :focus-visible {
+    outline: var(--cp-focus-ring-width) solid var(--cp-focus-ring-color);
+    outline-offset: var(--cp-focus-ring-offset);
+  }
+}

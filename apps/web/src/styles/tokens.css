@@ -1,0 +1,21 @@
+:root {
+  color-scheme: light;
+
+  --cp-font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  --cp-font-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  --cp-color-canvas: #f7f8f6;
+  --cp-color-surface: #ffffff;
+  --cp-color-text: #151a1d;
+  --cp-color-text-muted: #5d6670;
+  --cp-color-border-subtle: #d7dbd6;
+  --cp-color-border-strong: #7a858e;
+  --cp-color-action: #1f5eff;
+  --cp-color-action-hover: #1747c8;
+  --cp-color-healthy-fg: #0e6245;
+  --cp-color-healthy-bg: #e6f6ef;
+  --cp-color-healthy-border: #a7d8c4;
+  --cp-focus-ring-color: #1f5eff;
+  --cp-focus-ring-width: 2px;
+  --cp-focus-ring-offset: 2px;
+}

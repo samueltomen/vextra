@@ -1,0 +1,31 @@
+{
+  "name": "cronping",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "check": "pnpm format:check && pnpm lint && pnpm peers check && pnpm typecheck && pnpm test && pnpm build && pnpm check:no-bootstrap",
+    "check:no-bootstrap": "node scripts/check-no-bootstrap.mjs",
+    "dev": "pnpm --parallel --stream --filter @cronping/web --filter @cronping/api dev",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "test": "pnpm -r --if-present test",
+    "test:coverage": "pnpm -r --if-present test:coverage",
+    "typecheck": "pnpm -r --if-present typecheck"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.4",
+    "eslint": "9.39.4",
+    "eslint-plugin-react-hooks": "7.0.1",
+    "eslint-plugin-react-refresh": "0.4.26",
+    "globals": "16.5.0",
+    "prettier": "3.9.10",
+    "typescript-eslint": "8.58.0"
+  }
+}

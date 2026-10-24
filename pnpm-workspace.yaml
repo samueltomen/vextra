@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+  - packages/*
+
+allowBuilds:
+  '@heroui/shared-utils': true
+  '@swc/core': true
+  esbuild: true
+  workerd: true
