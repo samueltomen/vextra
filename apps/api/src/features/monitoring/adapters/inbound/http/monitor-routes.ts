@@ -5,6 +5,8 @@ import {
 import { Hono, type Context } from 'hono'
 
 import type { CreateMonitor } from '../../../application/create-monitor.ts'
+import type { MonitorIncidents } from '../../../application/monitor-incidents.ts'
+import type { MonitorLifecycle } from '../../../application/monitor-lifecycle.ts'
 import type {
   MonitorReadService,
   MonitorStateRecord,
@@ -17,6 +19,8 @@ export type AuthenticatedPrincipal = Readonly<{
 
 export type AuthenticatedMonitorScope = Readonly<{
   createMonitor: Pick<CreateMonitor, 'execute'>
+  monitorIncidents: Pick<MonitorIncidents, 'list'>
+  monitorLifecycle: Pick<MonitorLifecycle, 'delete' | 'pause' | 'resume'>
   monitorRead: Pick<MonitorReadService, 'get' | 'list'>
   principal: AuthenticatedPrincipal
 }>
@@ -165,7 +169,86 @@ export function createMonitorRoutes(
     }
   })
 
+  routes.get('/api/monitors/:monitorId/incidents', async (context) => {
+    const scope = await dependencies.authenticate(context)
+
+    if (!scope) {
+      return unauthorized(context)
+    }
+
+    const parsedId = monitorIdSchema.safeParse(context.req.param('monitorId'))
+
+    if (!parsedId.success) {
+      return monitorNotFound(context)
+    }
+
+    try {
+      const incidents = await scope.monitorIncidents.list(parsedId.data)
+
+      return context.json({
+        data: {
+          incidents: incidents.map(toIncidentResponse),
+        },
+      })
+    } catch {
+      return internalError(context)
+    }
+  })
+
+  routes.post('/api/monitors/:monitorId/pause', async (context) => {
+    return lifecycleAction(
+      context,
+      dependencies.authenticate,
+      (lifecycle, monitorId) => lifecycle.pause(monitorId),
+    )
+  })
+
+  routes.post('/api/monitors/:monitorId/resume', async (context) => {
+    return lifecycleAction(
+      context,
+      dependencies.authenticate,
+      (lifecycle, monitorId) => lifecycle.resume(monitorId),
+    )
+  })
+
+  routes.delete('/api/monitors/:monitorId', async (context) => {
+    return lifecycleAction(
+      context,
+      dependencies.authenticate,
+      (lifecycle, monitorId) => lifecycle.delete(monitorId),
+    )
+  })
+
   return routes
+}
+
+async function lifecycleAction(
+  context: Context,
+  authenticate: MonitorRoutesDependencies['authenticate'],
+  action: (
+    lifecycle: AuthenticatedMonitorScope['monitorLifecycle'],
+    monitorId: string,
+  ) => Promise<boolean>,
+) {
+  const scope = await authenticate(context)
+
+  if (!scope) {
+    return unauthorized(context)
+  }
+
+  const parsedId = monitorIdSchema.safeParse(context.req.param('monitorId'))
+
+  if (!parsedId.success) {
+    return monitorNotFound(context)
+  }
+
+  try {
+    const changed = await action(scope.monitorLifecycle, parsedId.data)
+
+    return changed ? context.body(null, 204) : monitorNotFound(context)
+  } catch {
+    return internalError(context)
+  }
 }
 
 function toMonitorResponse(monitor: MonitorStateRecord) {
@@ -188,6 +271,22 @@ function toMonitorResponse(monitor: MonitorStateRecord) {
         ? null
         : new Date(monitor.pausedAtMs).toISOString(),
     status: monitor.status,
+  }
+}
+
+function toIncidentResponse(
+  incident: Awaited<ReturnType<MonitorIncidents['list']>>[number],
+) {
+  return {
+    id: incident.id,
+    monitorId: incident.monitorId,
+    openedAt: new Date(incident.openedAtMs).toISOString(),
+    reason: incident.reason,
+    resolutionReason: incident.resolutionReason,
+    resolvedAt:
+      incident.resolvedAtMs === null
+        ? null
+        : new Date(incident.resolvedAtMs).toISOString(),
   }
 }
 

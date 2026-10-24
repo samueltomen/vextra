@@ -1,16 +1,25 @@
 import { Button, Skeleton } from '@heroui/react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
   CalendarClock,
+  CirclePause,
+  CirclePlay,
   Clipboard,
   KeyRound,
   ShieldCheck,
+  Trash2,
 } from 'lucide-react'
 import { useState } from 'react'
 
-import { getMonitor } from '../api/monitoring-api.ts'
+import {
+  deleteMonitor,
+  getMonitor,
+  listMonitorIncidents,
+  pauseMonitor,
+  resumeMonitor,
+} from '../api/monitoring-api.ts'
 import {
   formatDateTime,
   formatFrequency,
@@ -23,10 +32,36 @@ export function MonitorDetailPage({
   monitorId,
 }: Readonly<{ monitorId: string }>) {
   const [copied, setCopied] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const monitorQuery = useQuery({
     queryKey: ['monitors', monitorId],
     queryFn: () => getMonitor(monitorId),
+  })
+  const incidentsQuery = useQuery({
+    queryKey: ['monitors', monitorId, 'incidents'],
+    queryFn: () => listMonitorIncidents(monitorId),
+  })
+  const pause = useMutation({
+    mutationFn: () => pauseMonitor(monitorId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['monitors'] })
+    },
+  })
+  const resume = useMutation({
+    mutationFn: () => resumeMonitor(monitorId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['monitors'] })
+    },
+  })
+  const remove = useMutation({
+    mutationFn: () => deleteMonitor(monitorId),
+    onSuccess: async () => {
+      queryClient.removeQueries({ queryKey: ['monitors', monitorId] })
+      await queryClient.invalidateQueries({ queryKey: ['monitors'] })
+      await navigate({ replace: true, to: '/' })
+    },
   })
 
   if (monitorQuery.isPending) {
@@ -112,6 +147,65 @@ export function MonitorDetailPage({
         </div>
       </header>
 
+      <div className="flex flex-wrap gap-3">
+        {monitor.status === 'paused' ? (
+          <Button
+            className="min-h-11 bg-action text-white"
+            isLoading={resume.isPending}
+            onPress={() => resume.mutate()}
+            radius="md"
+            startContent={<CirclePlay aria-hidden="true" size={17} />}
+          >
+            Reprendre la surveillance
+          </Button>
+        ) : (
+          <Button
+            className="min-h-11 border-line"
+            isLoading={pause.isPending}
+            onPress={() => pause.mutate()}
+            radius="md"
+            startContent={<CirclePause aria-hidden="true" size={17} />}
+            variant="bordered"
+          >
+            Mettre en pause
+          </Button>
+        )}
+
+        {confirmDelete ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-danger-border bg-danger-bg px-3 py-2 text-danger">
+            <span className="text-sm">Supprimer définitivement ?</span>
+            <Button
+              className="min-h-10 bg-danger text-white"
+              isLoading={remove.isPending}
+              onPress={() => remove.mutate()}
+              radius="md"
+              size="sm"
+            >
+              Confirmer
+            </Button>
+            <Button
+              className="min-h-10 border-danger-border text-danger"
+              onPress={() => setConfirmDelete(false)}
+              radius="md"
+              size="sm"
+              variant="bordered"
+            >
+              Annuler
+            </Button>
+          </div>
+        ) : (
+          <Button
+            className="min-h-11 border-danger-border text-danger"
+            onPress={() => setConfirmDelete(true)}
+            radius="md"
+            startContent={<Trash2 aria-hidden="true" size={17} />}
+            variant="bordered"
+          >
+            Supprimer
+          </Button>
+        )}
+      </div>
+
       {monitor.status === 'late' ? (
         <div
           className="flex gap-3 rounded-xl border border-warning-border bg-warning-bg p-4 text-warning"
@@ -159,18 +253,40 @@ export function MonitorDetailPage({
 
           <section className="rounded-xl border border-line bg-surface p-5 sm:p-6">
             <h2 className="text-lg font-semibold">Derniers incidents</h2>
-            {monitor.status === 'late' ? (
-              <div className="mt-4 border-l-2 border-warning-border pl-4">
-                <p className="font-medium">Incident ouvert</p>
-                <p className="mt-1 text-sm text-muted">
-                  Aucun heartbeat reçu après l&apos;échéance du{' '}
-                  {formatDateTime(monitor.alertAtMs)}.
-                </p>
-              </div>
-            ) : (
+            {incidentsQuery.isPending ? (
+              <Skeleton className="mt-4 h-20 rounded-lg" />
+            ) : (incidentsQuery.data ?? []).length === 0 ? (
               <p className="mt-3 text-sm text-muted">
                 Aucun incident récent pour ce moniteur.
               </p>
+            ) : (
+              <ul className="mt-4 space-y-3">
+                {(incidentsQuery.data ?? []).map((incident) => (
+                  <li
+                    className="rounded-lg border border-line bg-canvas p-4"
+                    key={incident.id}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium">Heartbeat manquant</p>
+                      <p
+                        className={`text-xs font-medium ${
+                          incident.resolvedAtMs === null
+                            ? 'text-warning'
+                            : 'text-healthy'
+                        }`}
+                      >
+                        {incident.resolvedAtMs === null ? 'En cours' : 'Résolu'}
+                      </p>
+                    </div>
+                    <p className="mt-1 text-xs text-muted">
+                      Ouvert le {formatDateTime(incident.openedAtMs)}
+                      {incident.resolvedAtMs !== null
+                        ? ` · résolu le ${formatDateTime(incident.resolvedAtMs)}`
+                        : ''}
+                    </p>
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
         </div>

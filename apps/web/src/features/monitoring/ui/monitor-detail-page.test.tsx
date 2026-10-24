@@ -21,6 +21,7 @@ describe('MonitorDetailPage', () => {
     expect(
       screen.getByText('Heartbeat attendu mais non reçu'),
     ).toBeInTheDocument()
+    expect(screen.getByText('Heartbeat manquant')).toBeInTheDocument()
     expect(
       screen.getByText(/Authorization: Bearer \$CRONPING_TOKEN/),
     ).toBeInTheDocument()
@@ -30,6 +31,37 @@ describe('MonitorDetailPage', () => {
       await screen.findByRole('button', { name: 'Commande copiée' }),
     ).toBeInTheDocument()
     expect(writeText).toHaveBeenCalled()
+  })
+
+  it('pauses and resumes a monitor from the detail page', async () => {
+    await renderApp('/monitors/20000000-0000-4000-8000-000000000002')
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Mettre en pause' }),
+    )
+    expect(
+      await screen.findByRole('button', {
+        name: 'Reprendre la surveillance',
+      }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Reprendre la surveillance' }),
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Mettre en pause' }),
+    ).toBeInTheDocument()
+  })
+
+  it('deletes a monitor after explicit confirmation', async () => {
+    await renderApp('/monitors/20000000-0000-4000-8000-000000000002')
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Supprimer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }))
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Moniteurs' }),
+    ).toBeInTheDocument()
   })
 
   it('shows a healthy monitor without an open incident', async () => {

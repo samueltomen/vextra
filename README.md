@@ -77,6 +77,10 @@ Les moniteurs utilisent :
 - `GET /api/monitors` pour la liste ;
 - `GET /api/monitors/:monitorId` pour le détail ;
 - `POST /api/monitors` pour la création.
+- `POST /api/monitors/:monitorId/pause` pour la mise en pause ;
+- `POST /api/monitors/:monitorId/resume` pour la reprise ;
+- `DELETE /api/monitors/:monitorId` pour la suppression ;
+- `GET /api/monitors/:monitorId/incidents` pour l'historique.
 
 Le heartbeat public utilise :
 

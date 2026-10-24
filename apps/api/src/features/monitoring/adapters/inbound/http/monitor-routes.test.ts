@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { CreateMonitorResult } from '../../../application/create-monitor.ts'
+import type { MonitorIncidentRecord } from '../../../application/monitor-incidents.ts'
 import type { MonitorStateRecord } from '../../../application/monitor-read.ts'
 import {
   createMonitorRoutes,
@@ -35,22 +36,46 @@ const MONITOR_STATE: MonitorStateRecord = {
   tenantId: 'tenant-a',
 }
 
+const MONITOR_INCIDENT: MonitorIncidentRecord = {
+  id: '60000000-0000-4000-8000-000000000001',
+  monitorId: MONITOR_STATE.id,
+  openedAtMs: Date.parse('2026-01-01T00:00:00.000Z'),
+  reason: 'heartbeat_missed',
+  resolutionReason: null,
+  resolvedAtMs: null,
+}
+
 function createRoutes(principal: AuthenticatedPrincipal | null = null) {
   const execute = vi.fn(async () => RESULT)
   const get = vi.fn(async () => MONITOR_STATE)
   const list = vi.fn(async () => [MONITOR_STATE] as const)
+  const listIncidents = vi.fn(async () => [MONITOR_INCIDENT] as const)
+  const pause = vi.fn(async () => true)
+  const resume = vi.fn(async () => true)
+  const remove = vi.fn(async () => true)
   const app = createMonitorRoutes({
     authenticate: async () =>
       principal
         ? {
             createMonitor: { execute },
+            monitorIncidents: { list: listIncidents },
+            monitorLifecycle: { delete: remove, pause, resume },
             monitorRead: { get, list },
             principal,
           }
         : null,
   })
 
-  return { app, execute, get, list }
+  return {
+    app,
+    execute,
+    get,
+    list,
+    listIncidents,
+    pause,
+    remove,
+    resume,
+  }
 }
 
 function createRequest(body: unknown) {
@@ -173,6 +198,12 @@ describe('POST /api/monitors', () => {
             throw new RangeError('interval out of range')
           },
         },
+        monitorIncidents: { list: vi.fn(async () => []) },
+        monitorLifecycle: {
+          delete: vi.fn(async () => true),
+          pause: vi.fn(async () => true),
+          resume: vi.fn(async () => true),
+        },
         monitorRead: {
           get: vi.fn(async () => null),
           list: vi.fn(async () => []),
@@ -203,6 +234,12 @@ describe('POST /api/monitors', () => {
           execute: async () => {
             throw new Error('provider-specific database failure')
           },
+        },
+        monitorIncidents: { list: vi.fn(async () => []) },
+        monitorLifecycle: {
+          delete: vi.fn(async () => true),
+          pause: vi.fn(async () => true),
+          resume: vi.fn(async () => true),
         },
         monitorRead: {
           get: vi.fn(async () => null),
@@ -299,6 +336,12 @@ describe('monitor read routes', () => {
     const absentApp = createMonitorRoutes({
       authenticate: async () => ({
         createMonitor: { execute: vi.fn() },
+        monitorIncidents: { list: vi.fn(async () => []) },
+        monitorLifecycle: {
+          delete: vi.fn(async () => true),
+          pause: vi.fn(async () => true),
+          resume: vi.fn(async () => true),
+        },
         monitorRead: {
           get: vi.fn(async () => null),
           list: vi.fn(async () => []),
@@ -325,6 +368,12 @@ describe('monitor read routes', () => {
     const app = createMonitorRoutes({
       authenticate: async () => ({
         createMonitor: { execute: vi.fn() },
+        monitorIncidents: { list: vi.fn(async () => []) },
+        monitorLifecycle: {
+          delete: vi.fn(async () => true),
+          pause: vi.fn(async () => true),
+          resume: vi.fn(async () => true),
+        },
         monitorRead: {
           get: vi.fn(async () => {
             throw new Error('database unavailable')
@@ -343,5 +392,71 @@ describe('monitor read routes', () => {
 
     expect(listResponse.status).toBe(500)
     expect(detailResponse.status).toBe(500)
+  })
+})
+
+describe('monitor lifecycle routes', () => {
+  it('pauses and resumes a tenant-scoped monitor', async () => {
+    const { app, pause, resume } = createRoutes({
+      tenantId: 'tenant-a',
+      userId: 'user-a',
+    })
+
+    const pauseResponse = await app.request(
+      '/api/monitors/20000000-0000-4000-8000-000000000001/pause',
+      { method: 'POST' },
+    )
+    const resumeResponse = await app.request(
+      '/api/monitors/20000000-0000-4000-8000-000000000001/resume',
+      { method: 'POST' },
+    )
+
+    expect(pauseResponse.status).toBe(204)
+    expect(resumeResponse.status).toBe(204)
+    expect(pause).toHaveBeenCalledWith('20000000-0000-4000-8000-000000000001')
+    expect(resume).toHaveBeenCalledWith('20000000-0000-4000-8000-000000000001')
+  })
+
+  it('deletes a monitor after an explicit confirmation path', async () => {
+    const { app, remove } = createRoutes({
+      tenantId: 'tenant-a',
+      userId: 'user-a',
+    })
+    const response = await app.request(
+      '/api/monitors/20000000-0000-4000-8000-000000000001',
+      { method: 'DELETE' },
+    )
+
+    expect(response.status).toBe(204)
+    expect(remove).toHaveBeenCalledWith('20000000-0000-4000-8000-000000000001')
+  })
+
+  it('lists incident history for a monitor', async () => {
+    const { app, listIncidents } = createRoutes({
+      tenantId: 'tenant-a',
+      userId: 'user-a',
+    })
+    const response = await app.request(
+      '/api/monitors/20000000-0000-4000-8000-000000000001/incidents',
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      data: {
+        incidents: [
+          {
+            id: '60000000-0000-4000-8000-000000000001',
+            monitorId: '20000000-0000-4000-8000-000000000001',
+            openedAt: '2026-01-01T00:00:00.000Z',
+            reason: 'heartbeat_missed',
+            resolutionReason: null,
+            resolvedAt: null,
+          },
+        ],
+      },
+    })
+    expect(listIncidents).toHaveBeenCalledWith(
+      '20000000-0000-4000-8000-000000000001',
+    )
   })
 })
