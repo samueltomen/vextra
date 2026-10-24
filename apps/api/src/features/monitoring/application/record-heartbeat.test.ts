@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  RecordHeartbeat,
-  type HeartbeatRecorder,
-} from './record-heartbeat.ts'
+import { RecordHeartbeat, type HeartbeatRecorder } from './record-heartbeat.ts'
 
 function createRecorder(
   overrides: Partial<HeartbeatRecorder> = {},

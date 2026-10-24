@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(11);
 
 insert into auth.users (id, email)
 values
@@ -59,6 +59,26 @@ values
     now() + interval '5 minutes'
   )
 on conflict (id) do nothing;
+
+insert into public.incidents (
+  id,
+  tenant_id,
+  monitor_id,
+  opened_at
+)
+values
+  (
+    '60000000-0000-4000-8000-000000000001',
+    current_setting('test.alice_tenant_id')::uuid,
+    '20000000-0000-4000-8000-000000000001',
+    now() - interval '1 minute'
+  ),
+  (
+    '60000000-0000-4000-8000-000000000002',
+    current_setting('test.bob_tenant_id')::uuid,
+    '20000000-0000-4000-8000-000000000002',
+    now() - interval '1 minute'
+  );
 
 set local role authenticated;
 select set_config(
@@ -140,6 +160,40 @@ select throws_ok(
   '42501',
   null,
   'a user cannot insert a monitor into another tenant'
+);
+
+select is(
+  (select count(*) from public.incidents),
+  1::bigint,
+  'a user sees only incidents from their tenant'
+);
+
+select is(
+  (
+    select count(*)
+    from public.incidents
+    where tenant_id = current_setting('test.bob_tenant_id')::uuid
+  ),
+  0::bigint,
+  'a user cannot read another tenant incident by id'
+);
+
+select throws_ok(
+  $$
+    insert into public.incidents (
+      tenant_id,
+      monitor_id,
+      opened_at
+    )
+    values (
+      current_setting('test.alice_tenant_id')::uuid,
+      '20000000-0000-4000-8000-000000000001',
+      now()
+    )
+  $$,
+  '42501',
+  null,
+  'a client cannot insert incidents directly'
 );
 
 select * from finish();

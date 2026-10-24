@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { type WorkerEnvironment } from './composition.ts'
 import worker from './worker.ts'
@@ -35,5 +35,24 @@ describe('Cloudflare Worker entrypoint', () => {
         message: 'Service is not configured',
       },
     })
+  })
+
+  it('runs the due-monitor checker through the scheduled handler', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      expect(String(input)).toContain('/rest/v1/rpc/open_due_monitor_incidents')
+
+      return Response.json(2)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    let scheduledTask: Promise<unknown> | undefined
+
+    worker.scheduled({}, ENVIRONMENT, {
+      waitUntil(promise) {
+        scheduledTask = promise
+      },
+    })
+    await scheduledTask
+
+    expect(fetchMock).toHaveBeenCalledOnce()
   })
 })

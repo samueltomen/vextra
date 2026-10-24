@@ -12,7 +12,9 @@ function createApp(execute = vi.fn(async () => true)) {
 
 function createRequest(
   token = TOKEN,
-  init: Omit<RequestInit, 'headers'> & { headers?: Record<string, string> } = {},
+  init: Omit<RequestInit, 'headers'> & {
+    headers?: Record<string, string>
+  } = {},
 ) {
   return new Request('https://api.cronping.test/api/ping', {
     ...init,
@@ -55,17 +57,17 @@ describe('POST /api/ping', () => {
 
   it('rejects query parameters and request bodies without reading their content', async () => {
     const { app, execute } = createApp()
-    const queryResponse = await app.request(
-      createRequest(TOKEN, {}),
-      undefined,
-    )
+    const queryResponse = await app.request(createRequest(TOKEN, {}), undefined)
     const queryRequest = new Request(
       'https://api.cronping.test/api/ping?server=production',
       { headers: { Authorization: `Bearer ${TOKEN}` }, method: 'POST' },
     )
     const queryParamResponse = await app.request(queryRequest)
     const bodyResponse = await app.request(
-      createRequest(TOKEN, { body: '{"output":"secret"}' }),
+      createRequest(TOKEN, {
+        body: '{"output":"secret"}',
+        headers: { 'Content-Type': 'application/json' },
+      }),
     )
 
     expect(queryResponse.status).toBe(204)
