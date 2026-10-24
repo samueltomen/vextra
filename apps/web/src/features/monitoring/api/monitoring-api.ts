@@ -3,6 +3,7 @@ import type {
   ListMonitorIncidentsResponse,
   ListMonitorsResponse,
   MonitorResponse,
+  RotateMonitorTokenResponse,
 } from '@cronping/contracts'
 
 import { ApiError, apiRequest } from '../../../api/client.ts'
@@ -14,6 +15,7 @@ import {
   listDemoMonitors,
   pauseDemoMonitor,
   resumeDemoMonitor,
+  rotateDemoMonitorToken,
 } from '../../../demo/demo-monitoring-store.ts'
 import { isDemoModeEnabled } from '../../../demo/demo-mode.ts'
 import {
@@ -190,4 +192,23 @@ export async function listMonitorIncidents(
     resolvedAtMs:
       incident.resolvedAt === null ? null : Date.parse(incident.resolvedAt),
   }))
+}
+
+export async function rotateMonitorToken(monitorId: string): Promise<string> {
+  if (isDemoModeEnabled()) {
+    const token = await rotateDemoMonitorToken(monitorId)
+
+    if (!token) {
+      throw new Error('Monitor not found')
+    }
+
+    return token
+  }
+
+  const response = await apiRequest<RotateMonitorTokenResponse>(
+    `/api/monitors/${encodeURIComponent(monitorId)}/rotate-token`,
+    { method: 'POST' },
+  )
+
+  return response.data.heartbeatToken
 }

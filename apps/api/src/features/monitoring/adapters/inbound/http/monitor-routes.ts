@@ -11,6 +11,7 @@ import type {
   MonitorReadService,
   MonitorStateRecord,
 } from '../../../application/monitor-read.ts'
+import type { RotateMonitorToken } from '../../../application/rotate-monitor-token.ts'
 
 export type AuthenticatedPrincipal = Readonly<{
   tenantId: string
@@ -23,6 +24,7 @@ export type AuthenticatedMonitorScope = Readonly<{
   monitorLifecycle: Pick<MonitorLifecycle, 'delete' | 'pause' | 'resume'>
   monitorRead: Pick<MonitorReadService, 'get' | 'list'>
   principal: AuthenticatedPrincipal
+  rotateToken: Pick<RotateMonitorToken, 'execute'>
 }>
 
 export type MonitorRoutesDependencies = Readonly<{
@@ -217,6 +219,30 @@ export function createMonitorRoutes(
       dependencies.authenticate,
       (lifecycle, monitorId) => lifecycle.delete(monitorId),
     )
+  })
+
+  routes.post('/api/monitors/:monitorId/rotate-token', async (context) => {
+    const scope = await dependencies.authenticate(context)
+
+    if (!scope) {
+      return unauthorized(context)
+    }
+
+    const parsedId = monitorIdSchema.safeParse(context.req.param('monitorId'))
+
+    if (!parsedId.success) {
+      return monitorNotFound(context)
+    }
+
+    try {
+      const heartbeatToken = await scope.rotateToken.execute(parsedId.data)
+
+      return heartbeatToken
+        ? context.json({ data: { heartbeatToken } })
+        : monitorNotFound(context)
+    } catch {
+      return internalError(context)
+    }
   })
 
   return routes

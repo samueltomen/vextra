@@ -8,6 +8,7 @@ import {
   CirclePlay,
   Clipboard,
   KeyRound,
+  RefreshCw,
   ShieldCheck,
   Trash2,
 } from 'lucide-react'
@@ -19,6 +20,7 @@ import {
   listMonitorIncidents,
   pauseMonitor,
   resumeMonitor,
+  rotateMonitorToken,
 } from '../api/monitoring-api.ts'
 import {
   formatDateTime,
@@ -32,6 +34,8 @@ export function MonitorDetailPage({
   monitorId,
 }: Readonly<{ monitorId: string }>) {
   const [copied, setCopied] = useState(false)
+  const [copiedToken, setCopiedToken] = useState(false)
+  const [rotatedToken, setRotatedToken] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -61,6 +65,13 @@ export function MonitorDetailPage({
       queryClient.removeQueries({ queryKey: ['monitors', monitorId] })
       await queryClient.invalidateQueries({ queryKey: ['monitors'] })
       await navigate({ replace: true, to: '/' })
+    },
+  })
+  const rotate = useMutation({
+    mutationFn: () => rotateMonitorToken(monitorId),
+    onSuccess: (token) => {
+      setCopiedToken(false)
+      setRotatedToken(token)
     },
   })
 
@@ -112,6 +123,15 @@ export function MonitorDetailPage({
   async function copyCommand() {
     await navigator.clipboard.writeText(command)
     setCopied(true)
+  }
+
+  async function copyToken() {
+    if (!rotatedToken) {
+      return
+    }
+
+    await navigator.clipboard.writeText(rotatedToken)
+    setCopiedToken(true)
   }
 
   return (
@@ -249,6 +269,43 @@ export function MonitorDetailPage({
               <Clipboard aria-hidden="true" size={17} />
               {copied ? 'Commande copiée' : 'Copier la commande'}
             </Button>
+            <Button
+              className="ml-3 mt-4 min-h-11 border-line"
+              isLoading={rotate.isPending}
+              onPress={() => rotate.mutate()}
+              radius="md"
+              startContent={<RefreshCw aria-hidden="true" size={17} />}
+              variant="bordered"
+            >
+              Renouveler le token
+            </Button>
+
+            {rotatedToken ? (
+              <div
+                className="mt-5 rounded-lg border border-warning-border bg-warning-bg p-4 text-warning"
+                role="status"
+              >
+                <p className="font-semibold">Nouveau token affiché une fois</p>
+                <p className="mt-1 text-sm">
+                  L’ancien token est maintenant invalide. Copiez ce secret dans
+                  votre gestionnaire de secrets.
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <code className="min-w-0 flex-1 overflow-x-auto rounded-md bg-surface px-3 py-2 font-mono text-xs text-ink">
+                    {rotatedToken}
+                  </code>
+                  <Button
+                    className="min-h-10 border-warning-border text-warning"
+                    onPress={() => void copyToken()}
+                    radius="md"
+                    size="sm"
+                    variant="bordered"
+                  >
+                    {copiedToken ? 'Token copié' : 'Copier le token'}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </section>
 
           <section className="rounded-xl border border-line bg-surface p-5 sm:p-6">

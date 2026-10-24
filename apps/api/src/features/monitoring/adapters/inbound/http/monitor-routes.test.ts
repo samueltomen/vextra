@@ -215,6 +215,7 @@ describe('POST /api/monitors', () => {
           tenantId: 'tenant-a',
           userId: 'user-a',
         },
+        rotateToken: { execute: vi.fn(async () => null) },
       }),
     })
     const response = await app.request(
@@ -252,6 +253,7 @@ describe('POST /api/monitors', () => {
           tenantId: 'tenant-a',
           userId: 'user-a',
         },
+        rotateToken: { execute: vi.fn(async () => null) },
       }),
     })
     const response = await app.request(
@@ -350,6 +352,7 @@ describe('monitor read routes', () => {
           list: vi.fn(async () => []),
         },
         principal: { tenantId: 'tenant-a', userId: 'user-a' },
+        rotateToken: { execute: vi.fn(async () => null) },
       }),
     })
     const invalid = await absentApp.request('/api/monitors/not-a-uuid')
@@ -386,6 +389,7 @@ describe('monitor read routes', () => {
           }),
         },
         principal: { tenantId: 'tenant-a', userId: 'user-a' },
+        rotateToken: { execute: vi.fn(async () => null) },
       }),
     })
     const listResponse = await app.request('/api/monitors')

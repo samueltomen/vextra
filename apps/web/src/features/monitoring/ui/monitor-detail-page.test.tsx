@@ -64,6 +64,22 @@ describe('MonitorDetailPage', () => {
     ).toBeInTheDocument()
   })
 
+  it('rotates the heartbeat token and reveals it once', async () => {
+    await renderApp('/monitors/20000000-0000-4000-8000-000000000001')
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Renouveler le token' }),
+    )
+
+    expect(
+      await screen.findByText('Nouveau token affiché une fois'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('cp_rotated-heartbeat-token')).toBeInTheDocument()
+    expect(
+      screen.getByText(/ancien token est maintenant invalide/i),
+    ).toBeInTheDocument()
+  })
+
   it('shows a healthy monitor without an open incident', async () => {
     await renderApp('/monitors/20000000-0000-4000-8000-000000000001')
 

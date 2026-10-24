@@ -71,4 +71,21 @@ describe('LoginPage', () => {
       screen.getByText('Utilisez au moins 12 caractères.'),
     ).toBeInTheDocument()
   })
+
+  it('opens the local demo without calling the API', async () => {
+    await renderApp('/login', { authenticated: false })
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Explorer la démo locale',
+      }),
+    )
+
+    expect(
+      await screen.findByText(
+        'Mode démo local · aucune requête API ni donnée Supabase',
+      ),
+    ).toBeInTheDocument()
+    expect(await screen.findByText('Sauvegarde PostgreSQL')).toBeInTheDocument()
+  })
 })
