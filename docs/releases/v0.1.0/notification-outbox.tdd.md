@@ -42,7 +42,18 @@ Supabase db lint : aucun schéma en erreur
 
 ## Limites connues
 
-- Discord et Telegram restent à ajouter ;
+- Discord et Telegram sont hors périmètre de cette V1 e-mail ;
 - le rendu de l'e-mail est volontairement textuel et minimal ;
 - les métriques de profondeur d'outbox et le replay opérateur restent à
   instrumenter.
+
+## Centre de notifications
+
+La page `/notifications` affiche :
+
+- l'adresse e-mail du compte connecté ;
+- les compteurs d'envois livrés et à surveiller ;
+- les 50 dernières livraisons du tenant ;
+- le statut `En attente`, `En cours`, `Envoyé`, `Nouvelle tentative` ou
+  `Échec définitif` ;
+- le libellé local du moniteur, sans envoyer ce libellé au serveur.

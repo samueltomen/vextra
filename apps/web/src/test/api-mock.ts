@@ -144,6 +144,34 @@ export function installApiMock(options: ApiMockOptions = {}) {
         return new Response(null, { status: 204 })
       }
 
+      if (url.pathname === '/api/notifications' && method === 'GET') {
+        return authenticated
+          ? jsonResponse({
+              data: {
+                deliveries: [
+                  {
+                    attempts: 1,
+                    createdAt: new Date(Date.now() - 600_000).toISOString(),
+                    id: 'a0000000-0000-4000-8000-000000000001',
+                    kind: 'incident_opened',
+                    monitorId: '20000000-0000-4000-8000-000000000002',
+                    status: 'sent',
+                    updatedAt: new Date(Date.now() - 540_000).toISOString(),
+                  },
+                  {
+                    attempts: 2,
+                    createdAt: new Date(Date.now() - 3_600_000).toISOString(),
+                    kind: 'incident_resolved',
+                    monitorId: '20000000-0000-4000-8000-000000000001',
+                    status: 'failed',
+                    updatedAt: new Date(Date.now() - 3_000_000).toISOString(),
+                  },
+                ],
+              },
+            })
+          : errorResponse(401, 'unauthorized')
+      }
+
       if (url.pathname === '/api/monitors' && method === 'GET') {
         return authenticated
           ? jsonResponse({ data: { monitors } })

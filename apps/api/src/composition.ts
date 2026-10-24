@@ -47,11 +47,17 @@ import { MonitorReadService } from './features/monitoring/application/monitor-re
 import { RecordHeartbeat } from './features/monitoring/application/record-heartbeat.ts'
 import { RotateMonitorToken } from './features/monitoring/application/rotate-monitor-token.ts'
 import { DeliverNotifications } from './features/notifications/application/deliver-notifications.ts'
+import { NotificationHistory } from './features/notifications/application/notification-history.ts'
+import { createNotificationRoutes } from './features/notifications/adapters/inbound/http/notification-routes.ts'
 import { ResendNotificationSender } from './features/notifications/adapters/outbound/resend-notification-sender.ts'
 import {
   SupabaseNotificationDeliveryQueue,
   type NotificationDeliveryRpcClient,
 } from './features/notifications/adapters/outbound/supabase-notification-delivery-queue.ts'
+import {
+  SupabaseNotificationHistory,
+  type NotificationHistoryQueryClient,
+} from './features/notifications/adapters/outbound/supabase-notification-history.ts'
 
 export type WorkerEnvironment = Readonly<{
   APP_ORIGIN: string
@@ -128,9 +134,7 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     recorder: new SupabaseHeartbeatRecorder(supabase),
   })
 
-  const authenticateMonitor = async (
-    context: Context,
-  ): Promise<AuthenticatedMonitorScope | null> => {
+  const resolveSession = async (context: Context) => {
     const tokens = await readSessionCookie(context, codec)
 
     if (!tokens) {
@@ -149,6 +153,20 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     }
 
     const client = userClient(account.tokens.accessToken)
+
+    return { account, client }
+  }
+
+  const authenticateMonitor = async (
+    context: Context,
+  ): Promise<AuthenticatedMonitorScope | null> => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    const { account, client } = session
     const createMonitorUseCase = new CreateMonitor({
       clock: { nowMs: () => Date.now() },
       idGenerator: { generate: () => crypto.randomUUID() },
@@ -196,10 +214,30 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     }
   }
 
+  const authenticateNotifications = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    return {
+      history: new NotificationHistory(
+        new SupabaseNotificationHistory(
+          session.client as unknown as NotificationHistoryQueryClient,
+        ),
+      ),
+      tenantId: session.account.tenantId,
+    }
+  }
+
   return createApiApp({
     allowedOrigin: environment.APP_ORIGIN,
     authRoutes: createAuthRoutes({ accounts, codec }),
     monitorRoutes: createMonitorRoutes({ authenticate: authenticateMonitor }),
+    notificationRoutes: createNotificationRoutes({
+      authenticate: authenticateNotifications,
+    }),
     pingRoutes: createPingRoutes({
       execute: (token) => recordHeartbeat.execute(token),
     }),
