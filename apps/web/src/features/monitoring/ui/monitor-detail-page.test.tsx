@@ -97,6 +97,45 @@ describe('MonitorDetailPage', () => {
     expect(screen.queryByText('Heartbeat attendu mais non reçu')).toBeNull()
   })
 
+  it('edits the schedule of a monitor and shows the new configuration', async () => {
+    await renderApp('/monitors/20000000-0000-4000-8000-000000000001')
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Modifier la planification' }),
+    )
+
+    const save = screen.getByRole('button', {
+      name: 'Enregistrer la planification',
+    })
+    expect(save).toBeDisabled()
+
+    fireEvent.click(screen.getAllByRole('button', { name: '15 min' })[0]!)
+    expect(save).toBeEnabled()
+    fireEvent.click(save)
+
+    expect(
+      await screen.findByRole('button', { name: 'Modifier la planification' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Toutes les 15 minutes')).toBeInTheDocument()
+  })
+
+  it('cancels a schedule edit without saving it', async () => {
+    await renderApp('/monitors/20000000-0000-4000-8000-000000000001')
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Modifier la planification' }),
+    )
+    fireEvent.click(screen.getAllByRole('button', { name: '15 min' })[0]!)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Annuler la modification' }),
+    )
+
+    expect(screen.getByText('Tous les jours')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Enregistrer la planification' }),
+    ).toBeNull()
+  })
+
   it('shows a safe not-found state', async () => {
     await renderApp('/monitors/20000000-0000-4000-8000-000000000099')
 

@@ -110,7 +110,7 @@ export function SettingsPage() {
               </p>
             ) : null}
             <Button
-              className="mt-4 min-h-11 bg-danger text-white"
+              className="mt-4 min-h-11 bg-danger text-white dark:text-[#2d1010]"
               isDisabled={!canDelete}
               isLoading={deletion.isPending}
               onPress={() => {

@@ -14,8 +14,10 @@ import {
   listDemoIncidents,
   listDemoMonitors,
   pauseDemoMonitor,
+  renameDemoMonitor,
   resumeDemoMonitor,
   rotateDemoMonitorToken,
+  updateDemoMonitorSchedule,
 } from '../../../demo/demo-monitoring-store.ts'
 import { isDemoModeEnabled } from '../../../demo/demo-mode.ts'
 import {
@@ -140,6 +142,42 @@ export async function createMonitor(
       status: response.data.status,
     },
   }
+}
+
+export async function renameMonitor(
+  monitorId: string,
+  label: string,
+): Promise<void> {
+  if (isDemoModeEnabled()) {
+    return renameDemoMonitor(monitorId, label)
+  }
+
+  saveLocalMonitorLabel(monitorId, label)
+}
+
+export type MonitorScheduleDraft = Readonly<{
+  graceMinutes: number
+  intervalMinutes: number
+}>
+
+export async function updateMonitorSchedule(
+  monitorId: string,
+  draft: MonitorScheduleDraft,
+): Promise<void> {
+  if (isDemoModeEnabled()) {
+    return updateDemoMonitorSchedule(monitorId, draft)
+  }
+
+  await apiRequest<MonitorResponse>(
+    `/api/monitors/${encodeURIComponent(monitorId)}`,
+    {
+      body: JSON.stringify({
+        graceSeconds: Math.round(draft.graceMinutes * 60),
+        intervalSeconds: Math.round(draft.intervalMinutes * 60),
+      }),
+      method: 'PATCH',
+    },
+  )
 }
 
 export async function pauseMonitor(monitorId: string): Promise<void> {

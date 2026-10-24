@@ -7,7 +7,20 @@
       name="description"
       content="CronPing surveille les heartbeats de vos scripts planifiés."
     />
+    <meta name="color-scheme" content="light dark" />
     <title>CronPing</title>
+    <script>
+      try {
+        var stored = window.localStorage.getItem('cronping.theme')
+        var dark =
+          stored === 'dark' ||
+          ((stored === null || stored === 'system') &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.classList.toggle('dark', dark)
+      } catch (error) {
+        /* thème clair par défaut */
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

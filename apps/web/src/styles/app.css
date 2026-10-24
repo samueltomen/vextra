@@ -1,11 +1,14 @@
 @import 'tailwindcss';
 @import './tokens.css';
 @plugin '../../hero.ts';
+@custom-variant dark (&:is(.dark *));
 @source '../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
 
 @theme inline {
   --color-action: var(--cp-color-action);
   --color-action-soft: var(--cp-color-action-soft);
+  --color-action-fg: var(--cp-color-action-fg);
+  --color-action-hover: var(--cp-color-action-hover);
   --color-canvas: var(--cp-color-canvas);
   --color-border-strong: var(--cp-color-border-strong);
   --color-danger: var(--cp-color-danger-fg);
@@ -14,6 +17,20 @@
   --color-healthy: var(--cp-color-healthy-fg);
   --color-healthy-bg: var(--cp-color-healthy-bg);
   --color-healthy-border: var(--cp-color-healthy-border);
+  --color-healthy-solid: var(--cp-color-healthy-solid);
+  --color-warning-solid: var(--cp-color-warning-solid);
+  --color-danger-solid: var(--cp-color-danger-solid);
+  --color-neutral-solid: var(--cp-color-neutral-solid);
+  --color-raised: var(--cp-color-surface-raised);
+  --color-sidebar: var(--cp-color-sidebar);
+  --color-sidebar-hover: var(--cp-color-sidebar-hover);
+  --color-sidebar-line: var(--cp-color-sidebar-border);
+  --color-sidebar-ink: var(--cp-color-sidebar-text);
+  --color-sidebar-muted: var(--cp-color-sidebar-muted);
+  --color-sidebar-active: var(--cp-color-sidebar-active);
+  --color-sidebar-accent: var(--cp-color-sidebar-accent);
+  --shadow-card: var(--cp-shadow-card);
+  --shadow-raised: var(--cp-shadow-raised);
   --color-ink: var(--cp-color-text);
   --color-line: var(--cp-color-border-subtle);
   --color-muted: var(--cp-color-text-muted);
@@ -72,4 +89,21 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+@keyframes cp-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+    opacity: 1;
+  }
+
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px transparent;
+    opacity: 0.85;
+  }
+}
+
+.cp-pulse {
+  animation: cp-pulse-ring 1.8s ease-out infinite;
 }
