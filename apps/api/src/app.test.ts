@@ -5,6 +5,7 @@ import { createApiApp } from './app.ts'
 
 function createApp() {
   return createApiApp({
+    accountRoutes: new Hono(),
     allowedOrigin: 'http://localhost:5173',
     authRoutes: new Hono(),
     monitorRoutes: new Hono(),

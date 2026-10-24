@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  DeleteAccount,
-  type AccountDeletionPort,
-} from './delete-account.ts'
+import { DeleteAccount, type AccountDeletionPort } from './delete-account.ts'
 
 describe('DeleteAccount', () => {
   it('deletes only the authenticated user id', async () => {

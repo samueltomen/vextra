@@ -144,6 +144,11 @@ export function installApiMock(options: ApiMockOptions = {}) {
         return new Response(null, { status: 204 })
       }
 
+      if (url.pathname === '/api/account' && method === 'DELETE') {
+        authenticated = false
+        return new Response(null, { status: 204 })
+      }
+
       if (url.pathname === '/api/notifications' && method === 'GET') {
         return authenticated
           ? jsonResponse({

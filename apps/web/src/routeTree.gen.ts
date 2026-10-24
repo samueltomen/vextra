@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as MonitorsMonitorIdRouteImport } from './routes/monitors/$monitorId'
 import { Route as MonitorsNewRouteImport } from './routes/monitors/new'
 
@@ -30,6 +31,11 @@ const NotificationsRoute = NotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MonitorsMonitorIdRoute = MonitorsMonitorIdRouteImport.update({
   id: '/monitors/$monitorId',
   path: '/monitors/$monitorId',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
+  '/settings': typeof SettingsRoute
   '/monitors/$monitorId': typeof MonitorsMonitorIdRoute
   '/monitors/new': typeof MonitorsNewRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
+  '/settings': typeof SettingsRoute
   '/monitors/$monitorId': typeof MonitorsMonitorIdRoute
   '/monitors/new': typeof MonitorsNewRoute
 }
@@ -60,21 +68,33 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/notifications': typeof NotificationsRoute
+  '/settings': typeof SettingsRoute
   '/monitors/$monitorId': typeof MonitorsMonitorIdRoute
   '/monitors/new': typeof MonitorsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/login' | '/notifications' | '/monitors/$monitorId' | '/monitors/new'
+    | '/'
+    | '/login'
+    | '/notifications'
+    | '/settings'
+    | '/monitors/$monitorId'
+    | '/monitors/new'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/login' | '/notifications' | '/monitors/$monitorId' | '/monitors/new'
+    | '/'
+    | '/login'
+    | '/notifications'
+    | '/settings'
+    | '/monitors/$monitorId'
+    | '/monitors/new'
   id:
     | '__root__'
     | '/'
     | '/login'
     | '/notifications'
+    | '/settings'
     | '/monitors/$monitorId'
     | '/monitors/new'
   fileRoutesById: FileRoutesById
@@ -83,6 +103,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   NotificationsRoute: typeof NotificationsRoute
+  SettingsRoute: typeof SettingsRoute
   MonitorsMonitorIdRoute: typeof MonitorsMonitorIdRoute
   MonitorsNewRoute: typeof MonitorsNewRoute
 }
@@ -110,6 +131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/monitors/$monitorId': {
       id: '/monitors/$monitorId'
       path: '/monitors/$monitorId'
@@ -131,6 +159,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   NotificationsRoute: NotificationsRoute,
+  SettingsRoute: SettingsRoute,
   MonitorsMonitorIdRoute: MonitorsMonitorIdRoute,
   MonitorsNewRoute: MonitorsNewRoute,
 }

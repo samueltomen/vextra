@@ -33,7 +33,7 @@ function NavLink({
 }: Readonly<{
   children: ReactNode
   icon: ReactNode
-  to: '/' | '/monitors/new' | '/notifications'
+  to: '/' | '/monitors/new' | '/notifications' | '/settings'
 }>) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -128,11 +128,12 @@ function AppFrame({
           >
             Notifications
           </NavLink>
-          <span className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm text-muted">
-            <Settings aria-hidden="true" size={18} />
+          <NavLink
+            icon={<Settings aria-hidden="true" size={18} />}
+            to="/settings"
+          >
             Réglages
-            <span className="ml-auto text-xs">Bientôt</span>
-          </span>
+          </NavLink>
         </div>
 
         <div className="mt-4 rounded-lg border border-line bg-canvas px-3 py-3">
@@ -199,6 +200,13 @@ function AppFrame({
               to="/notifications"
             >
               <Bell aria-hidden="true" size={20} />
+            </Link>
+            <Link
+              aria-label="Ouvrir les réglages"
+              className="grid size-11 place-items-center rounded-lg text-muted hover:bg-surface hover:text-ink"
+              to="/settings"
+            >
+              <Settings aria-hidden="true" size={20} />
             </Link>
             <button
               aria-label={demoMode ? 'Quitter la démo' : 'Se déconnecter'}
