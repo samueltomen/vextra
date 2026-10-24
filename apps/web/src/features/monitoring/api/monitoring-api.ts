@@ -1,5 +1,6 @@
 import type {
   CreateMonitorResponse,
+  ListMonitorIncidentsResponse,
   ListMonitorsResponse,
   MonitorResponse,
 } from '@cronping/contracts'
@@ -21,6 +22,13 @@ export type CreateMonitorDraft = Readonly<{
 export type CreatedMonitor = Readonly<{
   heartbeatToken: string
   monitor: MonitorView
+}>
+
+export type MonitorIncidentView = Readonly<{
+  id: string
+  openedAtMs: number
+  resolutionReason: 'heartbeat_received' | 'manual' | null
+  resolvedAtMs: number | null
 }>
 
 function toMonitorView(
@@ -108,4 +116,40 @@ export async function createMonitor(
       status: response.data.status,
     },
   }
+}
+
+export async function pauseMonitor(monitorId: string): Promise<void> {
+  await apiRequest<void>(
+    `/api/monitors/${encodeURIComponent(monitorId)}/pause`,
+    { method: 'POST' },
+  )
+}
+
+export async function resumeMonitor(monitorId: string): Promise<void> {
+  await apiRequest<void>(
+    `/api/monitors/${encodeURIComponent(monitorId)}/resume`,
+    { method: 'POST' },
+  )
+}
+
+export async function deleteMonitor(monitorId: string): Promise<void> {
+  await apiRequest<void>(`/api/monitors/${encodeURIComponent(monitorId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function listMonitorIncidents(
+  monitorId: string,
+): Promise<readonly MonitorIncidentView[]> {
+  const response = await apiRequest<ListMonitorIncidentsResponse>(
+    `/api/monitors/${encodeURIComponent(monitorId)}/incidents`,
+  )
+
+  return response.data.incidents.map((incident) => ({
+    id: incident.id,
+    openedAtMs: Date.parse(incident.openedAt),
+    resolutionReason: incident.resolutionReason,
+    resolvedAtMs:
+      incident.resolvedAt === null ? null : Date.parse(incident.resolvedAt),
+  }))
 }

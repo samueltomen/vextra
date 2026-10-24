@@ -22,6 +22,14 @@ import {
 } from './features/monitoring/adapters/outbound/crypto-monitor-token.ts'
 import { SupabaseDueMonitorClaimer } from './features/monitoring/adapters/outbound/supabase-due-monitor-claimer.ts'
 import { SupabaseHeartbeatRecorder } from './features/monitoring/adapters/outbound/supabase-heartbeat-recorder.ts'
+import {
+  SupabaseMonitorIncidentRepository,
+  type MonitorIncidentQueryClient,
+} from './features/monitoring/adapters/outbound/supabase-monitor-incident-repository.ts'
+import {
+  SupabaseMonitorLifecycle,
+  type MonitorLifecycleRpcClient,
+} from './features/monitoring/adapters/outbound/supabase-monitor-lifecycle.ts'
 import { SupabaseMonitorRepository } from './features/monitoring/adapters/outbound/supabase-monitor-repository.ts'
 import {
   SupabaseMonitorQueryRepository,
@@ -29,6 +37,8 @@ import {
 } from './features/monitoring/adapters/outbound/supabase-monitor-query-repository.ts'
 import { CheckDueMonitors } from './features/monitoring/application/check-due-monitors.ts'
 import { CreateMonitor } from './features/monitoring/application/create-monitor.ts'
+import { MonitorIncidents } from './features/monitoring/application/monitor-incidents.ts'
+import { MonitorLifecycle } from './features/monitoring/application/monitor-lifecycle.ts'
 import { MonitorReadService } from './features/monitoring/application/monitor-read.ts'
 import { RecordHeartbeat } from './features/monitoring/application/record-heartbeat.ts'
 
@@ -145,6 +155,16 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
           return result
         },
       },
+      monitorIncidents: new MonitorIncidents(
+        new SupabaseMonitorIncidentRepository(
+          client as unknown as MonitorIncidentQueryClient,
+        ),
+      ),
+      monitorLifecycle: new MonitorLifecycle(
+        new SupabaseMonitorLifecycle(
+          client as unknown as MonitorLifecycleRpcClient,
+        ),
+      ),
       monitorRead: new MonitorReadService(
         new SupabaseMonitorQueryRepository(
           client as unknown as MonitorQueryClient,

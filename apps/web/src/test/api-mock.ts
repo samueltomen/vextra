@@ -96,6 +96,16 @@ export type ApiMockOptions = Readonly<{
 export function installApiMock(options: ApiMockOptions = {}) {
   let authenticated = options.authenticated ?? true
   const monitors = [...(options.monitors ?? createMonitorRows())]
+  const incidents = monitors
+    .filter((monitor) => monitor.status === 'late')
+    .map((monitor) => ({
+      id: `incident-${monitor.id}`,
+      monitorId: monitor.id,
+      openedAt: monitor.incidentOpenedAt ?? new Date().toISOString(),
+      reason: 'heartbeat_missed' as const,
+      resolutionReason: null,
+      resolvedAt: null,
+    }))
   const fetchMock = vi.fn(
     async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input), window.location.origin)
@@ -175,6 +185,51 @@ export function installApiMock(options: ApiMockOptions = {}) {
           },
           201,
         )
+      }
+
+      if (url.pathname.startsWith('/api/monitors/') && method === 'DELETE') {
+        const monitorId = decodeURIComponent(
+          url.pathname.split('/').at(-1) ?? '',
+        )
+        const index = monitors.findIndex((monitor) => monitor.id === monitorId)
+
+        if (index >= 0) {
+          monitors.splice(index, 1)
+        }
+
+        return new Response(null, { status: 204 })
+      }
+
+      if (url.pathname.endsWith('/pause') || url.pathname.endsWith('/resume')) {
+        const monitorId = decodeURIComponent(
+          url.pathname.split('/').at(-2) ?? '',
+        )
+        const monitor = monitors.find((candidate) => candidate.id === monitorId)
+
+        if (!monitor) {
+          return errorResponse(404, 'monitor_not_found')
+        }
+
+        monitor.status = url.pathname.endsWith('/pause') ? 'paused' : 'pending'
+        monitor.pausedAt = url.pathname.endsWith('/pause')
+          ? new Date().toISOString()
+          : null
+
+        return new Response(null, { status: 204 })
+      }
+
+      if (url.pathname.endsWith('/incidents') && method === 'GET') {
+        const monitorId = decodeURIComponent(
+          url.pathname.split('/').at(-2) ?? '',
+        )
+
+        return jsonResponse({
+          data: {
+            incidents: incidents.filter(
+              (incident) => incident.monitorId === monitorId,
+            ),
+          },
+        })
       }
 
       if (url.pathname.startsWith('/api/monitors/') && method === 'GET') {
