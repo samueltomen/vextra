@@ -53,6 +53,7 @@ function createRoutes(principal: AuthenticatedPrincipal | null = null) {
   const pause = vi.fn(async () => true)
   const resume = vi.fn(async () => true)
   const remove = vi.fn(async () => true)
+  const rotateToken = vi.fn(async () => 'new-raw-token')
   const app = createMonitorRoutes({
     authenticate: async () =>
       principal
@@ -62,6 +63,7 @@ function createRoutes(principal: AuthenticatedPrincipal | null = null) {
             monitorLifecycle: { delete: remove, pause, resume },
             monitorRead: { get, list },
             principal,
+            rotateToken: { execute: rotateToken },
           }
         : null,
   })
@@ -74,6 +76,7 @@ function createRoutes(principal: AuthenticatedPrincipal | null = null) {
     listIncidents,
     pause,
     remove,
+    rotateToken,
     resume,
   }
 }
@@ -458,5 +461,52 @@ describe('monitor lifecycle routes', () => {
     expect(listIncidents).toHaveBeenCalledWith(
       '20000000-0000-4000-8000-000000000001',
     )
+  })
+})
+
+describe('POST /api/monitors/:monitorId/rotate-token', () => {
+  it('returns the new token only in the authenticated response', async () => {
+    const { app, rotateToken } = createRoutes({
+      tenantId: 'tenant-a',
+      userId: 'user-a',
+    })
+    const response = await app.request(
+      '/api/monitors/20000000-0000-4000-8000-000000000001/rotate-token',
+      { method: 'POST' },
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      data: { heartbeatToken: 'new-raw-token' },
+    })
+    expect(rotateToken).toHaveBeenCalledWith(
+      '20000000-0000-4000-8000-000000000001',
+    )
+  })
+
+  it('returns 404 without leaking whether a foreign monitor exists', async () => {
+    const app = createMonitorRoutes({
+      authenticate: async () => ({
+        createMonitor: { execute: vi.fn() },
+        monitorIncidents: { list: vi.fn(async () => []) },
+        monitorLifecycle: {
+          delete: vi.fn(async () => true),
+          pause: vi.fn(async () => true),
+          resume: vi.fn(async () => true),
+        },
+        monitorRead: {
+          get: vi.fn(async () => null),
+          list: vi.fn(async () => []),
+        },
+        principal: { tenantId: 'tenant-a', userId: 'user-a' },
+        rotateToken: { execute: vi.fn(async () => null) },
+      }),
+    })
+    const response = await app.request(
+      '/api/monitors/20000000-0000-4000-8000-000000000001/rotate-token',
+      { method: 'POST' },
+    )
+
+    expect(response.status).toBe(404)
   })
 })
