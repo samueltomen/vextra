@@ -23,6 +23,8 @@ Le dépôt contient le socle de la V1 :
 - ingestion de heartbeats par token `Bearer`, hash HMAC et résolution
   d'incident ;
 - checker planifié chaque minute avec ouverture idempotente des incidents ;
+- outbox e-mail transactionnelle avec claim atomique, retries et
+  déduplication ;
 - configuration TypeScript stricte, Prettier, ESLint et Vitest ;
 - garde-fou interdisant Bootstrap.
 
@@ -61,6 +63,10 @@ n'effectue aucun appel API.
 
 `SUPABASE_SERVICE_ROLE_KEY` est uniquement requis par le handler planifié pour
 exécuter la RPC interne du checker. Il ne doit jamais être exposé à la SPA.
+
+La livraison e-mail nécessite aussi `RESEND_API_KEY` et
+`RESEND_FROM_EMAIL`. Sans ces deux valeurs, les événements restent dans
+l'outbox et aucun envoi externe n'est tenté.
 
 ## Développement
 
@@ -162,9 +168,10 @@ pnpm exec supabase stop
 Le service Analytics local est désactivé pour éviter des ports et services
 inutiles au développement de CronPing.
 
-Le Cron Trigger Cloudflare s'exécute toutes les minutes. Il appelle uniquement
-la RPC interne `open_due_monitor_incidents`, qui verrouille un lot borné de
-moniteurs échus et ouvre au plus un incident ouvert par moniteur.
+Le Cron Trigger Cloudflare s'exécute toutes les minutes. Il ouvre les incidents
+échus, puis traite un lot borné de livraisons e-mail. L'adresse du propriétaire
+est résolue depuis Supabase uniquement pendant le claim et n'est jamais stockée
+dans l'outbox.
 
 ## Structure
 

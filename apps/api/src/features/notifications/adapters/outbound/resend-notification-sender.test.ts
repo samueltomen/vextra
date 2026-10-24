@@ -10,7 +10,14 @@ const INPUT = {
 
 describe('ResendNotificationSender', () => {
   it('sends a content-minimal alert through Resend', async () => {
-    const fetchMock = vi.fn(async () => Response.json({ id: 'email-1' }))
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        void input
+        void init
+
+        return Response.json({ id: 'email-1' })
+      },
+    )
     vi.stubGlobal('fetch', fetchMock)
     const sender = new ResendNotificationSender({
       apiKey: 're_test',
@@ -18,7 +25,7 @@ describe('ResendNotificationSender', () => {
     })
 
     await expect(sender.send(INPUT)).resolves.toBeUndefined()
-    const [url, init] = fetchMock.mock.calls[0]
+    const [url, init] = fetchMock.mock.calls[0]!
     const body = JSON.parse(String(init?.body))
 
     expect(url).toBe('https://api.resend.com/emails')
@@ -49,8 +56,6 @@ describe('ResendNotificationSender', () => {
       from: 'CronPing <alerts@example.test>',
     })
 
-    await expect(sender.send(INPUT)).rejects.toThrow(
-      'email delivery failed',
-    )
+    await expect(sender.send(INPUT)).rejects.toThrow('email delivery failed')
   })
 })

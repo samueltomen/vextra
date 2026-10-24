@@ -4,3 +4,5 @@ SUPABASE_PUBLISHABLE_KEY=replace-with-the-local-anon-or-publishable-key
 SUPABASE_SERVICE_ROLE_KEY=replace-with-the-local-service-role-key
 SESSION_ENCRYPTION_KEY=replace-with-a-random-secret-of-at-least-32-bytes
 PING_TOKEN_PEPPER=replace-with-an-independent-random-secret-of-at-least-32-bytes
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=alerts@example.test

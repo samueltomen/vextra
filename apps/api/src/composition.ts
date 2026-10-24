@@ -46,10 +46,18 @@ import { MonitorLifecycle } from './features/monitoring/application/monitor-life
 import { MonitorReadService } from './features/monitoring/application/monitor-read.ts'
 import { RecordHeartbeat } from './features/monitoring/application/record-heartbeat.ts'
 import { RotateMonitorToken } from './features/monitoring/application/rotate-monitor-token.ts'
+import { DeliverNotifications } from './features/notifications/application/deliver-notifications.ts'
+import { ResendNotificationSender } from './features/notifications/adapters/outbound/resend-notification-sender.ts'
+import {
+  SupabaseNotificationDeliveryQueue,
+  type NotificationDeliveryRpcClient,
+} from './features/notifications/adapters/outbound/supabase-notification-delivery-queue.ts'
 
 export type WorkerEnvironment = Readonly<{
   APP_ORIGIN: string
   PING_TOKEN_PEPPER: string
+  RESEND_API_KEY?: string
+  RESEND_FROM_EMAIL?: string
   SESSION_ENCRYPTION_KEY: string
   SUPABASE_PUBLISHABLE_KEY: string
   SUPABASE_SERVICE_ROLE_KEY: string
@@ -208,4 +216,26 @@ export async function runScheduledCheck(
   })
 
   return checker.execute(batchSize)
+}
+
+export async function runNotificationDelivery(
+  environment: WorkerEnvironment,
+  batchSize = 10,
+) {
+  if (!environment.RESEND_API_KEY || !environment.RESEND_FROM_EMAIL) {
+    return null
+  }
+
+  const client = createServiceSupabaseClient(environment)
+  const deliver = new DeliverNotifications({
+    queue: new SupabaseNotificationDeliveryQueue(
+      client as unknown as NotificationDeliveryRpcClient,
+    ),
+    sender: new ResendNotificationSender({
+      apiKey: environment.RESEND_API_KEY,
+      from: environment.RESEND_FROM_EMAIL,
+    }),
+  })
+
+  return deliver.execute(batchSize)
 }

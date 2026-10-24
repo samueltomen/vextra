@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
+  Bell,
   CalendarClock,
   CirclePause,
   CirclePlay,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
+import { useCurrentAccount } from '../../accounts/query/use-current-account.ts'
 import {
   deleteMonitor,
   getMonitor,
@@ -39,6 +41,7 @@ export function MonitorDetailPage({
   const [confirmDelete, setConfirmDelete] = useState(false)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const accountQuery = useCurrentAccount()
   const monitorQuery = useQuery({
     queryKey: ['monitors', monitorId],
     queryFn: () => getMonitor(monitorId),
@@ -349,6 +352,24 @@ export function MonitorDetailPage({
         </div>
 
         <aside className="space-y-4">
+          <section className="rounded-xl border border-line bg-surface p-5">
+            <div className="flex items-center gap-2 text-action">
+              <Bell aria-hidden="true" size={17} />
+              <h2 className="text-sm font-semibold">Alertes e-mail</h2>
+            </div>
+            <p className="mt-3 text-xs leading-5 text-muted">
+              Les ouvertures et résolutions d’incident sont envoyées à l’adresse
+              de votre compte :
+            </p>
+            <p className="mt-2 truncate text-sm font-medium">
+              {accountQuery.data?.user.email ?? 'Compte connecté'}
+            </p>
+            <p className="mt-3 text-xs leading-5 text-muted">
+              L’e-mail n’est pas stocké dans le moniteur. Il est résolu au
+              moment de la livraison.
+            </p>
+          </section>
+
           <section className="rounded-xl border border-line bg-surface p-5">
             <h2 className="text-sm font-semibold">Configuration</h2>
             <dl className="mt-4 space-y-4 text-sm">
