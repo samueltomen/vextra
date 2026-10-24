@@ -2,7 +2,7 @@
 
 Statut : proposition à valider  
 Date : 2026-10-24  
-Mode : direct, car le dossier `.git` actuel n'est pas un dépôt Git exploitable  
+Mode : dépôt Git existant, branche `main`, remote `origin/main`
 Objectif : livrer un SaaS multi-tenant permettant de détecter l'absence
 d'exécution d'un script cron et d'alerter son propriétaire.
 
@@ -137,16 +137,16 @@ réduisent ce risque.
 
 Ces cibles sont des objectifs de pilote, pas des garanties de production :
 
-| Domaine | Cible |
-| --- | --- |
-| Création d'un moniteur | moins de 30 secondes de la connexion à la commande copiée |
-| Heartbeat | disponibilité 99,5 %, p95 sous 300 ms hors rate limit |
-| Détection | au plus 60 secondes après `deadline + grace` |
-| Première notification | p95 sous 60 secondes après détection |
-| Isolation | zéro accès ou écriture inter-tenant dans les tests et politiques RLS |
-| Fiabilité | aucun doublon d'incident ouvert ou d'alerte pour un même épisode |
-| Charge pilote | 100 tenants, 1 000 moniteurs, fréquence moyenne de 5 minutes |
-| Coût pilote | mesurer coût fixe et coût par million de heartbeats |
+| Domaine                | Cible                                                                |
+| ---------------------- | -------------------------------------------------------------------- |
+| Création d'un moniteur | moins de 30 secondes de la connexion à la commande copiée            |
+| Heartbeat              | disponibilité 99,5 %, p95 sous 300 ms hors rate limit                |
+| Détection              | au plus 60 secondes après `deadline + grace`                         |
+| Première notification  | p95 sous 60 secondes après détection                                 |
+| Isolation              | zéro accès ou écriture inter-tenant dans les tests et politiques RLS |
+| Fiabilité              | aucun doublon d'incident ouvert ou d'alerte pour un même épisode     |
+| Charge pilote          | 100 tenants, 1 000 moniteurs, fréquence moyenne de 5 minutes         |
+| Coût pilote            | mesurer coût fixe et coût par million de heartbeats                  |
 
 Le checker toutes les 15 minutes ne respecte pas cette cible. Il faut un
 checker au moins toutes les minutes, ou documenter un SLA dégradé et imposer une
@@ -164,14 +164,14 @@ Une démonstration fonctionnelle est réalisable en une journée si l'on accepte
 
 Trajectoire indicative de cette démo, sans marge de sécurité :
 
-| Créneau | Livrable |
-| --- | --- |
-| 09:00-10:00 | choix rapide du scheduler, bootstrap et variables d'environnement |
-| 10:00-12:00 | Supabase Auth, schéma minimal, RLS de base et premier tenant |
-| 12:00-13:30 | création d'un moniteur, token et snippet `curl` |
-| 13:30-15:00 | route de ping et mise à jour de l'état |
-| 15:00-16:30 | checker manuel, incident et e-mail Resend |
-| 16:30-18:00 | déploiement, test avec un vrai cron et corrections nominales |
+| Créneau     | Livrable                                                               |
+| ----------- | ---------------------------------------------------------------------- |
+| 09:00-10:00 | choix rapide du scheduler, initialisation et variables d'environnement |
+| 10:00-12:00 | Supabase Auth, schéma minimal, RLS de base et premier tenant           |
+| 12:00-13:30 | création d'un moniteur, token et snippet `curl`                        |
+| 13:30-15:00 | route de ping et mise à jour de l'état                                 |
+| 15:00-16:30 | checker manuel, incident et e-mail Resend                              |
+| 16:30-18:00 | déploiement, test avec un vrai cron et corrections nominales           |
 
 Un MVP fiable avec isolation tenant, incidents, outbox, retries, session
 sécurisée, chiffrement et déploiement demande plutôt 5 à 7 jours d'ingénierie.
@@ -190,7 +190,7 @@ La stack reste soumise aux ADR et doit être validée avant installation :
 - formulaires : TanStack Form avec schémas Zod partagés ;
 - tableaux : TanStack Table uniquement si le dashboard nécessite tri,
   filtrage ou pagination côté client ;
-- UI : composants accessibles, Tailwind CSS et primitives locales ;
+- UI : HeroUI et Tailwind CSS ; Bootstrap et ses variantes sont interdits ;
 - base et authentification : Supabase Postgres et Supabase Auth ;
 - migrations : Supabase CLI, schéma versionné et types TypeScript générés ;
 - API : Hono déployé sur Cloudflare Workers, avec un handler HTTP et un
@@ -247,7 +247,7 @@ packages/
   domain/
   contracts/
 supabase/migrations/
-tests/{unit,integration,e2e}
+tests/{integration,e2e}
 docs/adr
 infra
 scripts
@@ -323,17 +323,17 @@ Les expressions cron avec fuseau horaire, heure d'été et calendrier pourront
 
 ## 5. Modèle de données minimal
 
-| Table | Colonnes principales | Contraintes et index |
-| --- | --- | --- |
-| `tenants` | `id`, `created_at` | clé primaire UUID ; aucun libellé métier |
-| `memberships` | `tenant_id`, `user_id`, `role` | PK composite, rôle vérifié |
-| `auth_sessions` | `id_hash`, `user_id`, `encrypted_refresh_token`, `key_version`, `created_at`, `expires_at`, `revoked_at` | jamais lisible par le client ; hash et chiffrement uniquement |
-| `monitors` | `id`, `tenant_id`, `token_hash`, `token_prefix`, `interval_seconds`, `grace_seconds`, `status`, `last_ping_at`, `alert_at`, `enabled`, `created_at` | `token_hash` unique ; index partiel `(alert_at)` pour moniteurs actifs ; `(tenant_id, created_at)` |
-| `incidents` | `id`, `monitor_id`, `opened_at`, `resolved_at`, `reason` | index unique partiel d'un seul incident ouvert par moniteur |
-| `notification_channels` | `id`, `tenant_id`, `type`, `encrypted_config`, `key_version`, `enabled`, `created_at` | config chiffrée avec nonce unique ; l'e-mail est résolu depuis le compte, sans duplication en clair |
-| `monitor_notification_channels` | `monitor_id`, `channel_id` | PK composite ; les deux ressources doivent appartenir au même tenant |
-| `notification_deliveries` | `id`, `incident_id`, `channel_id`, `kind`, `status`, `attempts`, `next_attempt_at`, `last_error_code`, `idempotency_key` | `idempotency_key` unique ; index `(status, next_attempt_at)` ; erreur normalisée |
-| `audit_events` | `id`, `tenant_id`, `actor_id`, `action`, `target_type`, `target_id`, `metadata_redacted`, `created_at` | lecture tenant-scopée ; aucune donnée secrète |
+| Table                           | Colonnes principales                                                                                                                                | Contraintes et index                                                                                |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `tenants`                       | `id`, `created_at`                                                                                                                                  | clé primaire UUID ; aucun libellé métier                                                            |
+| `memberships`                   | `tenant_id`, `user_id`, `role`                                                                                                                      | PK composite, rôle vérifié                                                                          |
+| `auth_sessions`                 | `id_hash`, `user_id`, `encrypted_refresh_token`, `key_version`, `created_at`, `expires_at`, `revoked_at`                                            | jamais lisible par le client ; hash et chiffrement uniquement                                       |
+| `monitors`                      | `id`, `tenant_id`, `token_hash`, `token_prefix`, `interval_seconds`, `grace_seconds`, `status`, `last_ping_at`, `alert_at`, `enabled`, `created_at` | `token_hash` unique ; index partiel `(alert_at)` pour moniteurs actifs ; `(tenant_id, created_at)`  |
+| `incidents`                     | `id`, `monitor_id`, `opened_at`, `resolved_at`, `reason`                                                                                            | index unique partiel d'un seul incident ouvert par moniteur                                         |
+| `notification_channels`         | `id`, `tenant_id`, `type`, `encrypted_config`, `key_version`, `enabled`, `created_at`                                                               | config chiffrée avec nonce unique ; l'e-mail est résolu depuis le compte, sans duplication en clair |
+| `monitor_notification_channels` | `monitor_id`, `channel_id`                                                                                                                          | PK composite ; les deux ressources doivent appartenir au même tenant                                |
+| `notification_deliveries`       | `id`, `incident_id`, `channel_id`, `kind`, `status`, `attempts`, `next_attempt_at`, `last_error_code`, `idempotency_key`                            | `idempotency_key` unique ; index `(status, next_attempt_at)` ; erreur normalisée                    |
+| `audit_events`                  | `id`, `tenant_id`, `actor_id`, `action`, `target_type`, `target_id`, `metadata_redacted`, `created_at`                                              | lecture tenant-scopée ; aucune donnée secrète                                                       |
 
 Chaque table métier porte `tenant_id` ou y est rattachée sans ambiguïté.
 L'isolation ne repose jamais sur un filtre oublié dans une route. Les politiques
@@ -349,8 +349,8 @@ d'exécution.
 
 Les ADR ne doivent pas être créés avant validation utilisateur :
 
-- `0001-monolithe-modulaire-et-stack` : SPA React/Vite/TanStack, API Hono,
-  Worker Cloudflare et frontières de domaine ;
+- `0001-monolithe-modulaire-et-stack` : SPA React/Vite/TanStack avec HeroUI,
+  API Hono, Worker Cloudflare et frontières de domaine ;
 - `0002-isolation-multi-tenant` : membres, `tenant_id` et politiques RLS ;
 - `0003-semantique-heartbeat` : intervalle, marge, UTC et états ;
 - `0004-scheduler-et-checker` : plateforme, fréquence et mécanisme atomique ;
@@ -379,14 +379,18 @@ appartenant à une autre branche active sans rebase explicite.
 
 ### Étape 1 - Socle du dépôt et ADR
 
-Contexte : le dépôt ne contient actuellement que `AGENTS.md` ; aucun manifeste,
-runner ni convention technique ne peut être supposé.
+Contexte : le dépôt contient `AGENTS.md`, `docs/design/DESIGNSYSTEM.md` et ce
+plan, mais aucun manifeste, runner ni application ne peut encore être supposé.
 
 Tâches :
 
 - valider les ADR proposés et choisir le scheduler ;
 - initialiser un workspace `pnpm` avec `apps/web` en React/Vite/TanStack et
   `apps/api` en Hono ;
+- installer et configurer HeroUI comme unique bibliothèque de composants,
+  monter son provider une seule fois à la racine et mapper son thème vers les
+  tokens de `docs/design/DESIGNSYSTEM.md` ;
+- vérifier qu'aucune dépendance ou feuille de style Bootstrap n'est importée ;
 - activer TypeScript strict, `vite-plugin-checker` et un typecheck explicite,
   car `vite build` ne vérifie pas les types ;
 - configurer le proxy Vite `/api` vers l'API locale avec `wrangler dev` ;
@@ -415,14 +419,19 @@ pnpm build
 pnpm --filter @cronping/web exec tsc --noEmit
 pnpm --filter @cronping/api exec tsc --noEmit
 pnpm exec supabase --version
+if rg -n '"(bootstrap|react-bootstrap|bootstrap-icons)"' \
+  package.json pnpm-lock.yaml; then
+  echo "Bootstrap est interdit dans ce projet" >&2
+  exit 1
+fi
 ```
 
 Critères de sortie : toutes les commandes passent, aucune valeur secrète n'est
 versionnée, l'inventaire de données est explicite et le README reflète
 exactement le manifeste.
 
-Rollback : supprimer les fichiers de bootstrap de ce lot avant toute migration
-de données ; aucune donnée utilisateur n'est concernée.
+Rollback : supprimer les fichiers d'initialisation de ce lot avant toute
+migration de données ; aucune donnée utilisateur n'est concernée.
 
 ### Étape 2 - Schéma Supabase, authentification et RLS
 
@@ -490,7 +499,7 @@ Tâches :
 Vérification :
 
 ```bash
-pnpm test:unit -- monitoring
+pnpm --filter @cronping/domain test:coverage
 ```
 
 Critères de sortie : au moins 80 % de couverture sur le domaine, aucun import
@@ -895,20 +904,20 @@ production pour corriger une release.
 
 ## 10. Risques et décisions à prendre avant le code
 
-| Risque | Décision attendue |
-| --- | --- |
-| Scheduler trop lent ou limité | choisir un fournisseur et une fréquence minimale |
-| Token de heartbeat découvert | endpoint fixe, token en header, rotation immédiate |
-| Alertes perdues | valider l'outbox, les retries et le watchdog |
-| Fuite inter-tenant | valider RLS, RPC, rôles et tests d'isolation |
-| Coût des heartbeats fréquents | fixer la fréquence minimale et mesurer le coût réel |
-| Faux positifs | choisir des presets et une marge par défaut raisonnables |
-| Fuseaux horaires | reporter les vrais calendriers après le MVP d'intervalle |
-| Secret exposé via `VITE_` | séparer variables publiques et secrets Worker, scanner `dist/` |
-| Token ou payload capturé en log | vérifier le masquage de l'hébergeur avant production |
-| Libellé métier trop révélateur | conserver les alias uniquement dans le navigateur |
-| Compromission de la clé de chiffrement | séparer les clés et documenter la rotation |
-| Session dashboard volée | cookie `HttpOnly`, CSRF, révocation et expiration courte |
+| Risque                                 | Décision attendue                                              |
+| -------------------------------------- | -------------------------------------------------------------- |
+| Scheduler trop lent ou limité          | choisir un fournisseur et une fréquence minimale               |
+| Token de heartbeat découvert           | endpoint fixe, token en header, rotation immédiate             |
+| Alertes perdues                        | valider l'outbox, les retries et le watchdog                   |
+| Fuite inter-tenant                     | valider RLS, RPC, rôles et tests d'isolation                   |
+| Coût des heartbeats fréquents          | fixer la fréquence minimale et mesurer le coût réel            |
+| Faux positifs                          | choisir des presets et une marge par défaut raisonnables       |
+| Fuseaux horaires                       | reporter les vrais calendriers après le MVP d'intervalle       |
+| Secret exposé via `VITE_`              | séparer variables publiques et secrets Worker, scanner `dist/` |
+| Token ou payload capturé en log        | vérifier le masquage de l'hébergeur avant production           |
+| Libellé métier trop révélateur         | conserver les alias uniquement dans le navigateur              |
+| Compromission de la clé de chiffrement | séparer les clés et documenter la rotation                     |
+| Session dashboard volée                | cookie `HttpOnly`, CSRF, révocation et expiration courte       |
 
 ## 11. Porte de validation
 

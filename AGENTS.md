@@ -10,6 +10,10 @@ Ne jamais supposer qu'une technologie, une commande ou une convention existe :
 vérifier d'abord le manifeste, la configuration versionnée ou l'état réel du
 dépôt.
 
+Le dépôt est déjà initialisé avec Git et suit la branche `main`. Ne jamais
+exécuter `git init` ni recréer le dépôt. Vérifier `git status` et la branche
+courante avant de modifier l'arborescence.
+
 ## Outils ECC
 
 Utiliser uniquement les skills ECC pertinents pour la tâche ; ne pas les
@@ -66,8 +70,13 @@ et la créer après validation de l'utilisateur.
 
 ## Structure cible
 
-- `src/` : code applicatif organisé par domaine.
-- `tests/unit/`, `tests/integration/`, `tests/e2e/` : niveaux de test.
+- `apps/web/` : SPA React, Vite, TanStack et HeroUI.
+- `apps/api/` : API Hono exécutée sur Cloudflare Workers.
+- `packages/domain/` : domaine métier indépendant du framework et des adapters.
+- `packages/contracts/` : schémas et contrats partagés.
+- `supabase/migrations/` : migrations de base versionnées.
+- `**/src/**/*.test.{ts,tsx}` : tests unitaires colocalisés.
+- `tests/integration/` et `tests/e2e/` : tests traversant plusieurs frontières.
 - `docs/adr/` : décisions d'architecture ; `docs/` : documentation produit.
 - `infra/` et `scripts/` : déploiement et automatisation.
 - `assets/` : ressources statiques versionnées.
@@ -77,10 +86,21 @@ choix et commandes réelles dans `README.md`.
 
 ## Build et développement
 
-Ne pas supposer qu'un outil est configuré. Dès l'ajout d'un manifeste, définir
-et documenter les commandes canoniques d'installation, développement,
-migration, test, lint, typecheck et build. Ne pas assumer `npm test` : utiliser
-le gestionnaire de paquets et le runner déclarés.
+Le workspace utilise Node.js 22 et `pnpm@12.15.0`. Les commandes canoniques
+sont :
+
+- installation : `pnpm install`
+- développement : `pnpm dev`
+- lint : `pnpm lint`
+- formatage : `pnpm format:check`
+- typecheck : `pnpm typecheck`
+- tests : `pnpm test`
+- couverture : `pnpm test:coverage`
+- build : `pnpm build`
+- validation complète : `pnpm check`
+
+Ne jamais exécuter `npm test` ou ajouter un `package-lock.json`. Toute nouvelle
+commande doit être ajoutée au `package.json` racine et au `README.md`.
 
 Une modification n'est prête qu'après l'exécution des contrôles applicables
 (build, typecheck, lint et tests) et la revue du diff. Pour une modification
