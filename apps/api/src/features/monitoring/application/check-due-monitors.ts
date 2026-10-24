@@ -5,7 +5,9 @@ export interface DueMonitorClaimer {
 }
 
 export class CheckDueMonitors {
-  constructor(private readonly dependencies: Readonly<{ claimer: DueMonitorClaimer }>) {}
+  constructor(
+    private readonly dependencies: Readonly<{ claimer: DueMonitorClaimer }>,
+  ) {}
 
   async execute(batchSize = 100): Promise<number> {
     if (

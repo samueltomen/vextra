@@ -2,3 +2,6 @@ name = "cronping-api"
 main = "src/worker.ts"
 compatibility_date = "2026-10-24"
 workers_dev = true
+
+[triggers]
+crons = ["* * * * *"]

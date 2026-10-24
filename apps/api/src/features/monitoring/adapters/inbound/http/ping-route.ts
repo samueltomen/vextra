@@ -26,15 +26,18 @@ function rejected(context: Context) {
   )
 }
 
-export function createPingRoutes(
-  dependencies: PingRoutesDependencies,
-): Hono {
+export function createPingRoutes(dependencies: PingRoutesDependencies): Hono {
   const routes = new Hono()
 
   routes.post('/api/ping', async (context) => {
     const url = new URL(context.req.url)
+    const contentLength = context.req.header('content-length')
+    const declaresBody =
+      (contentLength !== undefined && contentLength !== '0') ||
+      context.req.header('content-type') !== undefined ||
+      context.req.header('transfer-encoding') !== undefined
 
-    if (url.search.length > 0 || context.req.raw.body !== null) {
+    if (url.search.length > 0 || declaresBody) {
       return context.json(
         {
           error: {

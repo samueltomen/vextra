@@ -21,12 +21,12 @@ export type AuthenticatedMonitorScope = Readonly<{
   principal: AuthenticatedPrincipal
 }>
 
-export type CreateMonitorRoutesDependencies = Readonly<{
+export type MonitorRoutesDependencies = Readonly<{
   authenticate: (context: Context) => Promise<AuthenticatedMonitorScope | null>
 }>
 
 export function createMonitorRoutes(
-  dependencies: CreateMonitorRoutesDependencies,
+  dependencies: MonitorRoutesDependencies,
 ): Hono {
   const routes = new Hono()
 

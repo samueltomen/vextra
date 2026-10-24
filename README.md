@@ -20,6 +20,9 @@ Le dépôt contient le socle de la V1 :
   l'inscription ;
 - tokens du design system ;
 - UI connectée avec connexion, dashboard, création et détail d'un moniteur ;
+- ingestion de heartbeats par token `Bearer`, hash HMAC et résolution
+  d'incident ;
+- checker planifié chaque minute avec ouverture idempotente des incidents ;
 - configuration TypeScript stricte, Prettier, ESLint et Vitest ;
 - garde-fou interdisant Bootstrap.
 
@@ -47,6 +50,9 @@ locale et deux secrets indépendants d'au moins 32 octets :
 `SESSION_ENCRYPTION_KEY` et `PING_TOKEN_PEPPER`. Ces valeurs restent côté
 Worker et ne doivent jamais recevoir le préfixe `VITE_`.
 
+`SUPABASE_SERVICE_ROLE_KEY` est uniquement requis par le handler planifié pour
+exécuter la RPC interne du checker. Il ne doit jamais être exposé à la SPA.
+
 ## Développement
 
 ```bash
@@ -71,6 +77,20 @@ Les moniteurs utilisent :
 - `GET /api/monitors` pour la liste ;
 - `GET /api/monitors/:monitorId` pour le détail ;
 - `POST /api/monitors` pour la création.
+
+Le heartbeat public utilise :
+
+```bash
+curl --fail --silent --show-error --retry 3 \
+  --request POST \
+  --header "Authorization: Bearer $CRONPING_TOKEN" \
+  "https://api.cronping.app/api/ping"
+```
+
+La requête ne doit contenir ni corps, ni paramètres de requête. Le token brut
+est hashé avec `PING_TOKEN_PEPPER` avant l'appel Supabase et n'est jamais
+persisté ni journalisé. Un heartbeat accepté renvoie `204`; un token invalide
+et un token inconnu partagent la même réponse `401`.
 
 Le tenant est toujours résolu côté serveur depuis la session ; un `tenantId`
 envoyé par le navigateur est rejeté. Un libellé local n'est jamais inclus dans
@@ -127,6 +147,10 @@ pnpm exec supabase stop
 
 Le service Analytics local est désactivé pour éviter des ports et services
 inutiles au développement de CronPing.
+
+Le Cron Trigger Cloudflare s'exécute toutes les minutes. Il appelle uniquement
+la RPC interne `open_due_monitor_incidents`, qui verrouille un lot borné de
+moniteurs échus et ouvre au plus un incident ouvert par moniteur.
 
 ## Structure
 

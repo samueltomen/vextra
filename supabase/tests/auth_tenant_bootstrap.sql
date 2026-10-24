@@ -4,6 +4,12 @@ create extension if not exists pgtap with schema extensions;
 
 select plan(6);
 
+select set_config(
+  'test.tenant_baseline',
+  (select count(*)::text from public.tenants),
+  true
+);
+
 insert into auth.users (id, email)
 values
   ('30000000-0000-4000-8000-000000000001', 'signup-a@example.test'),
@@ -49,9 +55,12 @@ select isnt(
 );
 
 select is(
-  (select count(*) from public.tenants),
+  (
+    select count(*) - current_setting('test.tenant_baseline')::bigint
+    from public.tenants
+  ),
   2::bigint,
-  'two signups create exactly two tenants'
+  'two signups create exactly two additional tenants'
 );
 
 select ok(
