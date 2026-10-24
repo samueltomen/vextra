@@ -91,6 +91,8 @@ describe('availability formatting', () => {
     expect(formatDuration(25 * 60_000)).toBe('25 min')
     expect(formatDuration(90 * 60_000)).toBe('1 h 30 min')
     expect(formatDuration(26 * 60 * 60_000)).toBe('1 j 2 h')
+    expect(formatDuration((24 * 60 + 20) * 60_000)).toBe('1 j 20 min')
+    expect(formatDuration(48 * 60 * 60_000)).toBe('2 j')
   })
 
   it('never rounds a degraded uptime up to 100 percent', () => {
