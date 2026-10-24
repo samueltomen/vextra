@@ -11,12 +11,15 @@
     "build": "pnpm -r --if-present build",
     "check": "pnpm format:check && pnpm lint && pnpm peers check && pnpm typecheck && pnpm test && pnpm build && pnpm check:no-bootstrap",
     "check:no-bootstrap": "node scripts/check-no-bootstrap.mjs",
+    "db:lint": "supabase db lint --local",
+    "db:reset": "supabase db reset",
     "dev": "pnpm --parallel --stream --filter @cronping/web --filter @cronping/api dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "test": "pnpm -r --if-present test",
     "test:coverage": "pnpm -r --if-present test:coverage",
+    "test:db": "supabase test db --local",
     "typecheck": "pnpm -r --if-present typecheck"
   },
   "devDependencies": {
@@ -26,6 +29,7 @@
     "eslint-plugin-react-refresh": "0.4.26",
     "globals": "16.5.0",
     "prettier": "3.9.10",
+    "supabase": "^2.121.0",
     "typescript-eslint": "8.58.0"
   }
 }
