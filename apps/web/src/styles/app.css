@@ -5,13 +5,25 @@
 
 @theme inline {
   --color-action: var(--cp-color-action);
+  --color-action-soft: var(--cp-color-action-soft);
   --color-canvas: var(--cp-color-canvas);
+  --color-border-strong: var(--cp-color-border-strong);
+  --color-danger: var(--cp-color-danger-fg);
+  --color-danger-bg: var(--cp-color-danger-bg);
+  --color-danger-border: var(--cp-color-danger-border);
   --color-healthy: var(--cp-color-healthy-fg);
   --color-healthy-bg: var(--cp-color-healthy-bg);
   --color-healthy-border: var(--cp-color-healthy-border);
   --color-ink: var(--cp-color-text);
   --color-line: var(--cp-color-border-subtle);
   --color-muted: var(--cp-color-text-muted);
+  --color-neutral: var(--cp-color-neutral-fg);
+  --color-neutral-bg: var(--cp-color-neutral-bg);
+  --color-neutral-border: var(--cp-color-neutral-border);
+  --color-surface: var(--cp-color-surface);
+  --color-warning: var(--cp-color-warning-fg);
+  --color-warning-bg: var(--cp-color-warning-bg);
+  --color-warning-border: var(--cp-color-warning-border);
   --font-mono: var(--cp-font-mono);
   --font-sans: var(--cp-font-sans);
 }
@@ -36,5 +48,16 @@
   :focus-visible {
     outline: var(--cp-focus-ring-width) solid var(--cp-focus-ring-color);
     outline-offset: var(--cp-focus-ring-offset);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
