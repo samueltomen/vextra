@@ -68,6 +68,12 @@ La livraison e-mail nécessite aussi `RESEND_API_KEY` et
 `RESEND_FROM_EMAIL`. Sans ces deux valeurs, les événements restent dans
 l'outbox et aucun envoi externe n'est tenté.
 
+Pour les tests sans domaine vérifié, utiliser
+`RESEND_FROM_EMAIL=CronPing <onboarding@resend.dev>` et une adresse de compte
+liée au compte Resend. Pour envoyer à des utilisateurs quelconques, vérifier un
+domaine dans Resend puis utiliser une adresse de ce domaine, par exemple
+`CronPing <alerts@mail.votre-domaine.com>`.
+
 ## Développement
 
 ```bash
