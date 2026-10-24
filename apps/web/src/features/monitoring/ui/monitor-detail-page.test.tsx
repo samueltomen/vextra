@@ -22,6 +22,8 @@ describe('MonitorDetailPage', () => {
       screen.getByText('Heartbeat attendu mais non reçu'),
     ).toBeInTheDocument()
     expect(screen.getByText('Heartbeat manquant')).toBeInTheDocument()
+    expect(screen.getByText('Alertes e-mail')).toBeInTheDocument()
+    expect(screen.getAllByText('alice@example.test')).toHaveLength(2)
     expect(
       screen.getByText(/Authorization: Bearer \$CRONPING_TOKEN/),
     ).toBeInTheDocument()

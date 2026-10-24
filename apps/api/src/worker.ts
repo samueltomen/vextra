@@ -1,5 +1,6 @@
 import {
   createApiFromEnvironment,
+  runNotificationDelivery,
   runScheduledCheck,
   type WorkerEnvironment,
 } from './composition.ts'
@@ -29,6 +30,11 @@ export default {
     environment: WorkerEnvironment,
     context: ScheduledContext,
   ) {
-    context.waitUntil(runScheduledCheck(environment))
+    context.waitUntil(
+      (async () => {
+        await runScheduledCheck(environment)
+        await runNotificationDelivery(environment)
+      })(),
+    )
   },
 }

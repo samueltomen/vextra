@@ -55,4 +55,41 @@ describe('Cloudflare Worker entrypoint', () => {
 
     expect(fetchMock).toHaveBeenCalledOnce()
   })
+
+  it('claims notification deliveries when Resend is configured', async () => {
+    const fetchMock = vi
+      .fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+
+        if (url.includes('open_due_monitor_incidents')) {
+          return Response.json(0)
+        }
+
+        if (url.includes('claim_notification_deliveries')) {
+          return Response.json([])
+        }
+
+        throw new Error(`Unexpected request: ${url}`)
+      })
+      .mockName('fetch')
+    vi.stubGlobal('fetch', fetchMock)
+    let scheduledTask: Promise<unknown> | undefined
+
+    worker.scheduled(
+      {},
+      {
+        ...ENVIRONMENT,
+        RESEND_API_KEY: 're_test',
+        RESEND_FROM_EMAIL: 'CronPing <alerts@example.test>',
+      },
+      {
+        waitUntil(promise) {
+          scheduledTask = promise
+        },
+      },
+    )
+    await scheduledTask
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
 })

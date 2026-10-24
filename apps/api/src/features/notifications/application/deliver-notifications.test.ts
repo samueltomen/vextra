@@ -57,7 +57,9 @@ describe('DeliverNotifications', () => {
     const sender: NotificationSender = {
       send: vi
         .fn()
-        .mockRejectedValueOnce(new Error('provider included owner@example.test'))
+        .mockRejectedValueOnce(
+          new Error('provider included owner@example.test'),
+        )
         .mockResolvedValueOnce(undefined),
     }
     const deliver = new DeliverNotifications({ queue, sender })
