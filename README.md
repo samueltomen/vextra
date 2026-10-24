@@ -12,6 +12,8 @@ Le dépôt contient le socle de la V1 :
 - API Hono prévue pour Cloudflare Workers ;
 - endpoint de santé `GET /api/health` ;
 - domaine monitoring pur avec calcul d'échéance et machine à états ;
+- contrats de création d'un moniteur et pipeline serveur avec token HMAC ;
+- schéma Supabase initial avec isolation RLS entre tenants.
 - tokens du design system ;
 - configuration TypeScript stricte, Prettier, ESLint et Vitest ;
 - garde-fou interdisant Bootstrap.
@@ -53,6 +55,8 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm test:coverage
+pnpm test:db
+pnpm db:lint
 pnpm build
 pnpm check
 ```
@@ -61,6 +65,16 @@ Le contrôle anti-Bootstrap peut être exécuté seul :
 
 ```bash
 pnpm check:no-bootstrap
+```
+
+Les commandes base de données nécessitent Supabase local :
+
+```bash
+pnpm exec supabase start
+pnpm exec supabase db reset
+pnpm test:db
+pnpm db:lint
+pnpm exec supabase stop
 ```
 
 ## Structure
@@ -74,8 +88,10 @@ docs/
   plans/            plans de construction
   releases/         preuves TDD et notes de version
 packages/
+  contracts/       schémas Zod et contrats API partagés
   domain/           règles métier monitoring sans I/O
 scripts/            automatisation locale
+supabase/           configuration, migrations et tests pgTAP
 ```
 
 ### Fichiers de configuration racine

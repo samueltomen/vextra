@@ -1,0 +1,22 @@
+{
+  "name": "@cronping/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "4.1.12",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
+  }
+}
