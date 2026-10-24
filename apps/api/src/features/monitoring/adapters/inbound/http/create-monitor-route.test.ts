@@ -24,8 +24,13 @@ const RESULT: CreateMonitorResult = {
 function createRoutes(principal: AuthenticatedPrincipal | null = null) {
   const execute = vi.fn(async () => RESULT)
   const app = createMonitorRoutes({
-    authenticate: async () => principal,
-    createMonitor: { execute },
+    authenticate: async () =>
+      principal
+        ? {
+            createMonitor: { execute },
+            principal,
+          }
+        : null,
   })
 
   return { app, execute }
@@ -146,14 +151,16 @@ describe('POST /api/monitors', () => {
   it('maps domain validation failures to a safe 422 response', async () => {
     const app = createMonitorRoutes({
       authenticate: async () => ({
-        tenantId: 'tenant-a',
-        userId: 'user-a',
-      }),
-      createMonitor: {
-        execute: async () => {
-          throw new RangeError('interval out of range')
+        createMonitor: {
+          execute: async () => {
+            throw new RangeError('interval out of range')
+          },
         },
-      },
+        principal: {
+          tenantId: 'tenant-a',
+          userId: 'user-a',
+        },
+      }),
     })
     const response = await app.request(
       createRequest({ intervalSeconds: 300, graceSeconds: 30 }),
@@ -171,14 +178,16 @@ describe('POST /api/monitors', () => {
   it('does not expose unexpected persistence failures', async () => {
     const app = createMonitorRoutes({
       authenticate: async () => ({
-        tenantId: 'tenant-a',
-        userId: 'user-a',
-      }),
-      createMonitor: {
-        execute: async () => {
-          throw new Error('provider-specific database failure')
+        createMonitor: {
+          execute: async () => {
+            throw new Error('provider-specific database failure')
+          },
         },
-      },
+        principal: {
+          tenantId: 'tenant-a',
+          userId: 'user-a',
+        },
+      }),
     })
     const response = await app.request(
       createRequest({ intervalSeconds: 300, graceSeconds: 30 }),
