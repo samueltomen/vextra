@@ -1,15 +1,15 @@
 export type MonitorStatus = 'healthy' | 'late' | 'paused' | 'pending'
 
 export type MonitorView = Readonly<{
-  id: string
-  tenantId: string
-  localLabel: string
-  intervalMinutes: number
-  graceMinutes: number
-  status: MonitorStatus
-  lastHeartbeatAtMs: number | null
   alertAtMs: number
-  channel: 'email' | 'discord'
+  createdAtMs: number
+  graceMinutes: number
+  id: string
+  incidentOpenedAtMs: number | null
+  intervalMinutes: number
+  localLabel: string
+  lastHeartbeatAtMs: number | null
+  status: MonitorStatus
 }>
 
 export type MonitorSummary = Readonly<{

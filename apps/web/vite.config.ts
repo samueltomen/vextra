@@ -3,6 +3,8 @@ import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { defineConfig } from 'vite'
 
+const apiTarget = process.env.CRONPING_API_TARGET ?? 'http://localhost:8787'
+
 export default defineConfig({
   plugins: [
     tanstackRouter({
@@ -16,7 +18,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8787',
+        target: apiTarget,
         changeOrigin: true,
       },
     },

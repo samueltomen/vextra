@@ -12,12 +12,17 @@ import {
 import { SessionCookieCodec } from './features/accounts/adapters/outbound/session-cookie.ts'
 import { SupabaseAccountsGateway } from './features/accounts/adapters/outbound/supabase-accounts-gateway.ts'
 import { CreateMonitor } from './features/monitoring/application/create-monitor.ts'
+import { MonitorReadService } from './features/monitoring/application/monitor-read.ts'
 import {
   createMonitorRoutes,
   type AuthenticatedMonitorScope,
-} from './features/monitoring/adapters/inbound/http/create-monitor-route.ts'
+} from './features/monitoring/adapters/inbound/http/monitor-routes.ts'
 import { WebCryptoMonitorTokenGenerator } from './features/monitoring/adapters/outbound/crypto-monitor-token.ts'
 import { SupabaseMonitorRepository } from './features/monitoring/adapters/outbound/supabase-monitor-repository.ts'
+import {
+  SupabaseMonitorQueryRepository,
+  type MonitorQueryClient,
+} from './features/monitoring/adapters/outbound/supabase-monitor-query-repository.ts'
 
 export type WorkerEnvironment = Readonly<{
   APP_ORIGIN: string
@@ -109,6 +114,11 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
           return result
         },
       },
+      monitorRead: new MonitorReadService(
+        new SupabaseMonitorQueryRepository(
+          client as unknown as MonitorQueryClient,
+        ),
+      ),
       principal: {
         tenantId: account.tenantId,
         userId: account.user.id,

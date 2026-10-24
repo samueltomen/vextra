@@ -5,8 +5,13 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
-      include: ['src/features/monitoring/**/*.{ts,tsx}', 'src/shell/**/*.tsx'],
-      exclude: ['src/features/monitoring/**/mock/**', 'src/**/*.test.*'],
+      include: [
+        'src/api/**/*.ts',
+        'src/features/**/*.{ts,tsx}',
+        'src/lib/**/*.ts',
+        'src/shell/**/*.tsx',
+      ],
+      exclude: ['src/**/*.test.*', 'src/test/**'],
       provider: 'v8',
       thresholds: {
         branches: 80,

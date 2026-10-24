@@ -1,20 +1,11 @@
 import { Button } from '@heroui/react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
-import {
-  ArrowRight,
-  BellRing,
-  Plus,
-  RefreshCw,
-  ShieldCheck,
-} from 'lucide-react'
+import { ArrowRight, Clock3, Plus, RefreshCw, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 
-import {
-  formatRelativeTime,
-  listMonitors,
-  statusLabel,
-} from '../mock/monitor-store.ts'
+import { listMonitors } from '../api/monitoring-api.ts'
+import { formatRelativeTime, statusLabel } from '../model/monitor-format.ts'
 import {
   summarizeMonitors,
   type MonitorStatus,
@@ -43,10 +34,6 @@ function formatFrequency(minutes: number): string {
       : `Toutes les ${minutes / 60} heures`
   }
   return `Toutes les ${minutes} minutes`
-}
-
-function channelLabel(channel: 'email' | 'discord'): string {
-  return channel === 'email' ? 'E-mail' : 'Discord'
 }
 
 function matchesFilter(status: MonitorStatus, filter: StatusFilter): boolean {
@@ -227,8 +214,8 @@ export function DashboardPage() {
                     {formatRelativeTime(monitor.lastHeartbeatAtMs)}
                   </p>
                   <p className="mt-2 flex items-center gap-1.5 text-muted">
-                    <BellRing aria-hidden="true" size={14} />
-                    {channelLabel(monitor.channel)}
+                    <Clock3 aria-hidden="true" size={14} />
+                    {formatRelativeTime(monitor.alertAtMs)}
                   </p>
                 </div>
                 <ArrowRight

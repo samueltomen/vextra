@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
-  BellRing,
   CalendarClock,
   Clipboard,
   KeyRound,
@@ -11,11 +10,8 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
-import {
-  formatRelativeTime,
-  getMonitor,
-  statusLabel,
-} from '../mock/monitor-store.ts'
+import { getMonitor } from '../api/monitoring-api.ts'
+import { formatRelativeTime, statusLabel } from '../model/monitor-format.ts'
 import { StatusBadge } from './status-badge.tsx'
 
 function formatDate(timestampMs: number | null): string {
@@ -78,10 +74,11 @@ export function MonitorDetailPage({
     )
   }
 
+  const pingUrl = new URL('/api/ping', window.location.origin).toString()
   const command = `curl --fail --silent --show-error --retry 3 \\
   --request POST \\
   --header "Authorization: Bearer $CRONPING_TOKEN" \\
-  "https://api.cronping.app/api/ping"`
+  "${pingUrl}"`
 
   async function copyCommand() {
     await navigator.clipboard.writeText(command)
@@ -199,10 +196,9 @@ export function MonitorDetailPage({
                 <dd className="font-medium">{monitor.graceMinutes} min</dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-muted">Canal</dt>
-                <dd className="flex items-center gap-1.5 font-medium">
-                  <BellRing aria-hidden="true" size={14} />
-                  {monitor.channel === 'email' ? 'E-mail' : 'Discord'}
+                <dt className="text-muted">Créé le</dt>
+                <dd className="font-medium">
+                  {formatDate(monitor.createdAtMs)}
                 </dd>
               </div>
               <div className="flex justify-between gap-4">

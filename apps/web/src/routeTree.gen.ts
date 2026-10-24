@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as MonitorsMonitorIdRouteImport } from './routes/monitors/$monitorId'
 import { Route as MonitorsNewRouteImport } from './routes/monitors/new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MonitorsMonitorIdRoute = MonitorsMonitorIdRouteImport.update({
@@ -31,30 +37,34 @@ const MonitorsNewRoute = MonitorsNewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/monitors/$monitorId': typeof MonitorsMonitorIdRoute
   '/monitors/new': typeof MonitorsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/monitors/$monitorId': typeof MonitorsMonitorIdRoute
   '/monitors/new': typeof MonitorsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/monitors/$monitorId': typeof MonitorsMonitorIdRoute
   '/monitors/new': typeof MonitorsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/monitors/$monitorId' | '/monitors/new'
+  fullPaths: '/' | '/login' | '/monitors/$monitorId' | '/monitors/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/monitors/$monitorId' | '/monitors/new'
-  id: '__root__' | '/' | '/monitors/$monitorId' | '/monitors/new'
+  to: '/' | '/login' | '/monitors/$monitorId' | '/monitors/new'
+  id: '__root__' | '/' | '/login' | '/monitors/$monitorId' | '/monitors/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
   MonitorsMonitorIdRoute: typeof MonitorsMonitorIdRoute
   MonitorsNewRoute: typeof MonitorsNewRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/monitors/$monitorId': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
   MonitorsMonitorIdRoute: MonitorsMonitorIdRoute,
   MonitorsNewRoute: MonitorsNewRoute,
 }

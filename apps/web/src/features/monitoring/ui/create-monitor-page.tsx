@@ -1,11 +1,4 @@
-import {
-  Button,
-  Input,
-  Radio,
-  RadioGroup,
-  Select,
-  SelectItem,
-} from '@heroui/react'
+import { Button, Input, Select, SelectItem } from '@heroui/react'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
@@ -19,11 +12,8 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
-import {
-  createMockMonitor,
-  type CreateMonitorDraft,
-  type CreatedMonitor,
-} from '../mock/monitor-store.ts'
+import { readFieldError } from '../../../lib/read-field-error.ts'
+import { createMonitor, type CreatedMonitor } from '../api/monitoring-api.ts'
 
 const INTERVAL_OPTIONS = [
   ['5', 'Toutes les 5 minutes'],
@@ -33,32 +23,14 @@ const INTERVAL_OPTIONS = [
   ['10080', 'Toutes les semaines'],
 ] as const
 
-function readFieldError(errors: readonly unknown[]): string | undefined {
-  const firstError = errors[0]
-
-  if (typeof firstError === 'string') {
-    return firstError
-  }
-
-  if (
-    firstError &&
-    typeof firstError === 'object' &&
-    'message' in firstError &&
-    typeof firstError.message === 'string'
-  ) {
-    return firstError.message
-  }
-
-  return undefined
-}
-
 function SuccessState({ created }: Readonly<{ created: CreatedMonitor }>) {
   const [copied, setCopied] = useState(false)
   const navigate = useNavigate()
+  const pingUrl = new URL('/api/ping', window.location.origin).toString()
   const command = `curl --fail --silent --show-error --retry 3 \\
   --request POST \\
   --header "Authorization: Bearer ${created.heartbeatToken}" \\
-  "https://api.cronping.app/api/ping"`
+  "${pingUrl}"`
 
   async function copyCommand() {
     await navigator.clipboard.writeText(command)
@@ -127,13 +99,12 @@ export function CreateMonitorPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const mutation = useMutation({ mutationFn: createMockMonitor })
+  const mutation = useMutation({ mutationFn: createMonitor })
   const form = useForm({
     defaultValues: {
       localLabel: '',
       intervalMinutes: 5,
       graceMinutes: 2,
-      channel: 'email' as CreateMonitorDraft['channel'],
     },
     onSubmit: async ({ value }) => {
       setSubmitError(null)
@@ -290,26 +261,6 @@ export function CreateMonitorPage() {
                 }}
               </form.Field>
             </div>
-
-            <form.Field name="channel">
-              {(field) => (
-                <RadioGroup
-                  description="D’autres canaux seront ajoutés après le MVP."
-                  label="Canal d’alerte"
-                  onValueChange={(value) =>
-                    form.setFieldValue(
-                      'channel',
-                      value as CreateMonitorDraft['channel'],
-                    )
-                  }
-                  orientation="horizontal"
-                  value={field.state.value}
-                >
-                  <Radio value="email">E-mail</Radio>
-                  <Radio value="discord">Discord</Radio>
-                </RadioGroup>
-              )}
-            </form.Field>
 
             {submitError ? (
               <p

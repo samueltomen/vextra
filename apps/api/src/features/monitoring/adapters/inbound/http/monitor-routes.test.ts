@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { CreateMonitorResult } from '../../../application/create-monitor.ts'
+import type { MonitorStateRecord } from '../../../application/monitor-read.ts'
 import {
   createMonitorRoutes,
   type AuthenticatedPrincipal,
-} from './create-monitor-route.ts'
+} from './monitor-routes.ts'
 
 const RESULT: CreateMonitorResult = {
   monitor: {
@@ -21,19 +22,35 @@ const RESULT: CreateMonitorResult = {
   heartbeatToken: 'raw-secret-token',
 }
 
+const MONITOR_STATE: MonitorStateRecord = {
+  alertAtMs: Date.parse('2026-01-01T00:05:30.000Z'),
+  createdAtMs: Date.parse('2026-01-01T00:00:00.000Z'),
+  graceSeconds: 30,
+  id: '20000000-0000-4000-8000-000000000001',
+  incidentOpenedAtMs: null,
+  intervalSeconds: 300,
+  lastHeartbeatAtMs: null,
+  pausedAtMs: null,
+  status: 'pending',
+  tenantId: 'tenant-a',
+}
+
 function createRoutes(principal: AuthenticatedPrincipal | null = null) {
   const execute = vi.fn(async () => RESULT)
+  const get = vi.fn(async () => MONITOR_STATE)
+  const list = vi.fn(async () => [MONITOR_STATE] as const)
   const app = createMonitorRoutes({
     authenticate: async () =>
       principal
         ? {
             createMonitor: { execute },
+            monitorRead: { get, list },
             principal,
           }
         : null,
   })
 
-  return { app, execute }
+  return { app, execute, get, list }
 }
 
 function createRequest(body: unknown) {
@@ -156,6 +173,10 @@ describe('POST /api/monitors', () => {
             throw new RangeError('interval out of range')
           },
         },
+        monitorRead: {
+          get: vi.fn(async () => null),
+          list: vi.fn(async () => []),
+        },
         principal: {
           tenantId: 'tenant-a',
           userId: 'user-a',
@@ -183,6 +204,10 @@ describe('POST /api/monitors', () => {
             throw new Error('provider-specific database failure')
           },
         },
+        monitorRead: {
+          get: vi.fn(async () => null),
+          list: vi.fn(async () => []),
+        },
         principal: {
           tenantId: 'tenant-a',
           userId: 'user-a',
@@ -200,5 +225,123 @@ describe('POST /api/monitors', () => {
         message: 'An unexpected error occurred',
       },
     })
+  })
+})
+
+describe('monitor read routes', () => {
+  it('requires an authenticated principal for reads', async () => {
+    const { app, get, list } = createRoutes()
+
+    const listResponse = await app.request('/api/monitors')
+    const detailResponse = await app.request(
+      '/api/monitors/20000000-0000-4000-8000-000000000001',
+    )
+
+    expect(listResponse.status).toBe(401)
+    expect(detailResponse.status).toBe(401)
+    expect(list).not.toHaveBeenCalled()
+    expect(get).not.toHaveBeenCalled()
+  })
+
+  it('lists monitor state for the authenticated tenant', async () => {
+    const { app, list } = createRoutes({
+      tenantId: 'tenant-a',
+      userId: 'user-a',
+    })
+    const response = await app.request('/api/monitors')
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      data: {
+        monitors: [
+          {
+            alertAt: '2026-01-01T00:05:30.000Z',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            graceSeconds: 30,
+            id: '20000000-0000-4000-8000-000000000001',
+            incidentOpenedAt: null,
+            intervalSeconds: 300,
+            lastHeartbeatAt: null,
+            pausedAt: null,
+            status: 'pending',
+          },
+        ],
+      },
+    })
+    expect(list).toHaveBeenCalledWith('tenant-a')
+  })
+
+  it('returns one tenant-scoped monitor', async () => {
+    const { app, get } = createRoutes({
+      tenantId: 'tenant-a',
+      userId: 'user-a',
+    })
+    const response = await app.request(
+      '/api/monitors/20000000-0000-4000-8000-000000000001',
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      data: {
+        monitor: {
+          id: '20000000-0000-4000-8000-000000000001',
+          status: 'pending',
+        },
+      },
+    })
+    expect(get).toHaveBeenCalledWith(
+      'tenant-a',
+      '20000000-0000-4000-8000-000000000001',
+    )
+  })
+
+  it('returns a safe 404 for absent or invalid monitor ids', async () => {
+    const absentApp = createMonitorRoutes({
+      authenticate: async () => ({
+        createMonitor: { execute: vi.fn() },
+        monitorRead: {
+          get: vi.fn(async () => null),
+          list: vi.fn(async () => []),
+        },
+        principal: { tenantId: 'tenant-a', userId: 'user-a' },
+      }),
+    })
+    const invalid = await absentApp.request('/api/monitors/not-a-uuid')
+    const absent = await absentApp.request(
+      '/api/monitors/20000000-0000-4000-8000-000000000001',
+    )
+
+    expect(invalid.status).toBe(404)
+    expect(absent.status).toBe(404)
+    await expect(absent.json()).resolves.toEqual({
+      error: {
+        code: 'monitor_not_found',
+        message: 'Monitor not found',
+      },
+    })
+  })
+
+  it('does not expose query failures', async () => {
+    const app = createMonitorRoutes({
+      authenticate: async () => ({
+        createMonitor: { execute: vi.fn() },
+        monitorRead: {
+          get: vi.fn(async () => {
+            throw new Error('database unavailable')
+          }),
+          list: vi.fn(async () => {
+            throw new Error('database unavailable')
+          }),
+        },
+        principal: { tenantId: 'tenant-a', userId: 'user-a' },
+      }),
+    })
+    const listResponse = await app.request('/api/monitors')
+    const detailResponse = await app.request(
+      '/api/monitors/20000000-0000-4000-8000-000000000001',
+    )
+
+    expect(listResponse.status).toBe(500)
+    expect(detailResponse.status).toBe(500)
   })
 })
