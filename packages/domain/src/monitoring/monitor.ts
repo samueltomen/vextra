@@ -54,11 +54,18 @@ function addSeconds(timestampMs: number, seconds: number): number {
   return nextTimestampMs
 }
 
+export function assertMonitorSchedule(
+  intervalSeconds: number,
+  graceSeconds: number,
+): void {
+  assertSeconds(intervalSeconds, 'intervalSeconds', MIN_INTERVAL_SECONDS)
+  assertSeconds(graceSeconds, 'graceSeconds', 0)
+}
+
 export function createMonitor(input: CreateMonitorInput): Monitor {
   assertNonEmpty(input.id, 'id')
   assertNonEmpty(input.tenantId, 'tenantId')
-  assertSeconds(input.intervalSeconds, 'intervalSeconds', MIN_INTERVAL_SECONDS)
-  assertSeconds(input.graceSeconds, 'graceSeconds', 0)
+  assertMonitorSchedule(input.intervalSeconds, input.graceSeconds)
   assertTimestamp(input.nowMs, 'nowMs')
 
   return {

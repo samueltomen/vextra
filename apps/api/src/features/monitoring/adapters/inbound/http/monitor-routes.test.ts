@@ -54,6 +54,7 @@ function createRoutes(principal: AuthenticatedPrincipal | null = null) {
   const resume = vi.fn(async () => true)
   const remove = vi.fn(async () => true)
   const rotateToken = vi.fn(async () => 'new-raw-token')
+  const updateSchedule = vi.fn(async () => true)
   const app = createMonitorRoutes({
     authenticate: async () =>
       principal
@@ -62,6 +63,7 @@ function createRoutes(principal: AuthenticatedPrincipal | null = null) {
             monitorIncidents: { list: listIncidents },
             monitorLifecycle: { delete: remove, pause, resume },
             monitorRead: { get, list },
+            monitorSchedule: { execute: updateSchedule },
             principal,
             rotateToken: { execute: rotateToken },
           }
@@ -78,6 +80,7 @@ function createRoutes(principal: AuthenticatedPrincipal | null = null) {
     remove,
     rotateToken,
     resume,
+    updateSchedule,
   }
 }
 
@@ -215,6 +218,7 @@ describe('POST /api/monitors', () => {
           tenantId: 'tenant-a',
           userId: 'user-a',
         },
+        monitorSchedule: { execute: vi.fn(async () => true) },
         rotateToken: { execute: vi.fn(async () => null) },
       }),
     })
@@ -253,6 +257,7 @@ describe('POST /api/monitors', () => {
           tenantId: 'tenant-a',
           userId: 'user-a',
         },
+        monitorSchedule: { execute: vi.fn(async () => true) },
         rotateToken: { execute: vi.fn(async () => null) },
       }),
     })
@@ -352,6 +357,7 @@ describe('monitor read routes', () => {
           list: vi.fn(async () => []),
         },
         principal: { tenantId: 'tenant-a', userId: 'user-a' },
+        monitorSchedule: { execute: vi.fn(async () => true) },
         rotateToken: { execute: vi.fn(async () => null) },
       }),
     })
@@ -389,6 +395,7 @@ describe('monitor read routes', () => {
           }),
         },
         principal: { tenantId: 'tenant-a', userId: 'user-a' },
+        monitorSchedule: { execute: vi.fn(async () => true) },
         rotateToken: { execute: vi.fn(async () => null) },
       }),
     })
@@ -468,6 +475,113 @@ describe('monitor lifecycle routes', () => {
   })
 })
 
+describe('PATCH /api/monitors/:monitorId', () => {
+  const MONITOR_URL = '/api/monitors/20000000-0000-4000-8000-000000000001'
+  const principal = { tenantId: 'tenant-a', userId: 'user-a' }
+
+  function patch(
+    app: ReturnType<typeof createRoutes>['app'],
+    body: unknown,
+    url = MONITOR_URL,
+  ) {
+    return app.request(url, {
+      body: typeof body === 'string' ? body : JSON.stringify(body),
+      headers: { 'content-type': 'application/json' },
+      method: 'PATCH',
+    })
+  }
+
+  it('updates the schedule for the authenticated tenant and returns the monitor', async () => {
+    const { app, get, updateSchedule } = createRoutes(principal)
+    const response = await patch(app, {
+      graceSeconds: 60,
+      intervalSeconds: 900,
+    })
+
+    expect(response.status).toBe(200)
+    expect(updateSchedule).toHaveBeenCalledWith({
+      graceSeconds: 60,
+      intervalSeconds: 900,
+      monitorId: '20000000-0000-4000-8000-000000000001',
+    })
+    expect(get).toHaveBeenCalledWith(
+      'tenant-a',
+      '20000000-0000-4000-8000-000000000001',
+    )
+    await expect(response.json()).resolves.toMatchObject({
+      data: { monitor: { id: MONITOR_STATE.id, status: 'pending' } },
+    })
+  })
+
+  it('requires authentication', async () => {
+    const { app, updateSchedule } = createRoutes()
+    const response = await patch(app, {
+      graceSeconds: 60,
+      intervalSeconds: 900,
+    })
+
+    expect(response.status).toBe(401)
+    expect(updateSchedule).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { graceSeconds: 60, intervalSeconds: 30 },
+    { graceSeconds: -1, intervalSeconds: 900 },
+    { graceSeconds: 60 },
+    { graceSeconds: 60, intervalSeconds: 900, tenantId: 'tenant-b' },
+  ])(
+    'rejects the invalid body %j without calling the use case',
+    async (body) => {
+      const { app, updateSchedule } = createRoutes(principal)
+      const response = await patch(app, body)
+
+      expect(response.status).toBe(422)
+      await expect(response.json()).resolves.toMatchObject({
+        error: { code: 'validation_error' },
+      })
+      expect(updateSchedule).not.toHaveBeenCalled()
+    },
+  )
+
+  it('rejects a body that is not JSON', async () => {
+    const { app, updateSchedule } = createRoutes(principal)
+    const response = await patch(app, '{not json')
+
+    expect(response.status).toBe(400)
+    expect(updateSchedule).not.toHaveBeenCalled()
+  })
+
+  it('returns 404 for a malformed id or a monitor the tenant cannot see', async () => {
+    const { app, get, updateSchedule } = createRoutes(principal)
+    const body = { graceSeconds: 60, intervalSeconds: 900 }
+
+    expect((await patch(app, body, '/api/monitors/not-a-uuid')).status).toBe(
+      404,
+    )
+    expect(updateSchedule).not.toHaveBeenCalled()
+
+    updateSchedule.mockResolvedValueOnce(false)
+    expect((await patch(app, body)).status).toBe(404)
+    expect(get).not.toHaveBeenCalled()
+  })
+
+  it('maps domain violations to 422 and provider failures to a generic 500', async () => {
+    const { app, updateSchedule } = createRoutes(principal)
+    const body = { graceSeconds: 60, intervalSeconds: 900 }
+
+    updateSchedule.mockRejectedValueOnce(new RangeError('bad'))
+    expect((await patch(app, body)).status).toBe(422)
+
+    updateSchedule.mockRejectedValueOnce(new Error('permission denied'))
+    const failed = await patch(app, body)
+
+    expect(failed.status).toBe(500)
+    expect(JSON.stringify(await failed.json())).not.toContain(
+      'permission denied',
+    )
+  })
+})
+
 describe('POST /api/monitors/:monitorId/rotate-token', () => {
   it('returns the new token only in the authenticated response', async () => {
     const { app, rotateToken } = createRoutes({
@@ -503,6 +617,7 @@ describe('POST /api/monitors/:monitorId/rotate-token', () => {
           list: vi.fn(async () => []),
         },
         principal: { tenantId: 'tenant-a', userId: 'user-a' },
+        monitorSchedule: { execute: vi.fn(async () => true) },
         rotateToken: { execute: vi.fn(async () => null) },
       }),
     })

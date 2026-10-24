@@ -1,5 +1,6 @@
 export {
   MIN_INTERVAL_SECONDS,
+  assertMonitorSchedule,
   createMonitor,
   detectOverdue,
   pauseMonitor,

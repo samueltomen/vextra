@@ -46,6 +46,11 @@ import { CheckDueMonitors } from './features/monitoring/application/check-due-mo
 import { CreateMonitor } from './features/monitoring/application/create-monitor.ts'
 import { MonitorIncidents } from './features/monitoring/application/monitor-incidents.ts'
 import { MonitorLifecycle } from './features/monitoring/application/monitor-lifecycle.ts'
+import { UpdateMonitorSchedule } from './features/monitoring/application/update-monitor-schedule.ts'
+import {
+  SupabaseMonitorSchedule,
+  type MonitorScheduleRpcClient,
+} from './features/monitoring/adapters/outbound/supabase-monitor-schedule.ts'
 import { MonitorReadService } from './features/monitoring/application/monitor-read.ts'
 import { RecordHeartbeat } from './features/monitoring/application/record-heartbeat.ts'
 import { RotateMonitorToken } from './features/monitoring/application/rotate-monitor-token.ts'
@@ -202,6 +207,11 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
       monitorRead: new MonitorReadService(
         new SupabaseMonitorQueryRepository(
           client as unknown as MonitorQueryClient,
+        ),
+      ),
+      monitorSchedule: new UpdateMonitorSchedule(
+        new SupabaseMonitorSchedule(
+          client as unknown as MonitorScheduleRpcClient,
         ),
       ),
       principal: {
