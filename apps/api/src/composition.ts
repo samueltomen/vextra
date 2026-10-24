@@ -3,13 +3,16 @@ import type { Context } from 'hono'
 
 import { createApiApp } from './app.ts'
 import { AccountService } from './features/accounts/application/account-service.ts'
+import { DeleteAccount } from './features/accounts/application/delete-account.ts'
 import { createAuthRoutes } from './features/accounts/adapters/inbound/http/auth-routes.ts'
+import { createAccountRoutes } from './features/accounts/adapters/inbound/http/account-routes.ts'
 import {
   clearSessionCookie,
   readSessionCookie,
   writeSessionCookie,
 } from './features/accounts/adapters/inbound/http/session-cookies.ts'
 import { SessionCookieCodec } from './features/accounts/adapters/outbound/session-cookie.ts'
+import { SupabaseAccountDeletion } from './features/accounts/adapters/outbound/supabase-account-deletion.ts'
 import { SupabaseAccountsGateway } from './features/accounts/adapters/outbound/supabase-accounts-gateway.ts'
 import {
   createMonitorRoutes,
@@ -231,7 +234,25 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     }
   }
 
+  const authenticateAccount = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    return {
+      deleteAccount: new DeleteAccount(
+        new SupabaseAccountDeletion(createServiceSupabaseClient(environment)),
+      ),
+      userId: session.account.user.id,
+    }
+  }
+
   return createApiApp({
+    accountRoutes: createAccountRoutes({
+      authenticate: authenticateAccount,
+    }),
     allowedOrigin: environment.APP_ORIGIN,
     authRoutes: createAuthRoutes({ accounts, codec }),
     monitorRoutes: createMonitorRoutes({ authenticate: authenticateMonitor }),

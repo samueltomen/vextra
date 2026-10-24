@@ -77,3 +77,12 @@ export async function signOut(): Promise<void> {
 
   await apiRequest<void>('/api/auth/logout', { method: 'POST' })
 }
+
+export async function deleteAccount(): Promise<void> {
+  if (isDemoModeEnabled()) {
+    disableDemoMode()
+    return
+  }
+
+  await apiRequest<void>('/api/account', { method: 'DELETE' })
+}

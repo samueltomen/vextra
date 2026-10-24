@@ -32,9 +32,7 @@ describe('DELETE /api/account', () => {
 
     expect(response.status).toBe(204)
     expect(response.headers.get('set-cookie')).toContain('Max-Age=0')
-    expect(execute).toHaveBeenCalledWith(
-      '00000000-0000-4000-8000-000000000001',
-    )
+    expect(execute).toHaveBeenCalledWith('00000000-0000-4000-8000-000000000001')
   })
 
   it('does not expose provider failures', async () => {

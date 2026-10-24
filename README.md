@@ -109,6 +109,11 @@ Les notifications e-mail utilisent `GET /api/notifications` pour afficher les
 l'état, les tentatives et l'identifiant du moniteur, jamais l'adresse
 destinataire.
 
+La suppression du compte utilise `DELETE /api/account`. L'identifiant supprimé
+est toujours celui de la session courante ; aucun identifiant utilisateur n'est
+accepté depuis le navigateur. La suppression du membership déclenche le
+nettoyage du tenant devenu vide et la suppression en cascade de ses données.
+
 Le heartbeat public utilise :
 
 ```bash
@@ -160,6 +165,7 @@ pnpm check:no-bootstrap
 /                       Dashboard et résumé des statuts
 /login                  Connexion et inscription
 /notifications          Centre de notifications e-mail
+/settings               Compte, notifications et suppression
 /monitors/new           Création d'un moniteur
 /monitors/:monitorId    Détail et commande heartbeat
 ```

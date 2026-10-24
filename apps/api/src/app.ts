@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 import { createOriginGuard } from './features/accounts/adapters/inbound/http/origin-guard.ts'
 
 export type ApiApplicationDependencies = Readonly<{
+  accountRoutes: Hono
   allowedOrigin: string
   authRoutes: Hono
   monitorRoutes: Hono
@@ -40,10 +41,12 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
   const originGuard = createOriginGuard(dependencies.allowedOrigin)
 
   app.use('/api/auth/*', originGuard)
+  app.use('/api/account', originGuard)
   app.use('/api/monitors', originGuard)
   app.use('/api/monitors/*', originGuard)
   app.use('/api/notifications', originGuard)
   app.route('/', createHealthRoutes())
+  app.route('/', dependencies.accountRoutes)
   app.route('/', dependencies.authRoutes)
   app.route('/', dependencies.monitorRoutes)
   app.route('/', dependencies.notificationRoutes)
