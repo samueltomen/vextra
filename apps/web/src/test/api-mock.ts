@@ -218,6 +218,19 @@ export function installApiMock(options: ApiMockOptions = {}) {
         return new Response(null, { status: 204 })
       }
 
+      if (url.pathname.endsWith('/rotate-token') && method === 'POST') {
+        const monitorId = decodeURIComponent(
+          url.pathname.split('/').at(-2) ?? '',
+        )
+        const monitor = monitors.find((candidate) => candidate.id === monitorId)
+
+        return monitor
+          ? jsonResponse({
+              data: { heartbeatToken: 'cp_rotated-heartbeat-token' },
+            })
+          : errorResponse(404, 'monitor_not_found')
+      }
+
       if (url.pathname.endsWith('/incidents') && method === 'GET') {
         const monitorId = decodeURIComponent(
           url.pathname.split('/').at(-2) ?? '',

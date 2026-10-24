@@ -30,6 +30,10 @@ import {
   SupabaseMonitorLifecycle,
   type MonitorLifecycleRpcClient,
 } from './features/monitoring/adapters/outbound/supabase-monitor-lifecycle.ts'
+import {
+  SupabaseMonitorTokenRotation,
+  type MonitorTokenRotationRpcClient,
+} from './features/monitoring/adapters/outbound/supabase-monitor-token-rotation.ts'
 import { SupabaseMonitorRepository } from './features/monitoring/adapters/outbound/supabase-monitor-repository.ts'
 import {
   SupabaseMonitorQueryRepository,
@@ -41,6 +45,7 @@ import { MonitorIncidents } from './features/monitoring/application/monitor-inci
 import { MonitorLifecycle } from './features/monitoring/application/monitor-lifecycle.ts'
 import { MonitorReadService } from './features/monitoring/application/monitor-read.ts'
 import { RecordHeartbeat } from './features/monitoring/application/record-heartbeat.ts'
+import { RotateMonitorToken } from './features/monitoring/application/rotate-monitor-token.ts'
 
 export type WorkerEnvironment = Readonly<{
   APP_ORIGIN: string
@@ -174,6 +179,12 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
         tenantId: account.tenantId,
         userId: account.user.id,
       },
+      rotateToken: new RotateMonitorToken({
+        generator: tokenGenerator,
+        port: new SupabaseMonitorTokenRotation(
+          client as unknown as MonitorTokenRotationRpcClient,
+        ),
+      }),
     }
   }
 

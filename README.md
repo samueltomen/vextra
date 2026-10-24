@@ -88,6 +88,7 @@ Les moniteurs utilisent :
 - `POST /api/monitors` pour la création.
 - `POST /api/monitors/:monitorId/pause` pour la mise en pause ;
 - `POST /api/monitors/:monitorId/resume` pour la reprise ;
+- `POST /api/monitors/:monitorId/rotate-token` pour remplacer le token ;
 - `DELETE /api/monitors/:monitorId` pour la suppression ;
 - `GET /api/monitors/:monitorId/incidents` pour l'historique.
 

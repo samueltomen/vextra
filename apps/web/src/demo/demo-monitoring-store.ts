@@ -145,6 +145,14 @@ export async function deleteDemoMonitor(monitorId: string): Promise<void> {
   monitors = monitors.filter((monitor) => monitor.id !== monitorId)
 }
 
+export async function rotateDemoMonitorToken(
+  monitorId: string,
+): Promise<string | null> {
+  const monitor = monitors.find((candidate) => candidate.id === monitorId)
+
+  return monitor ? `cp_demo_${crypto.randomUUID().replaceAll('-', '')}` : null
+}
+
 export async function listDemoIncidents(
   monitorId: string,
 ): Promise<readonly MonitorIncidentView[]> {
