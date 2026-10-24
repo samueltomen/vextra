@@ -14,16 +14,18 @@ Le dépôt contient le socle de la V1 :
 - domaine monitoring pur avec calcul d'échéance et machine à états ;
 - contrats de création d'un moniteur et pipeline serveur avec token HMAC ;
 - schéma Supabase initial avec isolation RLS entre tenants ;
+- inscription, connexion, déconnexion et session chiffrée dans un cookie
+  `__Host-` inaccessible au JavaScript ;
+- création automatique d'un tenant personnel et de son propriétaire à
+  l'inscription ;
 - tokens du design system ;
 - prototype UI local avec dashboard, création et détail d'un moniteur ;
 - configuration TypeScript stricte, Prettier, ESLint et Vitest ;
 - garde-fou interdisant Bootstrap.
 
-Le prototype UI utilise des données locales simulées : les créations restent
-visibles pendant la session mais ne sont pas encore persistées.
-
-Les fonctionnalités d'authentification et de persistance réelle seront ajoutées
-dans les étapes suivantes du
+Le prototype UI utilise encore des données locales simulées. L'API
+d'authentification et le pipeline de création côté serveur sont prêts ; leur
+branchement au dashboard sera réalisé dans l'étape suivante du
 [plan MVP](docs/plans/cronping-mvp.md).
 
 ## Prérequis
@@ -36,7 +38,13 @@ dans les étapes suivantes du
 ```bash
 pnpm install
 cp apps/web/.env.example apps/web/.env.local
+cp apps/api/.dev.vars.example apps/api/.dev.vars
 ```
+
+Renseigner ensuite dans `apps/api/.dev.vars` la clé publishable Supabase
+locale et deux secrets indépendants d'au moins 32 octets :
+`SESSION_ENCRYPTION_KEY` et `PING_TOKEN_PEPPER`. Ces valeurs restent côté
+Worker et ne doivent jamais recevoir le préfixe `VITE_`.
 
 ## Développement
 
@@ -49,6 +57,23 @@ pnpm dev
 - Health check : `http://localhost:8787/api/health`
 
 Le proxy Vite transmet `/api` vers le Worker local.
+
+Routes d'authentification :
+
+- `POST /api/auth/signup` ;
+- `POST /api/auth/login` ;
+- `POST /api/auth/logout` ;
+- `GET /api/auth/me`.
+
+La création authentifiée d'un moniteur est exposée par
+`POST /api/monitors`. Le tenant est toujours résolu côté serveur depuis la
+session ; un `tenantId` envoyé par le navigateur est rejeté.
+
+La session est chiffrée avec AES-GCM et transmise uniquement via
+`__Host-cronping_session`, avec `HttpOnly`, `Secure`, `SameSite=Strict` et
+`Path=/`. Les JWT Supabase ne sont jamais renvoyés au navigateur. Les mutations
+du dashboard exigent l'origine exacte configurée dans `APP_ORIGIN` ; le futur
+heartbeat serveur restera hors de cette garde navigateur.
 
 ## Commandes
 
@@ -91,6 +116,9 @@ pnpm test:db
 pnpm db:lint
 pnpm exec supabase stop
 ```
+
+Le service Analytics local est désactivé pour éviter des ports et services
+inutiles au développement de CronPing.
 
 ## Structure
 

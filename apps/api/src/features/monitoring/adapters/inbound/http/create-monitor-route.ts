@@ -8,9 +8,13 @@ export type AuthenticatedPrincipal = Readonly<{
   userId: string
 }>
 
-export type CreateMonitorRoutesDependencies = Readonly<{
-  authenticate: (context: Context) => Promise<AuthenticatedPrincipal | null>
+export type AuthenticatedMonitorScope = Readonly<{
   createMonitor: Pick<CreateMonitor, 'execute'>
+  principal: AuthenticatedPrincipal
+}>
+
+export type CreateMonitorRoutesDependencies = Readonly<{
+  authenticate: (context: Context) => Promise<AuthenticatedMonitorScope | null>
 }>
 
 export function createMonitorRoutes(
@@ -19,9 +23,9 @@ export function createMonitorRoutes(
   const routes = new Hono()
 
   routes.post('/api/monitors', async (context) => {
-    const principal = await dependencies.authenticate(context)
+    const scope = await dependencies.authenticate(context)
 
-    if (!principal) {
+    if (!scope) {
       return context.json(
         {
           error: {
@@ -69,8 +73,8 @@ export function createMonitorRoutes(
     }
 
     try {
-      const result = await dependencies.createMonitor.execute({
-        tenantId: principal.tenantId,
+      const result = await scope.createMonitor.execute({
+        tenantId: scope.principal.tenantId,
         intervalSeconds: parsed.data.intervalSeconds,
         graceSeconds: parsed.data.graceSeconds,
       })

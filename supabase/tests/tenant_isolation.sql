@@ -10,25 +10,25 @@ values
   ('00000000-0000-4000-8000-000000000002', 'bob@example.test')
 on conflict (id) do nothing;
 
-insert into public.tenants (id)
-values
-  ('10000000-0000-4000-8000-000000000001'),
-  ('10000000-0000-4000-8000-000000000002')
-on conflict (id) do nothing;
-
-insert into public.tenant_memberships (tenant_id, user_id, role)
-values
+select set_config(
+  'test.alice_tenant_id',
   (
-    '10000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001',
-    'owner'
+    select tenant_id::text
+    from public.tenant_memberships
+    where user_id = '00000000-0000-4000-8000-000000000001'
   ),
+  true
+);
+
+select set_config(
+  'test.bob_tenant_id',
   (
-    '10000000-0000-4000-8000-000000000002',
-    '00000000-0000-4000-8000-000000000002',
-    'owner'
-  )
-on conflict (tenant_id, user_id) do nothing;
+    select tenant_id::text
+    from public.tenant_memberships
+    where user_id = '00000000-0000-4000-8000-000000000002'
+  ),
+  true
+);
 
 insert into public.monitors (
   id,
@@ -42,7 +42,7 @@ insert into public.monitors (
 values
   (
     '20000000-0000-4000-8000-000000000001',
-    '10000000-0000-4000-8000-000000000001',
+    current_setting('test.alice_tenant_id')::uuid,
     repeat('a', 64),
     'alice-to',
     300,
@@ -51,7 +51,7 @@ values
   ),
   (
     '20000000-0000-4000-8000-000000000002',
-    '10000000-0000-4000-8000-000000000002',
+    current_setting('test.bob_tenant_id')::uuid,
     repeat('b', 64),
     'bob-toke',
     300,
@@ -89,19 +89,19 @@ select is(
   (
     select count(*)
     from public.monitors
-    where tenant_id = '10000000-0000-4000-8000-000000000002'
+    where tenant_id = current_setting('test.bob_tenant_id')::uuid
   ),
   0::bigint,
   'a user cannot read another tenant monitor by id'
 );
 
 select ok(
-  public.is_tenant_member('10000000-0000-4000-8000-000000000001'),
+  public.is_tenant_member(current_setting('test.alice_tenant_id')::uuid),
   'membership function authorizes the current tenant'
 );
 
 select isnt(
-  public.is_tenant_member('10000000-0000-4000-8000-000000000002'),
+  public.is_tenant_member(current_setting('test.bob_tenant_id')::uuid),
   true,
   'membership function rejects another tenant'
 );
@@ -109,7 +109,7 @@ select isnt(
 with changed as (
   update public.monitors
   set enabled = false
-  where tenant_id = '10000000-0000-4000-8000-000000000002'
+  where tenant_id = current_setting('test.bob_tenant_id')::uuid
   returning id
 )
 select is(
@@ -129,7 +129,7 @@ select throws_ok(
       alert_at
     )
     values (
-      '10000000-0000-4000-8000-000000000002',
+      current_setting('test.bob_tenant_id')::uuid,
       repeat('c', 64),
       'attack-t',
       300,
