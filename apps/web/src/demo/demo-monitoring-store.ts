@@ -109,6 +109,41 @@ export async function createDemoMonitor(input: DemoCreateInput) {
   }
 }
 
+export async function renameDemoMonitor(
+  monitorId: string,
+  label: string,
+): Promise<void> {
+  const localLabel = label.trim()
+
+  if (!localLabel) {
+    return
+  }
+
+  monitors = monitors.map((monitor) =>
+    monitor.id === monitorId ? { ...monitor, localLabel } : monitor,
+  )
+}
+
+export async function updateDemoMonitorSchedule(
+  monitorId: string,
+  schedule: Readonly<{ graceMinutes: number; intervalMinutes: number }>,
+): Promise<void> {
+  monitors = monitors.map((monitor) =>
+    monitor.id === monitorId
+      ? {
+          ...monitor,
+          alertAtMs:
+            monitor.status === 'paused' || monitor.status === 'late'
+              ? monitor.alertAtMs
+              : Date.now() +
+                (schedule.intervalMinutes + schedule.graceMinutes) * 60_000,
+          graceMinutes: schedule.graceMinutes,
+          intervalMinutes: schedule.intervalMinutes,
+        }
+      : monitor,
+  )
+}
+
 export async function pauseDemoMonitor(monitorId: string): Promise<void> {
   const pausedAtMs = Date.now()
   monitors = monitors.map((monitor) =>

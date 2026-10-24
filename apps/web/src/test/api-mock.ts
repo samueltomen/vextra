@@ -220,6 +220,33 @@ export function installApiMock(options: ApiMockOptions = {}) {
         )
       }
 
+      if (url.pathname.startsWith('/api/monitors/') && method === 'PATCH') {
+        const monitorId = decodeURIComponent(
+          url.pathname.split('/').at(-1) ?? '',
+        )
+        const monitor = monitors.find((candidate) => candidate.id === monitorId)
+
+        if (!monitor) {
+          return errorResponse(404, 'monitor_not_found')
+        }
+
+        const body = JSON.parse(String(init?.body)) as {
+          graceSeconds: number
+          intervalSeconds: number
+        }
+
+        monitor.graceSeconds = body.graceSeconds
+        monitor.intervalSeconds = body.intervalSeconds
+
+        if (monitor.status !== 'paused' && monitor.status !== 'late') {
+          monitor.alertAt = new Date(
+            Date.now() + (body.intervalSeconds + body.graceSeconds) * 1_000,
+          ).toISOString()
+        }
+
+        return jsonResponse({ data: { monitor } })
+      }
+
       if (url.pathname.startsWith('/api/monitors/') && method === 'DELETE') {
         const monitorId = decodeURIComponent(
           url.pathname.split('/').at(-1) ?? '',
