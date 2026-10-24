@@ -50,6 +50,10 @@ export type {
   MonitorIncident,
 } from './monitoring/monitor-incident.ts'
 
+export { updateMonitorScheduleRequestSchema } from './monitoring/update-monitor.ts'
+
+export type { UpdateMonitorScheduleRequest } from './monitoring/update-monitor.ts'
+
 export { rotateMonitorTokenResponseSchema } from './monitoring/rotate-token.ts'
 
 export type { RotateMonitorTokenResponse } from './monitoring/rotate-token.ts'

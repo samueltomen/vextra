@@ -98,6 +98,10 @@ Les moniteurs utilisent :
 - `GET /api/monitors` pour la liste ;
 - `GET /api/monitors/:monitorId` pour le détail ;
 - `POST /api/monitors` pour la création.
+- `PATCH /api/monitors/:monitorId` pour modifier la fréquence et la marge
+  (`intervalSeconds`, `graceSeconds`) ; un moniteur en attente ou opérationnel
+  reçoit une nouvelle échéance, un moniteur en pause ou en retard conserve la
+  sienne ;
 - `POST /api/monitors/:monitorId/pause` pour la mise en pause ;
 - `POST /api/monitors/:monitorId/resume` pour la reprise ;
 - `POST /api/monitors/:monitorId/rotate-token` pour remplacer le token ;
