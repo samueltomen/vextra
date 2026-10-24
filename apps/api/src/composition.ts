@@ -12,23 +12,30 @@ import {
 import { SessionCookieCodec } from './features/accounts/adapters/outbound/session-cookie.ts'
 import { SupabaseAccountsGateway } from './features/accounts/adapters/outbound/supabase-accounts-gateway.ts'
 import { CreateMonitor } from './features/monitoring/application/create-monitor.ts'
+import { CheckDueMonitors } from './features/monitoring/application/check-due-monitors.ts'
 import { MonitorReadService } from './features/monitoring/application/monitor-read.ts'
+import { RecordHeartbeat } from './features/monitoring/application/record-heartbeat.ts'
 import {
   createMonitorRoutes,
   type AuthenticatedMonitorScope,
 } from './features/monitoring/adapters/inbound/http/monitor-routes.ts'
 import { WebCryptoMonitorTokenGenerator } from './features/monitoring/adapters/outbound/crypto-monitor-token.ts'
+import { SupabaseDueMonitorClaimer } from './features/monitoring/adapters/outbound/supabase-due-monitor-claimer.ts'
+import { SupabaseHeartbeatRecorder } from './features/monitoring/adapters/outbound/supabase-heartbeat-recorder.ts'
 import { SupabaseMonitorRepository } from './features/monitoring/adapters/outbound/supabase-monitor-repository.ts'
 import {
   SupabaseMonitorQueryRepository,
   type MonitorQueryClient,
 } from './features/monitoring/adapters/outbound/supabase-monitor-query-repository.ts'
+import { hashMonitorToken } from './features/monitoring/adapters/outbound/crypto-monitor-token.ts'
+import { createPingRoutes } from './features/monitoring/adapters/inbound/http/ping-route.ts'
 
 export type WorkerEnvironment = Readonly<{
   APP_ORIGIN: string
   PING_TOKEN_PEPPER: string
   SESSION_ENCRYPTION_KEY: string
   SUPABASE_PUBLISHABLE_KEY: string
+  SUPABASE_SERVICE_ROLE_KEY: string
   SUPABASE_URL: string
 }>
 
@@ -61,6 +68,23 @@ function createSupabaseClient(
   )
 }
 
+function createServiceSupabaseClient(environment: WorkerEnvironment) {
+  return createClient(
+    environment.SUPABASE_URL,
+    environment.SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        persistSession: false,
+      },
+      db: {
+        timeout: 8_000,
+      },
+    },
+  )
+}
+
 export function createApiFromEnvironment(environment: WorkerEnvironment) {
   const codec = new SessionCookieCodec(environment.SESSION_ENCRYPTION_KEY)
   const supabase = createSupabaseClient(environment)
@@ -73,6 +97,11 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
   const tokenGenerator = new WebCryptoMonitorTokenGenerator(
     environment.PING_TOKEN_PEPPER,
   )
+  const recordHeartbeat = new RecordHeartbeat({
+    hashToken: (token) =>
+      hashMonitorToken(token, environment.PING_TOKEN_PEPPER),
+    recorder: new SupabaseHeartbeatRecorder(supabase),
+  })
 
   const authenticateMonitor = async (
     context: Context,
@@ -130,5 +159,20 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     allowedOrigin: environment.APP_ORIGIN,
     authRoutes: createAuthRoutes({ accounts, codec }),
     monitorRoutes: createMonitorRoutes({ authenticate: authenticateMonitor }),
+    pingRoutes: createPingRoutes({
+      execute: (token) => recordHeartbeat.execute(token),
+    }),
   })
+}
+
+export async function runScheduledCheck(
+  environment: WorkerEnvironment,
+  batchSize = 100,
+): Promise<number> {
+  const client = createServiceSupabaseClient(environment)
+  const checker = new CheckDueMonitors({
+    claimer: new SupabaseDueMonitorClaimer(client),
+  })
+
+  return checker.execute(batchSize)
 }

@@ -6,6 +6,7 @@ export type ApiApplicationDependencies = Readonly<{
   allowedOrigin: string
   authRoutes: Hono
   monitorRoutes: Hono
+  pingRoutes: Hono
 }>
 
 export function createHealthRoutes(): Hono {
@@ -43,6 +44,7 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
   app.route('/', createHealthRoutes())
   app.route('/', dependencies.authRoutes)
   app.route('/', dependencies.monitorRoutes)
+  app.route('/', dependencies.pingRoutes)
 
   return app
 }

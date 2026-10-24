@@ -10,6 +10,7 @@ const ENVIRONMENT: WorkerEnvironment = {
   PING_TOKEN_PEPPER: 'pepper-with-at-least-thirty-two-characters',
   SESSION_ENCRYPTION_KEY: 'session-secret-with-at-least-32-bytes-of-entropy',
   SUPABASE_PUBLISHABLE_KEY: 'publishable-key',
+  SUPABASE_SERVICE_ROLE_KEY: 'service-role-key',
   SUPABASE_URL: 'https://project.supabase.test',
 }
 

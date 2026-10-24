@@ -8,6 +8,7 @@ function createApp() {
     allowedOrigin: 'http://localhost:5173',
     authRoutes: new Hono(),
     monitorRoutes: new Hono(),
+    pingRoutes: new Hono(),
   })
 }
 

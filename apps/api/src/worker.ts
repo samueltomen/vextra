@@ -1,7 +1,12 @@
 import {
   createApiFromEnvironment,
+  runScheduledCheck,
   type WorkerEnvironment,
 } from './composition.ts'
+
+type ScheduledContext = Readonly<{
+  waitUntil(promise: Promise<unknown>): void
+}>
 
 export default {
   fetch(request: Request, environment: WorkerEnvironment) {
@@ -18,5 +23,12 @@ export default {
         { status: 503 },
       )
     }
+  },
+  scheduled(
+    _controller: unknown,
+    environment: WorkerEnvironment,
+    context: ScheduledContext,
+  ) {
+    context.waitUntil(runScheduledCheck(environment))
   },
 }
