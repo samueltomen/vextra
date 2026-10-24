@@ -5,7 +5,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
-      include: ['src/routes/home-page.tsx'],
+      include: ['src/features/monitoring/**/*.{ts,tsx}', 'src/shell/**/*.tsx'],
+      exclude: ['src/features/monitoring/**/mock/**', 'src/**/*.test.*'],
       provider: 'v8',
       thresholds: {
         branches: 80,

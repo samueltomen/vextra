@@ -13,13 +13,17 @@ Le dépôt contient le socle de la V1 :
 - endpoint de santé `GET /api/health` ;
 - domaine monitoring pur avec calcul d'échéance et machine à états ;
 - contrats de création d'un moniteur et pipeline serveur avec token HMAC ;
-- schéma Supabase initial avec isolation RLS entre tenants.
+- schéma Supabase initial avec isolation RLS entre tenants ;
 - tokens du design system ;
+- prototype UI local avec dashboard, création et détail d'un moniteur ;
 - configuration TypeScript stricte, Prettier, ESLint et Vitest ;
 - garde-fou interdisant Bootstrap.
 
-Les fonctionnalités d'authentification, de moniteurs et de notifications seront
-ajoutées dans les étapes suivantes du
+Le prototype UI utilise des données locales simulées : les créations restent
+visibles pendant la session mais ne sont pas encore persistées.
+
+Les fonctionnalités d'authentification et de persistance réelle seront ajoutées
+dans les étapes suivantes du
 [plan MVP](docs/plans/cronping-mvp.md).
 
 ## Prérequis
@@ -66,6 +70,17 @@ Le contrôle anti-Bootstrap peut être exécuté seul :
 ```bash
 pnpm check:no-bootstrap
 ```
+
+## Prototype UI
+
+```text
+/                       Dashboard et résumé des statuts
+/monitors/new           Création d'un moniteur
+/monitors/:monitorId    Détail et commande heartbeat
+```
+
+En développement, les états du dashboard peuvent être prévisualisés avec
+`?state=loading`, `?state=empty` ou `?state=error`.
 
 Les commandes base de données nécessitent Supabase local :
 

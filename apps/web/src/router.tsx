@@ -1,26 +1,13 @@
-import {
-  createRootRoute,
-  createRoute,
-  createRouter,
-} from '@tanstack/react-router'
+import { createRouter } from '@tanstack/react-router'
 
-import { HomePage } from './routes/home-page.tsx'
-import { RootRoute } from './routes/root-route.tsx'
-
-const rootRoute = createRootRoute({
-  component: RootRoute,
-})
-
-const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/',
-  component: HomePage,
-})
-
-const routeTree = rootRoute.addChildren([indexRoute])
+import { queryClient } from './query/query-client.ts'
+import { routeTree } from './routeTree.gen.ts'
 
 export const router = createRouter({
   routeTree,
+  context: {
+    queryClient,
+  },
 })
 
 declare module '@tanstack/react-router' {

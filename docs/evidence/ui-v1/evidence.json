@@ -1,0 +1,85 @@
+{
+  "contract": "Dashboard scannable, création en une colonne, statuts lisibles sans couleur seule, navigation responsive et aucune donnée d'exécution affichée.",
+  "targetViewports": ["1440x900", "390x844"],
+  "accessibility": {
+    "status": "pass",
+    "evidence": "Labels de formulaires associés, erreurs reliées, focus visible, lien d'évitement, cibles principales de 44 px, statuts avec icône et texte, reduced motion désactivant les animations."
+  },
+  "responsive": {
+    "status": "pass",
+    "evidence": "Captures desktop 1440x900 et mobile 390x844 sans débordement horizontal ; sidebar remplacée par la navigation mobile, résumé en grille 2x2 et listes empilées."
+  },
+  "contentStates": {
+    "loading": {
+      "status": "pass",
+      "evidence": "Squelettes stables dans le dashboard, capture dashboard-loading.png."
+    },
+    "empty": {
+      "status": "pass",
+      "evidence": "Message explicite et action de création, capture dashboard-empty.png."
+    },
+    "error": {
+      "status": "pass",
+      "evidence": "Message non technique et bouton Réessayer, capture dashboard-error.png."
+    },
+    "partial": {
+      "status": "not-applicable",
+      "reason": "Le prototype consomme un snapshot local atomique ; un état partiel deviendra applicable avec les sources API distinctes."
+    },
+    "success": {
+      "status": "pass",
+      "evidence": "Confirmation, commande heartbeat et token affiché une fois, capture create-monitor-success.png."
+    },
+    "permission": {
+      "status": "not-applicable",
+      "reason": "Le prototype UI est local et n'intègre pas encore les frontières d'authentification et d'autorisation."
+    }
+  },
+  "renderedEvidence": [
+    {
+      "viewport": "1440x900",
+      "artifact": "dashboard-desktop.png",
+      "observation": "Dashboard dense et scannable, résumé 4 statuts, liste de moniteurs et action primaire claire."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "dashboard-mobile.png",
+      "observation": "Navigation mobile, action principale pleine largeur et résumé 2x2 sans débordement."
+    },
+    {
+      "viewport": "1440x900",
+      "artifact": "create-monitor-desktop.png",
+      "observation": "Formulaire en une colonne et panneau explicatif secondaire ; libellé local clairement signalé."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "create-monitor-mobile.png",
+      "observation": "Formulaire utilisable sur une colonne avec contrôles empilés et actions accessibles."
+    },
+    {
+      "viewport": "1440x900",
+      "artifact": "create-monitor-success.png",
+      "observation": "Token visible une seule fois avec commande curl et actions copier/consulter."
+    },
+    {
+      "viewport": "1440x900",
+      "artifact": "monitor-detail-desktop.png",
+      "observation": "Statut en retard dominant, échéance, commande heartbeat, configuration et confidentialité."
+    },
+    {
+      "viewport": "1440x900",
+      "artifact": "dashboard-loading.png",
+      "observation": "Structure de chargement stable sans déplacement du layout."
+    },
+    {
+      "viewport": "1440x900",
+      "artifact": "dashboard-empty.png",
+      "observation": "État vide explicite avec prochaine action."
+    },
+    {
+      "viewport": "1440x900",
+      "artifact": "dashboard-error.png",
+      "observation": "Erreur compréhensible avec chemin de récupération."
+    }
+  ]
+}
