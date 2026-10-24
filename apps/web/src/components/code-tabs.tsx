@@ -38,14 +38,15 @@ export function CodeTabs({
   }
 
   return (
-    <div>
+    <div className="min-w-0">
       <Tabs
         aria-label="Langage d’intégration"
         classNames={{
           cursor: 'bg-action',
           tab: 'h-10 px-3',
           tabContent: 'text-muted group-data-[selected=true]:text-action',
-          tabList: 'gap-1 overflow-x-auto border-b border-line p-0',
+          base: 'max-w-full',
+          tabList: 'max-w-full gap-1 overflow-x-auto border-b border-line p-0',
         }}
         onSelectionChange={(key) => {
           setSelectedId(String(key))

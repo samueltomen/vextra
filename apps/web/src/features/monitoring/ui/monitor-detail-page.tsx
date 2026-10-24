@@ -403,7 +403,7 @@ export function MonitorDetailPage({
         <AvailabilityBar days={availability.days} />
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
         <div className="space-y-6">
           <section className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
             <div className="flex items-center gap-2">
@@ -620,24 +620,29 @@ export function MonitorDetailPage({
               </form>
             ) : null}
             <dl className="mt-4 space-y-4 text-sm">
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted">Fréquence</dt>
-                <dd className="font-medium">
-                  {formatFrequency(monitor.intervalMinutes)}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted">Marge</dt>
-                <dd className="font-medium">{monitor.graceMinutes} min</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted">Alerte après</dt>
-                <dd className="font-medium">
-                  {formatDuration(
-                    (monitor.intervalMinutes + monitor.graceMinutes) * 60_000,
-                  )}
-                </dd>
-              </div>
+              {scheduleDraft === null ? (
+                <>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted">Fréquence</dt>
+                    <dd className="font-medium">
+                      {formatFrequency(monitor.intervalMinutes)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted">Marge</dt>
+                    <dd className="font-medium">{monitor.graceMinutes} min</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted">Alerte après</dt>
+                    <dd className="font-medium">
+                      {formatDuration(
+                        (monitor.intervalMinutes + monitor.graceMinutes) *
+                          60_000,
+                      )}
+                    </dd>
+                  </div>
+                </>
+              ) : null}
               <div className="flex justify-between gap-4">
                 <dt className="text-muted">Créé le</dt>
                 <dd className="font-medium">

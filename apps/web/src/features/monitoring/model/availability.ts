@@ -136,7 +136,11 @@ export function formatDuration(durationMs: number): string {
   const days = Math.floor(hours / 24)
   const restHours = hours % 24
 
-  return restHours === 0 ? `${days} j` : `${days} j ${restHours} h`
+  if (restHours > 0) {
+    return `${days} j ${restHours} h`
+  }
+
+  return restMinutes === 0 ? `${days} j` : `${days} j ${restMinutes} min`
 }
 
 export function formatUptime(percent: number | null): string {
