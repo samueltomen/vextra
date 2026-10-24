@@ -1,43 +1,35 @@
 import { Button } from '@heroui/react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
-import { ArrowRight, Clock3, Plus, RefreshCw, ShieldCheck } from 'lucide-react'
+import {
+  ArrowRight,
+  Clock3,
+  Plus,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+} from 'lucide-react'
 import { useState } from 'react'
 
 import { listMonitors } from '../api/monitoring-api.ts'
-import { formatRelativeTime, statusLabel } from '../model/monitor-format.ts'
+import {
+  formatFrequency,
+  formatRelativeTime,
+  statusLabel,
+} from '../model/monitor-format.ts'
 import {
   summarizeMonitors,
   type MonitorStatus,
+  type StatusFilter,
   type MonitorView,
 } from '../model/monitor.ts'
 import { StatusBadge } from './status-badge.tsx'
 import { StatusSummary } from './status-summary.tsx'
 
-type StatusFilter = 'all' | 'late'
 type PreviewState = 'loading' | 'empty' | 'error'
 
-function formatFrequency(minutes: number): string {
-  if (minutes % 10_080 === 0) {
-    return minutes === 10_080
-      ? 'Toutes les semaines'
-      : `Toutes les ${minutes / 10_080} semaines`
-  }
-  if (minutes % 1_440 === 0) {
-    return minutes === 1_440
-      ? 'Tous les jours'
-      : `Tous les ${minutes / 1_440} jours`
-  }
-  if (minutes % 60 === 0) {
-    return minutes === 60
-      ? 'Toutes les heures'
-      : `Toutes les ${minutes / 60} heures`
-  }
-  return `Toutes les ${minutes} minutes`
-}
-
 function matchesFilter(status: MonitorStatus, filter: StatusFilter): boolean {
-  return filter === 'all' || status === 'late'
+  return filter === 'all' || status === filter
 }
 
 function getPreviewState(search: string): PreviewState | null {
@@ -53,6 +45,7 @@ function getPreviewState(search: string): PreviewState | null {
 
 export function DashboardPage() {
   const [filter, setFilter] = useState<StatusFilter>('all')
+  const [query, setQuery] = useState('')
   const navigate = useNavigate()
   const search = useLocation({ select: (location) => location.searchStr })
   const previewState = getPreviewState(search)
@@ -74,8 +67,13 @@ export function DashboardPage() {
   })
 
   const monitors = monitorsQuery.data ?? []
-  const visibleMonitors = monitors.filter((monitor) =>
-    matchesFilter(monitor.status, filter),
+  const normalizedSearch = query.trim().toLowerCase()
+  const visibleMonitors = monitors.filter(
+    (monitor) =>
+      matchesFilter(monitor.status, filter) &&
+      (normalizedSearch.length === 0 ||
+        monitor.localLabel.toLowerCase().includes(normalizedSearch) ||
+        monitor.id.toLowerCase().includes(normalizedSearch)),
   )
   const summary = summarizeMonitors(monitors)
 
@@ -104,43 +102,36 @@ export function DashboardPage() {
         </Button>
       </header>
 
-      <StatusSummary summary={summary} />
+      <StatusSummary
+        activeFilter={filter}
+        onSelect={setFilter}
+        summary={summary}
+      />
 
       <section aria-labelledby="monitor-list-title">
-        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-semibold" id="monitor-list-title">
-              Tous les moniteurs
+              Moniteurs
             </h2>
-            <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-xs text-muted">
-              {monitors.length}
+            <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-xs text-muted tabular-nums">
+              {visibleMonitors.length}
             </span>
           </div>
-          <div
-            aria-label="Filtrer les moniteurs"
-            className="flex gap-1 rounded-lg border border-line bg-surface p-1"
-            role="group"
-          >
-            {(
-              [
-                ['all', 'Tous'],
-                ['late', `En retard ${summary.late}`],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                aria-pressed={filter === value}
-                className={`min-h-11 rounded-md px-3 text-sm font-medium ${
-                  filter === value
-                    ? 'bg-ink text-white'
-                    : 'text-muted hover:text-ink'
-                }`}
-                key={value}
-                onClick={() => setFilter(value)}
-                type="button"
-              >
-                {label}
-              </button>
-            ))}
+          <div className="relative w-full max-w-sm">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+              size={16}
+            />
+            <input
+              aria-label="Rechercher un moniteur"
+              className="min-h-10 w-full rounded-lg border border-line bg-surface pl-9 pr-3 text-sm text-ink outline-none placeholder:text-muted focus:border-action"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Rechercher un libellé ou un identifiant"
+              type="search"
+              value={query}
+            />
           </div>
         </div>
 
@@ -180,12 +171,27 @@ export function DashboardPage() {
               size={28}
             />
             <h3 className="mt-4 text-lg font-semibold">
-              Aucun moniteur dans cette vue
+              {monitors.length === 0
+                ? 'Aucun moniteur'
+                : 'Aucun résultat pour ce filtre'}
             </h3>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-              Créez un moniteur pour commencer à détecter les exécutions
-              silencieuses.
+              {monitors.length === 0
+                ? 'Créez un moniteur pour commencer à détecter les exécutions silencieuses.'
+                : 'Modifiez la recherche ou revenez à tous les moniteurs.'}
             </p>
+            {monitors.length > 0 ? (
+              <button
+                className="mt-5 min-h-10 rounded-md px-3 text-sm font-medium text-action hover:bg-action-soft"
+                onClick={() => {
+                  setQuery('')
+                  setFilter('all')
+                }}
+                type="button"
+              >
+                Réinitialiser les filtres
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="overflow-hidden rounded-xl border border-line bg-surface">
@@ -201,8 +207,11 @@ export function DashboardPage() {
               >
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{monitor.localLabel}</p>
-                  <p className="mt-1 text-sm text-muted">
+                  <p className="mt-1 text-xs text-muted">
                     {formatFrequency(monitor.intervalMinutes)}
+                  </p>
+                  <p className="mt-1 font-mono text-xs text-muted">
+                    {monitor.id.slice(0, 8)}
                   </p>
                 </div>
                 <StatusBadge status={monitor.status} />
@@ -211,11 +220,15 @@ export function DashboardPage() {
                     <span className="block text-xs text-muted">
                       Dernier signal
                     </span>
-                    {formatRelativeTime(monitor.lastHeartbeatAtMs)}
+                    <span className="tabular-nums">
+                      {formatRelativeTime(monitor.lastHeartbeatAtMs)}
+                    </span>
                   </p>
                   <p className="mt-2 flex items-center gap-1.5 text-muted">
                     <Clock3 aria-hidden="true" size={14} />
-                    {formatRelativeTime(monitor.alertAtMs)}
+                    <span className="tabular-nums">
+                      {formatRelativeTime(monitor.alertAtMs)}
+                    </span>
                   </p>
                 </div>
                 <ArrowRight

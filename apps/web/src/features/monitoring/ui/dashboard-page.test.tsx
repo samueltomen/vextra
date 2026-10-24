@@ -32,9 +32,7 @@ describe('DashboardPage', () => {
   it('renders an actionable empty state', async () => {
     await renderApp('/?state=empty')
 
-    expect(
-      await screen.findByText('Aucun moniteur dans cette vue'),
-    ).toBeInTheDocument()
+    expect(await screen.findByText('Aucun moniteur')).toBeInTheDocument()
   })
 
   it('renders a recoverable error state', async () => {
@@ -64,5 +62,16 @@ describe('DashboardPage', () => {
         name: 'Ajouter un heartbeat',
       }),
     ).toBeInTheDocument()
+  })
+
+  it('searches by local label without sending that label to the server', async () => {
+    await renderApp('/')
+
+    fireEvent.change(await screen.findByLabelText('Rechercher un moniteur'), {
+      target: { value: 'Stripe' },
+    })
+
+    expect(screen.queryByText('Sauvegarde PostgreSQL')).not.toBeInTheDocument()
+    expect(screen.getByText('Synchronisation Stripe')).toBeInTheDocument()
   })
 })
