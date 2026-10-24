@@ -104,6 +104,11 @@ Les moniteurs utilisent :
 - `DELETE /api/monitors/:monitorId` pour la suppression ;
 - `GET /api/monitors/:monitorId/incidents` pour l'historique.
 
+Les notifications e-mail utilisent `GET /api/notifications` pour afficher les
+50 dernières livraisons du tenant. La réponse contient le type d'événement,
+l'état, les tentatives et l'identifiant du moniteur, jamais l'adresse
+destinataire.
+
 Le heartbeat public utilise :
 
 ```bash
@@ -154,6 +159,7 @@ pnpm check:no-bootstrap
 ```text
 /                       Dashboard et résumé des statuts
 /login                  Connexion et inscription
+/notifications          Centre de notifications e-mail
 /monitors/new           Création d'un moniteur
 /monitors/:monitorId    Détail et commande heartbeat
 ```

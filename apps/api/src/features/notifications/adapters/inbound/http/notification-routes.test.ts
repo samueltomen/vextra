@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { NotificationHistoryRecord } from '../../../application/notification-history.ts'
-import { createNotificationRoutes } from './notification-routes.ts'
+import {
+  createNotificationRoutes,
+  type NotificationRoutesDependencies,
+} from './notification-routes.ts'
 
 const DELIVERY: NotificationHistoryRecord = {
   attempts: 1,
@@ -14,9 +17,10 @@ const DELIVERY: NotificationHistoryRecord = {
 }
 
 function createApp(
-  authenticate = vi.fn(async () => ({
+  authenticate: NotificationRoutesDependencies['authenticate'] = async () => ({
     history: { list: vi.fn(async () => [DELIVERY]) },
-  })),
+    tenantId: 'tenant-a',
+  }),
 ) {
   return createNotificationRoutes({ authenticate })
 }
@@ -59,6 +63,7 @@ describe('GET /api/notifications', () => {
             throw new Error('database unavailable')
           }),
         },
+        tenantId: 'tenant-a',
       })),
     )
     const response = await app.request('/api/notifications')

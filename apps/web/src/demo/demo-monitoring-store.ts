@@ -1,5 +1,6 @@
 import type { MonitorIncidentView } from '../features/monitoring/api/monitoring-api.ts'
 import type { MonitorView } from '../features/monitoring/model/monitor.ts'
+import type { NotificationDeliveryView } from '../features/notifications/api/notifications-api.ts'
 
 type DemoCreateInput = Readonly<{
   graceMinutes: number
@@ -161,4 +162,38 @@ export async function listDemoIncidents(
   }
 
   return []
+}
+
+export async function listDemoNotifications(): Promise<
+  readonly NotificationDeliveryView[]
+> {
+  return [
+    {
+      attempts: 1,
+      createdAtMs: nowMs - 420_000,
+      id: 'b0000000-0000-4000-8000-000000000001',
+      kind: 'incident_opened',
+      monitorId: demoId('2'),
+      status: 'sent',
+      updatedAtMs: nowMs - 360_000,
+    },
+    {
+      attempts: 1,
+      createdAtMs: nowMs - 172_800_000,
+      id: 'b0000000-0000-4000-8000-000000000002',
+      kind: 'incident_resolved',
+      monitorId: demoId('1'),
+      status: 'sent',
+      updatedAtMs: nowMs - 172_740_000,
+    },
+    {
+      attempts: 2,
+      createdAtMs: nowMs - 3_600_000,
+      id: 'b0000000-0000-4000-8000-000000000003',
+      kind: 'incident_opened',
+      monitorId: demoId('4'),
+      status: 'failed',
+      updatedAtMs: nowMs - 3_000_000,
+    },
+  ]
 }
