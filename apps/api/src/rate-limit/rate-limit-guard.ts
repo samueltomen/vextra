@@ -20,6 +20,7 @@ export function createCloudflareRateLimiter(
 
 export function createRateLimitGuard(
   options: Readonly<{
+    clientIpHeader?: string
     limiter: RateLimiter
     methods?: readonly string[]
     scope: string
@@ -30,7 +31,9 @@ export function createRateLimitGuard(
       return next()
     }
 
-    const clientIp = context.req.header('cf-connecting-ip') ?? 'unknown'
+    const clientIp =
+      context.req.header(options.clientIpHeader ?? 'cf-connecting-ip') ??
+      'unknown'
     const allowed = await options.limiter
       .allow(`${options.scope}:${clientIp}`)
       // Fail open: a limiter outage must never reject legitimate heartbeats.

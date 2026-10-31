@@ -23,6 +23,8 @@ type AuthRoutesAccounts = Pick<
 export type AuthRoutesDependencies = Readonly<{
   accounts: AuthRoutesAccounts
   codec: SessionCookieCodec
+  /** Self-hosted installs can close registration. Defaults to open. */
+  signupsEnabled?: boolean
 }>
 
 function invalidJson(context: Context) {
@@ -101,6 +103,18 @@ export function createAuthRoutes(dependencies: AuthRoutesDependencies): Hono {
   const routes = new Hono()
 
   routes.post('/api/auth/signup', async (context) => {
+    if (dependencies.signupsEnabled === false) {
+      return context.json(
+        {
+          error: {
+            code: 'signup_disabled',
+            message: 'Registration is closed on this installation',
+          },
+        },
+        403,
+      )
+    }
+
     const body = await readJson(context)
 
     if (!body.ok) {

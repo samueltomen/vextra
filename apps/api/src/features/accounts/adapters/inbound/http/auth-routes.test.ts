@@ -345,3 +345,27 @@ describe('account HTTP routes', () => {
     })
   })
 })
+
+describe('closed registration', () => {
+  it('refuses sign-ups without calling the account service when closed', async () => {
+    const signUp = vi.fn()
+    const accounts = { signIn: vi.fn(), signUp } as never
+    const app = createAuthRoutes({
+      accounts,
+      codec: new SessionCookieCodec(SECRET),
+      signupsEnabled: false,
+    })
+    const response = await app.request(
+      createJsonRequest('/api/auth/signup', {
+        email: 'ada@example.test',
+        password: 'correct horse battery staple',
+      }),
+    )
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'signup_disabled' },
+    })
+    expect(signUp).not.toHaveBeenCalled()
+  })
+})

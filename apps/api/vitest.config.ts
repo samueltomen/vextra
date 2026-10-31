@@ -4,7 +4,8 @@ export default defineConfig({
   test: {
     coverage: {
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts'],
+      // node.ts only wires I/O (HTTP server, sockets, timers) around tested units.
+      exclude: ['src/**/*.test.ts', 'src/node.ts'],
       provider: 'v8',
       thresholds: {
         branches: 80,

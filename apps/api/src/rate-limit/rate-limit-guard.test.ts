@@ -78,4 +78,25 @@ describe('createRateLimitGuard', () => {
     expect(allow).not.toHaveBeenCalled()
     expect(response.status).toBe(404)
   })
+
+  it('reads the client IP from a configured proxy header', async () => {
+    const allow = vi.fn(async () => true)
+    const app = new Hono()
+
+    app.use(
+      '/limited',
+      createRateLimitGuard({
+        clientIpHeader: 'x-forwarded-for',
+        limiter: { allow },
+        scope: 'auth',
+      }),
+    )
+    app.post('/limited', (context) => context.json({ ok: true }))
+    await app.request('/limited', {
+      headers: { 'cf-connecting-ip': '9.9.9.9', 'x-forwarded-for': '10.0.0.7' },
+      method: 'POST',
+    })
+
+    expect(allow).toHaveBeenCalledWith('auth:10.0.0.7')
+  })
 })

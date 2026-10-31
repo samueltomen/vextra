@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { type WorkerEnvironment } from './composition.ts'
+import { runNotificationDelivery, runWeeklyReports } from './composition.ts'
 import worker from './worker.ts'
 
 const ENVIRONMENT: WorkerEnvironment = {
@@ -130,5 +131,33 @@ describe('Cloudflare Worker entrypoint', () => {
       }),
     )
     info.mockRestore()
+  })
+})
+
+describe('e-mail transport selection', () => {
+  const transport = { sendMail: vi.fn(async () => undefined) }
+
+  it('delivers e-mail through SMTP when only a transport is configured', async () => {
+    mockSupabase()
+
+    await expect(
+      runNotificationDelivery({
+        ...ENVIRONMENT,
+        EMAIL_FROM: 'CronPing <alerts@example.test>',
+        EMAIL_TRANSPORT: transport,
+      }),
+    ).resolves.toEqual({ failed: 0, sent: 0 })
+    await expect(
+      runWeeklyReports({
+        ...ENVIRONMENT,
+        EMAIL_FROM: 'CronPing <alerts@example.test>',
+        EMAIL_TRANSPORT: transport,
+      }),
+    ).resolves.toEqual({ failed: 0, sent: 0 })
+  })
+
+  it('stays disabled without Resend or SMTP', async () => {
+    await expect(runNotificationDelivery(ENVIRONMENT)).resolves.toBeNull()
+    await expect(runWeeklyReports(ENVIRONMENT)).resolves.toBeNull()
   })
 })
