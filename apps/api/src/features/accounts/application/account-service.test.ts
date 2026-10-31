@@ -26,7 +26,10 @@ function createGateway(
   return {
     getUser: vi.fn(async () => USER),
     refreshSession: vi.fn(async () => ({ session: TOKENS, user: USER })),
-    resolvePrimaryTenantId: vi.fn(async () => TENANT_ID),
+    resolvePrimaryTenantId: vi.fn(async () => ({
+      role: 'owner' as const,
+      tenantId: TENANT_ID,
+    })),
     revokeSession: vi.fn(async () => undefined),
     signIn: vi.fn(async () => ({ session: TOKENS, user: USER })),
     signUp: vi.fn(async () => ({ session: TOKENS, user: USER })),
@@ -53,13 +56,40 @@ describe('AccountService', () => {
       }),
     ).resolves.toEqual({
       refreshed: false,
+      role: 'owner',
       tenantId: TENANT_ID,
-      tokens: TOKENS,
+      tokens: { ...TOKENS, tenantId: TENANT_ID },
       user: USER,
     })
     expect(gateway.resolvePrimaryTenantId).toHaveBeenCalledWith({
       accessToken: TOKENS.accessToken,
+      preferredTenantId: undefined,
       userId: USER.id,
+    })
+  })
+
+  it('asks the gateway for the space stored in the session and keeps it on refresh', async () => {
+    const other = '10000000-0000-4000-8000-000000000002'
+    const gateway = createGateway({
+      resolvePrimaryTenantId: vi.fn(async () => ({
+        role: 'viewer' as const,
+        tenantId: other,
+      })),
+    })
+    const service = createService(gateway)
+
+    await expect(
+      service.authenticate({ ...TOKENS, tenantId: other }),
+    ).resolves.toMatchObject({ role: 'viewer', tenantId: other })
+    expect(gateway.resolvePrimaryTenantId).toHaveBeenCalledWith(
+      expect.objectContaining({ preferredTenantId: other }),
+    )
+
+    const expired = { ...TOKENS, expiresAtMs: NOW_MS, tenantId: other }
+
+    await expect(service.authenticate(expired)).resolves.toMatchObject({
+      refreshed: true,
+      tokens: expect.objectContaining({ tenantId: other }),
     })
   })
 
@@ -93,8 +123,9 @@ describe('AccountService', () => {
       requiresEmailConfirmation: false,
       session: {
         refreshed: false,
+        role: 'owner',
         tenantId: TENANT_ID,
-        tokens: TOKENS,
+        tokens: { ...TOKENS, tenantId: TENANT_ID },
         user: USER,
       },
       user: USER,
@@ -122,8 +153,9 @@ describe('AccountService', () => {
       }),
     ).resolves.toEqual({
       refreshed: true,
+      role: 'owner',
       tenantId: TENANT_ID,
-      tokens: refreshedTokens,
+      tokens: { ...refreshedTokens, tenantId: TENANT_ID },
       user: USER,
     })
     expect(gateway.getUser).not.toHaveBeenCalled()
@@ -135,8 +167,9 @@ describe('AccountService', () => {
 
     await expect(service.authenticate(TOKENS)).resolves.toEqual({
       refreshed: false,
+      role: 'owner',
       tenantId: TENANT_ID,
-      tokens: TOKENS,
+      tokens: { ...TOKENS, tenantId: TENANT_ID },
       user: USER,
     })
     expect(gateway.getUser).toHaveBeenCalledWith(TOKENS.accessToken)

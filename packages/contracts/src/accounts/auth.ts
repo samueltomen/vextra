@@ -28,8 +28,15 @@ export const signUpResponseSchema = z.strictObject({
   }),
 })
 
+export const membershipRoleSchema = z.enum(['owner', 'member', 'viewer'])
+
+export const switchTenantRequestSchema = z.strictObject({
+  tenantId: z.uuid(),
+})
+
 export const authenticatedSessionResponseSchema = z.strictObject({
   data: z.strictObject({
+    role: membershipRoleSchema,
     tenantId: z.uuid(),
     user: authUserSchema,
   }),

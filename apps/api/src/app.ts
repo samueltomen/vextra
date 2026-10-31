@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 
 import {
   createRateLimitGuard,
@@ -18,11 +18,31 @@ export type ApiApplicationDependencies = Readonly<{
   statusPageRoutes: Hono
   maintenanceRoutes: Hono
   apiKeyRoutes: Hono
+  teamRoutes: Hono
+  /** Returns false when the caller's role forbids unsafe methods. */
+  canWrite?: (context: Context) => Promise<boolean>
   workspaceRoutes: Hono
   /** Header carrying the client IP (default: Cloudflare's). */
   clientIpHeader?: string
   rateLimiters?: Readonly<{ auth: RateLimiter; ping: RateLimiter }>
 }>
+
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
+
+const READ_ONLY_PROTECTED_PREFIXES = [
+  '/api/monitors',
+  '/api/monitors/*',
+  '/api/folders',
+  '/api/folders/*',
+  '/api/preferences',
+  '/api/channels',
+  '/api/channels/*',
+  '/api/status-page',
+  '/api/maintenance',
+  '/api/maintenance/*',
+  '/api/api-keys',
+  '/api/api-keys/*',
+] as const
 
 export function createHealthRoutes(): Hono {
   const routes = new Hono()
@@ -113,10 +133,35 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
   app.use('/api/folders/*', originGuard)
   app.use('/api/preferences', originGuard)
   app.use('/api/status-page', originGuard)
+  app.use('/api/team/*', originGuard)
   app.use('/api/api-keys', originGuard)
   app.use('/api/api-keys/*', originGuard)
   app.use('/api/maintenance', originGuard)
   app.use('/api/maintenance/*', originGuard)
+  if (dependencies.canWrite) {
+    const canWrite = dependencies.canWrite
+
+    // Spaces where the caller only has read access reject every write to the
+    // tenant's data. Auth, account, team (leave/accept) and pings are exempt.
+    for (const prefix of READ_ONLY_PROTECTED_PREFIXES) {
+      app.use(prefix, async (context, next) => {
+        if (SAFE_METHODS.has(context.req.method) || (await canWrite(context))) {
+          return next()
+        }
+
+        return context.json(
+          {
+            error: {
+              code: 'read_only',
+              message: 'Your role in this space is read-only',
+            },
+          },
+          403,
+        )
+      })
+    }
+  }
+
   app.route('/', createHealthRoutes())
   app.route('/', dependencies.accountRoutes)
   app.route('/', dependencies.authRoutes)
@@ -129,6 +174,7 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
   app.route('/', dependencies.statusPageRoutes)
   app.route('/', dependencies.maintenanceRoutes)
   app.route('/', dependencies.apiKeyRoutes)
+  app.route('/', dependencies.teamRoutes)
 
   return app
 }

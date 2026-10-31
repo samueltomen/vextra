@@ -7,6 +7,15 @@ export type SessionTokens = Readonly<{
   accessToken: string
   refreshToken: string
   expiresAtMs: number
+  /** Space the user last switched to; verified against memberships on use. */
+  tenantId?: string | undefined
+}>
+
+export type MembershipRole = 'member' | 'owner' | 'viewer'
+
+export type ResolvedMembership = Readonly<{
+  role: MembershipRole
+  tenantId: string
 }>
 
 export type ProviderSession = Readonly<{
@@ -16,6 +25,7 @@ export type ProviderSession = Readonly<{
 
 export type AuthenticatedAccount = Readonly<{
   refreshed: boolean
+  role: MembershipRole
   tenantId: string
   tokens: SessionTokens
   user: AuthUser
@@ -41,10 +51,12 @@ export type Credentials = Readonly<{
 export interface AccountsGateway {
   getUser(accessToken: string): Promise<AuthUser>
   refreshSession(refreshToken: string): Promise<ProviderSession>
+  /** The preferred space if the user still belongs to it, else the oldest. */
   resolvePrimaryTenantId(input: {
     accessToken: string
+    preferredTenantId?: string | undefined
     userId: string
-  }): Promise<string | null>
+  }): Promise<ResolvedMembership | null>
   revokeSession(accessToken: string): Promise<void>
   signIn(input: Credentials): Promise<ProviderSession>
   signUp(input: Credentials): Promise<ProviderSession>
@@ -154,6 +166,7 @@ export class AccountService {
         return await this.resolveAuthenticatedAccount(
           { session: tokens, user },
           false,
+          tokens.tenantId,
         )
       } catch {
         return await this.refresh(tokens)
@@ -187,26 +200,31 @@ export class AccountService {
     return this.resolveAuthenticatedAccount(
       { session, user: refreshed.user },
       true,
+      expiredTokens.tenantId,
     )
   }
 
   private async resolveAuthenticatedAccount(
     providerSession: ProviderSession & { session: SessionTokens },
     refreshed: boolean,
+    preferredTenantId?: string,
   ): Promise<AuthenticatedAccount> {
-    const tenantId = await this.dependencies.gateway.resolvePrimaryTenantId({
+    const membership = await this.dependencies.gateway.resolvePrimaryTenantId({
       accessToken: providerSession.session.accessToken,
+      preferredTenantId,
       userId: providerSession.user.id,
     })
 
-    if (!tenantId) {
+    if (!membership) {
       throw new AccountStateError()
     }
 
     return {
       refreshed,
-      tenantId,
-      tokens: providerSession.session,
+      role: membership.role,
+      tenantId: membership.tenantId,
+      // The resolved space is persisted so a refresh keeps the user in it.
+      tokens: { ...providerSession.session, tenantId: membership.tenantId },
       user: providerSession.user,
     }
   }

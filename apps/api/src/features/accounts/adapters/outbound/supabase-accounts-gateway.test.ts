@@ -150,13 +150,9 @@ describe('SupabaseAccountsGateway', () => {
       from: () => ({
         select: () => ({
           eq: () => ({
-            order: () => ({
-              limit: () => ({
-                maybeSingle: async () => ({
-                  data: null,
-                  error: { code: '42501' },
-                }),
-              }),
+            order: async () => ({
+              data: null,
+              error: { code: '42501' },
             }),
           }),
         }),
@@ -212,14 +208,17 @@ describe('SupabaseAccountsGateway', () => {
     ).rejects.toBeInstanceOf(InvalidCredentialsError)
   })
 
-  it('resolves the primary tenant through a user-scoped client', async () => {
+  it('resolves the preferred space, falling back to the oldest, through a user-scoped client', async () => {
     const client = createClient()
-    const maybeSingle = vi.fn(async () => ({
-      data: { tenant_id: '10000000-0000-4000-8000-000000000001' },
+    const FIRST = '10000000-0000-4000-8000-000000000001'
+    const SECOND = '10000000-0000-4000-8000-000000000002'
+    const order = vi.fn(async () => ({
+      data: [
+        { role: 'owner', tenant_id: FIRST },
+        { role: 'viewer', tenant_id: SECOND },
+      ],
       error: null,
     }))
-    const limit = vi.fn(() => ({ maybeSingle }))
-    const order = vi.fn(() => ({ limit }))
     const eq = vi.fn(() => ({ order }))
     const select = vi.fn(() => ({ eq }))
     const from = vi.fn(() => ({ select }))
@@ -232,11 +231,25 @@ describe('SupabaseAccountsGateway', () => {
         accessToken: 'access-token',
         userId: USER.id,
       }),
-    ).resolves.toBe('10000000-0000-4000-8000-000000000001')
+    ).resolves.toEqual({ role: 'owner', tenantId: FIRST })
+    await expect(
+      gateway.resolvePrimaryTenantId({
+        accessToken: 'access-token',
+        preferredTenantId: SECOND,
+        userId: USER.id,
+      }),
+    ).resolves.toEqual({ role: 'viewer', tenantId: SECOND })
+    await expect(
+      gateway.resolvePrimaryTenantId({
+        accessToken: 'access-token',
+        preferredTenantId: '10000000-0000-4000-8000-0000000000ff',
+        userId: USER.id,
+      }),
+    ).resolves.toEqual({ role: 'owner', tenantId: FIRST })
 
     expect(createUserClient).toHaveBeenCalledWith('access-token')
     expect(from).toHaveBeenCalledWith('tenant_memberships')
-    expect(select).toHaveBeenCalledWith('tenant_id')
+    expect(select).toHaveBeenCalledWith('tenant_id, role')
     expect(eq).toHaveBeenCalledWith('user_id', USER.id)
   })
 
@@ -277,12 +290,10 @@ describe('SupabaseAccountsGateway', () => {
     ).resolves.toBeNull()
 
     const malformed = new SupabaseAccountsGateway(client, () => {
-      const maybeSingle = vi.fn(async () => ({
-        data: { tenant_id: 42 },
+      const order = vi.fn(async () => ({
+        data: [{ role: 'owner', tenant_id: 42 }],
         error: null,
       }))
-      const limit = vi.fn(() => ({ maybeSingle }))
-      const order = vi.fn(() => ({ limit }))
       const eq = vi.fn(() => ({ order }))
       const select = vi.fn(() => ({ eq }))
 

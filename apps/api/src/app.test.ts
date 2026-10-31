@@ -16,6 +16,7 @@ function createApp() {
     statusPageRoutes: new Hono(),
     maintenanceRoutes: new Hono(),
     apiKeyRoutes: new Hono(),
+    teamRoutes: new Hono(),
     workspaceRoutes: new Hono(),
   })
 }
@@ -61,6 +62,7 @@ describe('rate limiting wiring', () => {
       statusPageRoutes: new Hono(),
       maintenanceRoutes: new Hono(),
       apiKeyRoutes: new Hono(),
+      teamRoutes: new Hono(),
       workspaceRoutes: new Hono(),
       rateLimiters: { auth: { allow }, ping: { allow } },
     })
@@ -118,11 +120,74 @@ describe('cache policy', () => {
       notificationRoutes: new Hono(),
       pingRoutes: new Hono(),
       statusPageRoutes,
+      teamRoutes: new Hono(),
       workspaceRoutes: new Hono(),
     })
     const response = await app.request('/api/status/x/badge.svg')
 
     expect(response.headers.get('cache-control')).toBe('public, max-age=300')
     expect(response.headers.get('x-content-type-options')).toBe('nosniff')
+  })
+})
+
+describe('read-only role guard', () => {
+  function appWith(canWrite: () => Promise<boolean>) {
+    const ok = (c: { json: (body: unknown) => Response }) => c.json({ ok: 1 })
+
+    return createApiApp({
+      accountRoutes: new Hono(),
+      allowedOrigin: 'http://localhost:5173',
+      apiKeyRoutes: new Hono(),
+      authRoutes: new Hono().post('/api/auth/login', ok),
+      canWrite,
+      channelRoutes: new Hono(),
+      liveRoutes: new Hono(),
+      maintenanceRoutes: new Hono(),
+      monitorRoutes: new Hono()
+        .get('/api/monitors', ok)
+        .post('/api/monitors', ok)
+        .delete('/api/monitors/:id', ok),
+      notificationRoutes: new Hono(),
+      pingRoutes: new Hono().post('/api/ping', ok),
+      statusPageRoutes: new Hono(),
+      teamRoutes: new Hono().delete('/api/team/members/:id', ok),
+      workspaceRoutes: new Hono(),
+    })
+  }
+
+  const request = (app: Hono, method: string, path: string) =>
+    app.request(path, {
+      headers: { origin: 'http://localhost:5173' },
+      method,
+    })
+
+  it('rejects writes of a read-only role but still allows reads', async () => {
+    const app = appWith(async () => false)
+
+    expect((await request(app, 'GET', '/api/monitors')).status).toBe(200)
+
+    const post = await request(app, 'POST', '/api/monitors')
+
+    expect(post.status).toBe(403)
+    await expect(post.json()).resolves.toMatchObject({
+      error: { code: 'read_only' },
+    })
+    expect((await request(app, 'DELETE', '/api/monitors/x')).status).toBe(403)
+  })
+
+  it('leaves auth, pings and leaving a team available to every role', async () => {
+    const app = appWith(async () => false)
+
+    expect((await request(app, 'POST', '/api/auth/login')).status).toBe(200)
+    expect((await request(app, 'POST', '/api/ping')).status).toBe(200)
+    expect((await request(app, 'DELETE', '/api/team/members/x')).status).toBe(
+      200,
+    )
+  })
+
+  it('lets writers through', async () => {
+    const app = appWith(async () => true)
+
+    expect((await request(app, 'POST', '/api/monitors')).status).toBe(200)
   })
 })

@@ -23,6 +23,7 @@ const TOKENS = {
 }
 const ACCOUNT: AuthenticatedAccount = {
   refreshed: false,
+  role: 'owner',
   tenantId: TENANT_ID,
   tokens: TOKENS,
   user: USER,
@@ -236,11 +237,80 @@ describe('account HTTP routes', () => {
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual({
-      data: { tenantId: TENANT_ID, user: USER },
+      data: { role: 'owner', tenantId: TENANT_ID, user: USER },
     })
     expect(response.headers.get('set-cookie')).toContain(
       `${SESSION_COOKIE_NAME}=`,
     )
+  })
+
+  describe('POST /api/auth/tenant', () => {
+    const OTHER = '10000000-0000-4000-8000-000000000002'
+
+    async function switchTo(
+      routes: ReturnType<typeof createRoutes>,
+      body: unknown,
+      withCookie = true,
+    ) {
+      const cookie = await encodeSessionCookie(routes.codec, TOKENS)
+
+      return routes.app.request(
+        createJsonRequest(
+          '/api/auth/tenant',
+          body,
+          withCookie ? { cookie: `${SESSION_COOKIE_NAME}=${cookie}` } : {},
+        ),
+      )
+    }
+
+    it('persists the chosen space in the encrypted session cookie', async () => {
+      const authenticate = vi.fn(async () => ({
+        ...ACCOUNT,
+        role: 'viewer' as const,
+        tenantId: OTHER,
+        tokens: { ...TOKENS, tenantId: OTHER },
+      }))
+      const routes = createRoutes({ authenticate })
+      const response = await switchTo(routes, { tenantId: OTHER })
+
+      expect(response.status).toBe(200)
+      await expect(response.json()).resolves.toEqual({
+        data: { role: 'viewer', tenantId: OTHER, user: USER },
+      })
+      expect(authenticate).toHaveBeenCalledWith(
+        expect.objectContaining({ tenantId: OTHER }),
+      )
+      expect(response.headers.get('set-cookie')).toContain(
+        `${SESSION_COOKIE_NAME}=`,
+      )
+    })
+
+    it('refuses a space the user does not belong to', async () => {
+      const routes = createRoutes()
+      const response = await switchTo(routes, { tenantId: OTHER })
+
+      expect(response.status).toBe(403)
+      expect(response.headers.get('set-cookie')).toBeNull()
+    })
+
+    it('requires a session and a valid body', async () => {
+      const routes = createRoutes()
+
+      expect((await switchTo(routes, { tenantId: OTHER }, false)).status).toBe(
+        401,
+      )
+      expect((await switchTo(routes, { tenantId: 'nope' })).status).toBe(422)
+    })
+
+    it('clears an expired session', async () => {
+      const routes = createRoutes({ authenticate: async () => null })
+      const response = await switchTo(routes, { tenantId: OTHER })
+
+      expect(response.status).toBe(401)
+      expect(response.headers.get('set-cookie')).toContain(
+        `${SESSION_COOKIE_NAME}=;`,
+      )
+    })
   })
 
   it('does not rewrite a cookie when the session did not refresh', async () => {
