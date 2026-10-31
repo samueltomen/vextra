@@ -57,6 +57,19 @@ describe('StatusPageCard', () => {
     expect(
       await screen.findByRole('link', { name: 'Ouvrir la page publique' }),
     ).toHaveAttribute('href', expect.stringContaining('/status/acme-status'))
+    expect(screen.getByAltText('Badge de statut')).toHaveAttribute(
+      'src',
+      expect.stringContaining('/api/status/acme-status/badge.svg'),
+    )
+    expect(screen.getByAltText('Badge de disponibilité')).toHaveAttribute(
+      'src',
+      expect.stringContaining('metric=uptime'),
+    )
+    expect(
+      screen.getByText(
+        /\[!\[Statut\]\(.*badge\.svg\)\]\(.*\/status\/acme-status\)/,
+      ),
+    ).toBeInTheDocument()
   })
 
   it('reports an address that is already taken', async () => {

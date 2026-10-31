@@ -5,6 +5,11 @@ import {
 import { Hono, type Context } from 'hono'
 
 import {
+  buildBadge,
+  renderBadgeSvg,
+  type Badge,
+} from '../../../application/status-badge.ts'
+import {
   StatusPageSlugTakenError,
   type ManageStatusPage,
   type ReadPublicStatusPage,
@@ -107,6 +112,42 @@ export function createStatusPageRoutes(
         : errorBody(context, 404, 'not_found', 'Status page not found')
     } catch {
       return errorBody(context, 500, 'internal_error', 'Request failed')
+    }
+  })
+
+  routes.get('/api/status/:slug/badge.svg', async (context) => {
+    const slug = statusPageSlugSchema.safeParse(context.req.param('slug'))
+    const metric =
+      context.req.query('metric') === 'uptime' ? 'uptime' : 'status'
+    const respond = (badge: Badge, status: 200 | 404 = 200) => {
+      context.header('Content-Type', 'image/svg+xml; charset=utf-8')
+      context.header('Cache-Control', 'public, max-age=300')
+
+      return context.body(renderBadgeSvg(badge), status)
+    }
+
+    if (!slug.success) {
+      return respond(
+        { color: '#6e7781', label: 'statut', message: 'introuvable' },
+        404,
+      )
+    }
+
+    try {
+      const page = await dependencies.publicPage.read(slug.data)
+
+      return page
+        ? respond(buildBadge(page, metric))
+        : respond(
+            { color: '#6e7781', label: 'statut', message: 'introuvable' },
+            404,
+          )
+    } catch {
+      return respond({
+        color: '#6e7781',
+        label: 'statut',
+        message: 'indisponible',
+      })
     }
   })
 
