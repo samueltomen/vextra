@@ -295,7 +295,9 @@ describe('weekly report', () => {
   it('lets the owner turn the Monday report off', async () => {
     const { fetchMock } = await renderAppWithMock()
 
-    const toggle = await screen.findByLabelText(/Rapport hebdomadaire/)
+    const toggle = await screen.findByLabelText(
+      /Rapport hebdomadaire.*Un résumé/,
+    )
 
     expect(toggle).toBeChecked()
     fireEvent.click(toggle)
