@@ -5,7 +5,7 @@ import {
   toCronExpression,
 } from './integration-snippets.ts'
 
-const PING_URL = 'https://cronping.example.test/api/ping'
+const PING_URL = 'https://vextra.example.test/api/ping'
 
 function snippet(token: string | null, id: string, intervalMinutes?: number) {
   const found = buildIntegrationSnippets({
@@ -24,11 +24,11 @@ function snippet(token: string | null, id: string, intervalMinutes?: number) {
 describe('buildIntegrationSnippets', () => {
   it('references the environment variable when the token is not revealed', () => {
     expect(snippet(null, 'curl')).toContain(
-      'Authorization: Bearer $CRONPING_TOKEN',
+      'Authorization: Bearer $VEXTRA_TOKEN',
     )
-    expect(snippet(null, 'python')).toContain('os.environ["CRONPING_TOKEN"]')
-    expect(snippet(null, 'node')).toContain('process.env.CRONPING_TOKEN')
-    expect(snippet(null, 'powershell')).toContain('$env:CRONPING_TOKEN')
+    expect(snippet(null, 'python')).toContain('os.environ["VEXTRA_TOKEN"]')
+    expect(snippet(null, 'node')).toContain('process.env.VEXTRA_TOKEN')
+    expect(snippet(null, 'powershell')).toContain('$env:VEXTRA_TOKEN')
   })
 
   it('embeds the revealed token in every language except GitHub Actions', () => {
@@ -44,7 +44,7 @@ describe('buildIntegrationSnippets', () => {
     }
 
     expect(snippet('cp_secret', 'github')).not.toContain('cp_secret')
-    expect(snippet('cp_secret', 'github')).toContain('secrets.CRONPING_TOKEN')
+    expect(snippet('cp_secret', 'github')).toContain('secrets.VEXTRA_TOKEN')
   })
 
   it('targets the ping endpoint with a POST request everywhere', () => {

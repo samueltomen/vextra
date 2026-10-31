@@ -22,7 +22,7 @@ appels cross-site : la connexion échouerait.
 
 Servir le web et l'API **sous une seule origine** (`https://app.<domaine>`) :
 
-- un seul Worker (`cronping`) sert le SPA en assets statiques et l'API sous
+- un seul Worker (`vextra`) sert le SPA en assets statiques et l'API sous
   `/api/*` (`run_worker_first = ["/api/*"]`) : la même origine est garantie par
   construction, sans route ni domaine personnalisé obligatoires ;
 - un domaine personnalisé (`app.<domaine>`) pourra être attaché plus tard au

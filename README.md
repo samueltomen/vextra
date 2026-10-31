@@ -1,6 +1,6 @@
-# CronPing
+# Vextra
 
-CronPing est un SaaS multi-tenant de heartbeat pour tâches planifiées. Il
+Vextra est un SaaS multi-tenant de heartbeat pour tâches planifiées. Il
 détecte l'absence d'exécution d'un script et alerte son propriétaire sans
 recevoir ni stocker le contenu du script ou du cron.
 
@@ -89,10 +89,10 @@ La livraison e-mail nécessite aussi `RESEND_API_KEY` et
 l'outbox et aucun envoi externe n'est tenté.
 
 Pour les tests sans domaine vérifié, utiliser
-`RESEND_FROM_EMAIL=CronPing <onboarding@resend.dev>` et une adresse de compte
+`RESEND_FROM_EMAIL=Vextra <onboarding@resend.dev>` et une adresse de compte
 liée au compte Resend. Pour envoyer à des utilisateurs quelconques, vérifier un
 domaine dans Resend puis utiliser une adresse de ce domaine, par exemple
-`CronPing <alerts@mail.votre-domaine.com>`.
+`Vextra <alerts@mail.votre-domaine.com>`.
 
 ## Développement
 
@@ -143,8 +143,8 @@ Le heartbeat public utilise :
 ```bash
 curl --fail --silent --show-error --retry 3 \
   --request POST \
-  --header "Authorization: Bearer $CRONPING_TOKEN" \
-  "https://api.cronping.app/api/ping"
+  --header "Authorization: Bearer $VEXTRA_TOKEN" \
+  "https://api.vextra.app/api/ping"
 ```
 
 La requête ne doit contenir ni corps, ni paramètres de requête. Le token brut
@@ -157,7 +157,7 @@ envoyé par le navigateur est rejeté. Un libellé local n'est jamais inclus dan
 une requête API.
 
 La session est chiffrée avec AES-GCM et transmise uniquement via
-`__Host-cronping_session`, avec `HttpOnly`, `Secure`, `SameSite=Strict` et
+`__Host-vextra_session`, avec `HttpOnly`, `Secure`, `SameSite=Strict` et
 `Path=/`. Les JWT Supabase ne sont jamais renvoyés au navigateur. Les mutations
 du dashboard exigent l'origine exacte configurée dans `APP_ORIGIN` ; le futur
 heartbeat serveur restera hors de cette garde navigateur.
@@ -171,15 +171,15 @@ se fait sur une seule origine (voir
 
 ## Déploiement
 
-Un seul Worker Cloudflare (`cronping`, environnement `production` de
+Un seul Worker Cloudflare (`vextra`, environnement `production` de
 `apps/api/wrangler.toml`) sert le SPA en assets statiques et l'API sous
 `/api/*`, donc sous une seule origine (ADR 0001).
 
-1. Se connecter : `pnpm --filter @cronping/api exec wrangler login`.
+1. Se connecter : `pnpm --filter @vextra/api exec wrangler login`.
 2. Appliquer les migrations sur le projet Supabase de production :
    `pnpm exec supabase link --project-ref <ref>` puis `pnpm exec supabase db push`.
 3. Définir les secrets (une commande par secret) :
-   `pnpm --filter @cronping/api exec wrangler secret put <NOM> -e production`
+   `pnpm --filter @vextra/api exec wrangler secret put <NOM> -e production`
    pour `APP_ORIGIN` (l'URL publique du Worker), `SUPABASE_URL`,
    `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
    `SESSION_ENCRYPTION_KEY`, `PING_TOKEN_PEPPER`, `RESEND_API_KEY` et
@@ -285,7 +285,7 @@ pnpm exec supabase stop
 ```
 
 Le service Analytics local est désactivé pour éviter des ports et services
-inutiles au développement de CronPing.
+inutiles au développement de Vextra.
 
 Le Cron Trigger Cloudflare s'exécute toutes les minutes. Il ouvre les incidents
 échus, puis traite un lot borné de livraisons e-mail. L'adresse du propriétaire
@@ -337,6 +337,6 @@ l'outillage et ne doivent jamais être commités.
 
 ## Licence et contribution
 
-CronPing est un logiciel libre, distribué sous [licence MIT](LICENSE). Les
+Vextra est un logiciel libre, distribué sous [licence MIT](LICENSE). Les
 contributions sont les bienvenues : voir [CONTRIBUTING.md](CONTRIBUTING.md), le
 [code de conduite](CODE_OF_CONDUCT.md) et la [politique de sécurité](SECURITY.md).

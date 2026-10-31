@@ -1,4 +1,4 @@
-import { signInRequestSchema, signUpRequestSchema } from '@cronping/contracts'
+import { signInRequestSchema, signUpRequestSchema } from '@vextra/contracts'
 import { Hono, type Context } from 'hono'
 
 import {

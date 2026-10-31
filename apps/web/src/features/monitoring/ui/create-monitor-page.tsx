@@ -275,7 +275,7 @@ function CreateMonitorForm({
             Ajouter un heartbeat
           </h1>
           <p className="mt-3 max-w-2xl text-muted">
-            CronPing ne reçoit qu&apos;un signal. Le contenu du script et de la
+            Vextra ne reçoit qu&apos;un signal. Le contenu du script et de la
             tâche planifiée reste sur votre serveur.
           </p>
 
@@ -483,7 +483,7 @@ function CreateMonitorForm({
               <h2 className="text-sm font-semibold">Fonctionnement</h2>
             </div>
             <ol className="mt-5 space-y-4 text-sm text-muted">
-              <li>1. CronPing génère une commande unique.</li>
+              <li>1. Vextra génère une commande unique.</li>
               <li>2. Votre script appelle cette commande à la fin.</li>
               <li>3. Sans signal avant l’échéance, une alerte est créée.</li>
             </ol>

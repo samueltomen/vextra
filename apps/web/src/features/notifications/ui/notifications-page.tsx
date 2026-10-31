@@ -104,8 +104,8 @@ export function NotificationsPage() {
         </p>
         <h1 className="text-xl font-semibold tracking-tight">Notifications</h1>
         <p className="mt-3 max-w-2xl text-muted">
-          CronPing alerte l’adresse de votre compte lorsqu’un incident s’ouvre
-          ou se résout.
+          Vextra alerte l’adresse de votre compte lorsqu’un incident s’ouvre ou
+          se résout.
         </p>
       </header>
 

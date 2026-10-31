@@ -7,7 +7,7 @@ import {
 } from './render-notification-email.ts'
 
 const MONITOR_ID = '20000000-0000-4000-8000-000000000001'
-const APP_ORIGIN = 'https://cronping.example.test'
+const APP_ORIGIN = 'https://vextra.example.test'
 
 describe('renderNotificationEmail', () => {
   it('renders an incident alert with the app palette and a monitor link', () => {
@@ -17,7 +17,7 @@ describe('renderNotificationEmail', () => {
       monitorId: MONITOR_ID,
     })
 
-    expect(email.subject).toBe('CronPing · heartbeat manquant')
+    expect(email.subject).toBe('Vextra · heartbeat manquant')
     expect(email.html).toContain('<!doctype html>')
     expect(email.html).toContain('#0f766e')
     expect(email.html).toContain('#d6403a')
@@ -34,7 +34,7 @@ describe('renderNotificationEmail', () => {
       monitorId: MONITOR_ID,
     })
 
-    expect(email.subject).toBe('CronPing · heartbeat reçu')
+    expect(email.subject).toBe('Vextra · heartbeat reçu')
     expect(email.html).toContain('#16a36a')
     expect(email.html).toContain('Incident résolu')
     expect(email.html).not.toContain('#d6403a')
@@ -93,7 +93,7 @@ describe('renderNotificationEmail', () => {
       monitorId: MONITOR_ID,
     })
 
-    expect(email.subject).toBe('CronPing · exécution en échec')
+    expect(email.subject).toBe('Vextra · exécution en échec')
     expect(email.html).toContain('Exécution en échec')
     expect(email.html).toContain('#d6403a')
     expect(email.text).toContain('échec')
@@ -127,7 +127,7 @@ describe('renderWeeklyReportEmail', () => {
       report: REPORT,
     })
 
-    expect(email.subject).toBe('CronPing · votre rapport de la semaine')
+    expect(email.subject).toBe('Vextra · votre rapport de la semaine')
     expect(email.html).toContain('Bonjour Ada &lt;b&gt;,')
     expect(email.html).toContain('Sync &lt;i&gt;Stripe&lt;/i&gt;')
     expect(email.html).not.toContain('<i>Stripe</i>')

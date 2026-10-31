@@ -24,7 +24,7 @@ const VARIANTS: Readonly<Record<NotificationKind, Variant>> = {
     badge: 'Incident ouvert',
     body: 'Votre moniteur n’a pas reçu de heartbeat dans la fenêtre attendue. Vérifiez que la tâche planifiée s’exécute toujours.',
     heading: 'Heartbeat manquant',
-    subject: 'CronPing · heartbeat manquant',
+    subject: 'Vextra · heartbeat manquant',
   },
   run_failed: {
     accent: '#d6403a',
@@ -32,7 +32,7 @@ const VARIANTS: Readonly<Record<NotificationKind, Variant>> = {
     badge: 'Exécution en échec',
     body: 'Votre job a signalé lui-même un échec. Consultez l’historique des exécutions du moniteur pour la durée et l’heure.',
     heading: 'Exécution en échec',
-    subject: 'CronPing · exécution en échec',
+    subject: 'Vextra · exécution en échec',
   },
   incident_resolved: {
     accent: '#16a36a',
@@ -40,7 +40,7 @@ const VARIANTS: Readonly<Record<NotificationKind, Variant>> = {
     badge: 'Incident résolu',
     body: 'Votre moniteur a de nouveau reçu un heartbeat. Tout est rentré dans l’ordre.',
     heading: 'Heartbeat reçu',
-    subject: 'CronPing · heartbeat reçu',
+    subject: 'Vextra · heartbeat reçu',
   },
 }
 
@@ -100,7 +100,7 @@ export function renderNotificationEmail(
       <tr><td style="background:#0a1816;border-radius:16px 16px 0 0;padding:20px 28px;">
         <table role="presentation" cellspacing="0" cellpadding="0"><tr>
           <td style="width:32px;height:32px;border-radius:8px;background:#2dd4bf;color:#032421;text-align:center;font:700 18px/32px -apple-system,'Segoe UI',Roboto,sans-serif;">&#8767;</td>
-          <td style="padding-left:12px;font:600 18px -apple-system,'Segoe UI',Roboto,sans-serif;color:#e8f1ef;">CronPing</td>
+          <td style="padding-left:12px;font:600 18px -apple-system,'Segoe UI',Roboto,sans-serif;color:#e8f1ef;">Vextra</td>
         </tr></table>
       </td></tr>
       <tr><td class="cp-card cp-pad" style="background:#ffffff;border:1px solid #d8e1de;border-top:4px solid ${variant.accent};border-radius:0 0 16px 16px;padding:32px 28px;">
@@ -113,7 +113,7 @@ export function renderNotificationEmail(
         <a class="cp-cta" href="${safeMonitorUrl}" style="display:inline-block;padding:13px 22px;border-radius:10px;background:#0f766e;color:#ffffff;font:600 15px -apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;">Ouvrir le moniteur</a>
       </td></tr>
       <tr><td style="padding:20px 8px 0;text-align:center;">
-        <p class="cp-muted" style="margin:0;font:400 12px/1.6 -apple-system,'Segoe UI',Roboto,sans-serif;color:#55655f;">Vous recevez cet e-mail car vous êtes propriétaire de ce moniteur CronPing.<br><a class="cp-link" href="${safeSettingsUrl}" style="color:#0f766e;">Gérer mes notifications</a></p>
+        <p class="cp-muted" style="margin:0;font:400 12px/1.6 -apple-system,'Segoe UI',Roboto,sans-serif;color:#55655f;">Vous recevez cet e-mail car vous êtes propriétaire de ce moniteur Vextra.<br><a class="cp-link" href="${safeSettingsUrl}" style="color:#0f766e;">Gérer mes notifications</a></p>
       </td></tr>
     </table>
   </td></tr>
@@ -122,7 +122,7 @@ export function renderNotificationEmail(
 </html>`
 
   const text = [
-    `CronPing · ${variant.heading}`,
+    `Vextra · ${variant.heading}`,
     '',
     variant.body,
     '',
@@ -143,7 +143,7 @@ export function renderWeeklyReportEmail(
 ): RenderedEmail {
   const { report } = input
   const origin = input.appOrigin.replace(/\/+$/u, '')
-  const subject = 'CronPing · votre rapport de la semaine'
+  const subject = 'Vextra · votre rapport de la semaine'
   const greeting = report.displayName?.trim()
     ? `Bonjour ${report.displayName.trim()},`
     : 'Bonjour,'
@@ -197,13 +197,13 @@ export function renderWeeklyReportEmail(
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="cp-canvas" style="background:#f6f7f9;">
   <tr><td align="center" style="padding:32px 16px;">
     <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="width:100%;max-width:560px;">
-      <tr><td style="background:#0a1816;border-radius:16px 16px 0 0;padding:20px 28px;font:600 18px -apple-system,'Segoe UI',Roboto,sans-serif;color:#e8f1ef;">CronPing · Rapport hebdomadaire</td></tr>
+      <tr><td style="background:#0a1816;border-radius:16px 16px 0 0;padding:20px 28px;font:600 18px -apple-system,'Segoe UI',Roboto,sans-serif;color:#e8f1ef;">Vextra · Rapport hebdomadaire</td></tr>
       <tr><td class="cp-card" style="background:#ffffff;border:1px solid #e3e6eb;border-top:4px solid ${accent};border-radius:0 0 16px 16px;padding:28px;">
         <p class="cp-text" style="margin:0 0 6px;font:600 16px -apple-system,'Segoe UI',Roboto,sans-serif;color:#10201e;">${escapeHtml(greeting)}</p>
         <p class="cp-muted" style="margin:0 0 20px;font:400 14px/1.6 -apple-system,'Segoe UI',Roboto,sans-serif;color:#55655f;">${healthy ? 'Aucun incident en cours : vos jobs sont dans les temps.' : 'Un ou plusieurs incidents sont encore ouverts : pensez à les consulter.'} Voici le résumé des 7 derniers jours.</p>
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0">${statRows}</table>
         ${problems.length > 0 ? `<p class="cp-text" style="margin:22px 0 8px;font:600 14px -apple-system,'Segoe UI',Roboto,sans-serif;color:#10201e;">Moniteurs à surveiller</p><ul style="margin:0;padding-left:18px;">${problemRows}</ul>` : ''}
-        <p style="margin:26px 0 0;"><a class="cp-cta" href="${escapeHtml(origin)}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#0f766e;color:#ffffff;font:600 15px -apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;">Ouvrir CronPing</a></p>
+        <p style="margin:26px 0 0;"><a class="cp-cta" href="${escapeHtml(origin)}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#0f766e;color:#ffffff;font:600 15px -apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;">Ouvrir Vextra</a></p>
       </td></tr>
       <tr><td style="padding:18px 8px 0;text-align:center;"><p class="cp-muted" style="margin:0;font:400 12px/1.6 -apple-system,'Segoe UI',Roboto,sans-serif;color:#55655f;">Rapport envoyé le lundi à 9 h UTC. <a class="cp-link" href="${escapeHtml(origin)}/settings" style="color:#0f766e;">Désactiver dans les réglages</a></p></td></tr>
     </table>
@@ -230,7 +230,7 @@ export function renderWeeklyReportEmail(
         ]
       : []),
     '',
-    `Ouvrir CronPing : ${origin}`,
+    `Ouvrir Vextra : ${origin}`,
     `Désactiver ce rapport : ${origin}/settings`,
   ].join('\n')
 

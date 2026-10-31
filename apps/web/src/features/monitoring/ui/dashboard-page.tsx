@@ -42,7 +42,7 @@ import { StatusSummary } from './status-summary.tsx'
 type PreviewState = 'loading' | 'empty' | 'error'
 type DashboardView = 'grid' | 'list'
 
-const VIEW_STORAGE_KEY = 'cronping.dashboard-view'
+const VIEW_STORAGE_KEY = 'vextra.dashboard-view'
 const REFRESH_INTERVAL_MS = 30_000
 
 const SORT_OPTIONS = [

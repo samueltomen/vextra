@@ -14,8 +14,8 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 # Pas de VITE_API_URL : le navigateur appelle l'API sur la même origine.
-RUN pnpm --filter @cronping/web build \
- && pnpm --filter @cronping/api build:node
+RUN pnpm --filter @vextra/web build \
+ && pnpm --filter @vextra/api build:node
 
 # --- Exécution : aucune dépendance, juste Node et deux dossiers ---------------
 FROM node:22-alpine

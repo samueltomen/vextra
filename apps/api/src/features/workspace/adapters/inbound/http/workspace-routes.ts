@@ -4,7 +4,7 @@ import {
   setMonitorFolderRequestSchema,
   updateMonitorDetailsRequestSchema,
   updatePreferencesRequestSchema,
-} from '@cronping/contracts'
+} from '@vextra/contracts'
 import { Hono, type Context } from 'hono'
 
 import {

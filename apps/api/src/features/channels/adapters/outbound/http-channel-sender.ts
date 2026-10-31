@@ -11,7 +11,7 @@ const TITLES: Readonly<Record<AlertEvent, string>> = {
   incident_resolved: 'Incident résolu',
   reminder: 'Rappel : incident toujours ouvert',
   run_failed: 'Exécution en échec',
-  test: 'Test d’alerte CronPing',
+  test: 'Test d’alerte Vextra',
 }
 
 const REQUEST_TIMEOUT_MS = 8_000
@@ -67,13 +67,13 @@ export function buildChannelRequest(
     case 'pagerduty':
       return {
         body: {
-          dedup_key: alert.event === 'test' ? 'cronping-test' : alert.monitorId,
+          dedup_key: alert.event === 'test' ? 'vextra-test' : alert.monitorId,
           event_action:
             alert.event === 'incident_resolved' ? 'resolve' : 'trigger',
           payload: {
             custom_details: { url },
             severity: alert.event === 'test' ? 'info' : 'error',
-            source: 'cronping',
+            source: 'vextra',
             summary: text,
           },
           routing_key: target,
@@ -95,7 +95,7 @@ export function buildChannelRequest(
             alert.openedAtMs === null
               ? null
               : new Date(alert.openedAtMs).toISOString(),
-          source: 'cronping',
+          source: 'vextra',
           text,
           title,
         },

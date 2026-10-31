@@ -9,7 +9,7 @@ import {
 
 const DEPENDENCIES = {
   appOrigin: 'https://app.test',
-  from: 'CronPing <alerts@example.test>',
+  from: 'Vextra <alerts@example.test>',
 }
 
 const REPORT: WeeklyReport = {
@@ -45,7 +45,7 @@ describe('SmtpNotificationSender', () => {
 
     expect(message).toMatchObject({
       from: DEPENDENCIES.from,
-      subject: 'CronPing · heartbeat manquant',
+      subject: 'Vextra · heartbeat manquant',
       to: 'owner@example.test',
     })
     expect(message?.html).toContain('Sync Stripe')
@@ -93,7 +93,7 @@ describe('SmtpWeeklyReportSender', () => {
     }).send(REPORT)
 
     expect(sendMail.mock.calls[0]?.[0]).toMatchObject({
-      subject: 'CronPing · votre rapport de la semaine',
+      subject: 'Vextra · votre rapport de la semaine',
       to: 'owner@example.test',
     })
   })

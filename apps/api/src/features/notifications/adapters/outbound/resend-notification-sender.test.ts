@@ -25,8 +25,8 @@ describe('ResendNotificationSender', () => {
     vi.stubGlobal('fetch', fetchMock)
     const sender = new ResendNotificationSender({
       apiKey: 're_test',
-      appOrigin: 'https://cronping.example.test',
-      from: 'CronPing <alerts@example.test>',
+      appOrigin: 'https://vextra.example.test',
+      from: 'Vextra <alerts@example.test>',
     })
 
     await expect(sender.send(INPUT)).resolves.toBeUndefined()
@@ -38,7 +38,7 @@ describe('ResendNotificationSender', () => {
       Authorization: 'Bearer re_test',
     })
     expect(body).toMatchObject({
-      from: 'CronPing <alerts@example.test>',
+      from: 'Vextra <alerts@example.test>',
       to: INPUT.to,
     })
     expect(body.subject).toContain('heartbeat')
@@ -60,8 +60,8 @@ describe('ResendNotificationSender', () => {
     )
     const sender = new ResendNotificationSender({
       apiKey: 're_test',
-      appOrigin: 'https://cronping.example.test',
-      from: 'CronPing <alerts@example.test>',
+      appOrigin: 'https://vextra.example.test',
+      from: 'Vextra <alerts@example.test>',
     })
 
     await expect(sender.send(INPUT)).rejects.toThrow('email delivery failed')
@@ -84,8 +84,8 @@ describe('ResendNotificationSender', () => {
     )
     const sender = new ResendNotificationSender({
       apiKey: 're_test',
-      appOrigin: 'https://cronping.example.test',
-      from: 'CronPing <alerts@example.test>',
+      appOrigin: 'https://vextra.example.test',
+      from: 'Vextra <alerts@example.test>',
     })
 
     await expect(sender.send(INPUT)).rejects.toThrow('email delivery failed')
@@ -117,7 +117,7 @@ describe('ResendWeeklyReportSender', () => {
   const dependencies = {
     apiKey: 're_test',
     appOrigin: 'https://app.test',
-    from: 'CronPing <reports@example.test>',
+    from: 'Vextra <reports@example.test>',
   }
 
   it('sends the HTML report to the owner through Resend', async () => {
@@ -135,7 +135,7 @@ describe('ResendWeeklyReportSender', () => {
     expect(url).toBe('https://api.resend.com/emails')
     expect(body).toMatchObject({
       from: dependencies.from,
-      subject: 'CronPing · votre rapport de la semaine',
+      subject: 'Vextra · votre rapport de la semaine',
       to: 'owner@example.test',
     })
     expect(body.html).toContain('<!doctype html>')

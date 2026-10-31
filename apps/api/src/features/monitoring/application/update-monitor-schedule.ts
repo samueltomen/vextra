@@ -2,7 +2,7 @@ import {
   assertMonitorSchedule,
   maxCronGapSeconds,
   parseCronExpression,
-} from '@cronping/domain'
+} from '@vextra/domain'
 
 export type UpdateMonitorScheduleInput = Readonly<{
   cron?: Readonly<{ expression: string; timezone: string }> | undefined

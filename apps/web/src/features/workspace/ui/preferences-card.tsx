@@ -1,4 +1,4 @@
-import type { Preferences } from '@cronping/contracts'
+import type { Preferences } from '@vextra/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { SlidersHorizontal } from 'lucide-react'
 import { useState, type FormEvent } from 'react'

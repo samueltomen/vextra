@@ -26,7 +26,7 @@ import {
 } from './node/static-security.ts'
 
 const TICK_INTERVAL_MS = 60_000
-const INTERNAL_CLIENT_IP_HEADER = 'x-cronping-client-ip'
+const INTERNAL_CLIENT_IP_HEADER = 'x-vextra-client-ip'
 
 function log(event: string, details: Record<string, unknown> = {}) {
   console.info(JSON.stringify({ event, ...details }))

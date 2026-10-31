@@ -1,4 +1,4 @@
-# Contribuer à CronPing
+# Contribuer à Vextra
 
 Merci de l'intérêt que vous portez au projet. Le dépôt est sous licence MIT.
 

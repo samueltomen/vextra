@@ -26,7 +26,7 @@ describe('GET /api/health', () => {
     expect(response.headers.get('x-content-type-options')).toBe('nosniff')
     expect(response.headers.get('x-frame-options')).toBe('DENY')
     await expect(response.json()).resolves.toEqual({
-      service: 'cronping-api',
+      service: 'vextra-api',
       status: 'ok',
     })
   })

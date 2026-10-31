@@ -1,4 +1,4 @@
-import { nextCronOccurrence, parseCronExpression } from '@cronping/domain'
+import { nextCronOccurrence, parseCronExpression } from '@vextra/domain'
 
 export type StaleCronMonitor = Readonly<{
   cronExpression: string

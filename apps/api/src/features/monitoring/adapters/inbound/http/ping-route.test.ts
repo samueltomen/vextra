@@ -17,7 +17,7 @@ function createRequest(
     headers?: Record<string, string>
   } = {},
 ) {
-  return new Request('https://api.cronping.test/api/ping', {
+  return new Request('https://api.vextra.test/api/ping', {
     ...init,
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -60,7 +60,7 @@ describe('POST /api/ping', () => {
     const { app, execute } = createApp()
     const queryResponse = await app.request(createRequest(TOKEN, {}), undefined)
     const queryRequest = new Request(
-      'https://api.cronping.test/api/ping?server=production',
+      'https://api.vextra.test/api/ping?server=production',
       { headers: { Authorization: `Bearer ${TOKEN}` }, method: 'POST' },
     )
     const queryParamResponse = await app.request(queryRequest)
@@ -109,7 +109,7 @@ describe('POST /api/ping', () => {
 
   it('refuses non-POST methods with Allow: POST', async () => {
     const { app } = createApp()
-    const response = await app.request('https://api.cronping.test/api/ping')
+    const response = await app.request('https://api.vextra.test/api/ping')
 
     expect(response.status).toBe(405)
     expect(response.headers.get('allow')).toBe('POST')
@@ -118,7 +118,7 @@ describe('POST /api/ping', () => {
 
 describe('ping by URL and run events', () => {
   const url = (path: string, method = 'GET') =>
-    new Request(`https://api.cronping.test/api/ping/${path}`, { method })
+    new Request(`https://api.vextra.test/api/ping/${path}`, { method })
 
   it.each(['GET', 'HEAD', 'POST'])(
     'accepts a success ping with the token in the path (%s)',
@@ -140,7 +140,7 @@ describe('ping by URL and run events', () => {
       expect(recordEvent).toHaveBeenLastCalledWith(TOKEN, kind)
 
       const bearer = await app.request(
-        new Request(`https://api.cronping.test/api/ping/${kind}`, {
+        new Request(`https://api.vextra.test/api/ping/${kind}`, {
           headers: { Authorization: `Bearer ${TOKEN}` },
           method: 'POST',
         }),
@@ -170,7 +170,7 @@ describe('ping by URL and run events', () => {
     expect(
       (
         await app.request(
-          new Request(`https://api.cronping.test/api/ping/${TOKEN}`, {
+          new Request(`https://api.vextra.test/api/ping/${TOKEN}`, {
             body: 'output',
             headers: { 'content-type': 'text/plain' },
             method: 'POST',
@@ -182,7 +182,7 @@ describe('ping by URL and run events', () => {
     expect(
       (
         await app.request(
-          new Request('https://api.cronping.test/api/ping/start', {
+          new Request('https://api.vextra.test/api/ping/start', {
             method: 'POST',
           }),
         )

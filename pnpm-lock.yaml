@@ -197,10 +197,10 @@ importers:
 
   apps/api:
     dependencies:
-      '@cronping/contracts':
+      '@vextra/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@cronping/domain':
+      '@vextra/domain':
         specifier: workspace:*
         version: link:../../packages/domain
       '@hono/node-server':
@@ -246,10 +246,10 @@ importers:
 
   apps/web:
     dependencies:
-      '@cronping/contracts':
+      '@vextra/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@cronping/domain':
+      '@vextra/domain':
         specifier: workspace:*
         version: link:../../packages/domain
       '@fontsource-variable/inter':

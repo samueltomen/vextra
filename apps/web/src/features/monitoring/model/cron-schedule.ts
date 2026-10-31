@@ -4,7 +4,7 @@ import {
   nextCronOccurrence,
   parseCronExpression,
   upcomingCronOccurrences,
-} from '@cronping/domain'
+} from '@vextra/domain'
 
 import { formatFrequency } from './monitor-format.ts'
 

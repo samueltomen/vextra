@@ -1,4 +1,4 @@
-const LABELS_STORAGE_KEY = 'cronping.monitor-labels.v1'
+const LABELS_STORAGE_KEY = 'vextra.monitor-labels.v1'
 
 type StoredLabels = Record<string, string>
 

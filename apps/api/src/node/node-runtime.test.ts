@@ -17,7 +17,7 @@ import {
 
 const SECRET = 'x'.repeat(40)
 const BASE = {
-  APP_ORIGIN: 'https://cronping.example.org',
+  APP_ORIGIN: 'https://vextra.example.org',
   PING_TOKEN_PEPPER: SECRET,
   SESSION_ENCRYPTION_KEY: SECRET,
   SUPABASE_PUBLISHABLE_KEY: 'publishable',
@@ -69,7 +69,7 @@ describe('readNodeConfig', () => {
     expect(config.webRoot).toBe('./web')
     expect(config.smtp).toBeNull()
     expect(config.clientIpHeader).toBeNull()
-    expect(config.environment.APP_ORIGIN).toBe('https://cronping.example.org')
+    expect(config.environment.APP_ORIGIN).toBe('https://vextra.example.org')
     expect(config.environment.RESEND_API_KEY).toBeUndefined()
   })
 
@@ -106,7 +106,7 @@ describe('readNodeConfig', () => {
     const config = readNodeConfig({
       ...BASE,
       RESEND_API_KEY: 're_key',
-      RESEND_FROM_EMAIL: 'CronPing <a@example.org>',
+      RESEND_FROM_EMAIL: 'Vextra <a@example.org>',
     })
 
     expect(config.environment.RESEND_API_KEY).toBe('re_key')
@@ -119,7 +119,7 @@ describe('readNodeConfig', () => {
   it('infers SMTP from the host and validates its settings', () => {
     const config = readNodeConfig({
       ...BASE,
-      EMAIL_FROM: 'CronPing <a@example.org>',
+      EMAIL_FROM: 'Vextra <a@example.org>',
       SMTP_HOST: 'smtp.example.org',
       SMTP_PASSWORD: 'pw',
       SMTP_PORT: '465',
@@ -133,7 +133,7 @@ describe('readNodeConfig', () => {
       secure: true,
       user: 'user',
     })
-    expect(config.environment.EMAIL_FROM).toBe('CronPing <a@example.org>')
+    expect(config.environment.EMAIL_FROM).toBe('Vextra <a@example.org>')
 
     const problems = (overrides: Record<string, string>) => {
       try {

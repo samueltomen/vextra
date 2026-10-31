@@ -246,7 +246,7 @@ export function LoginPage() {
         />
         <div className="relative flex items-center gap-3">
           <BrandMark />
-          <span className="text-lg font-semibold tracking-tight">CronPing</span>
+          <span className="text-lg font-semibold tracking-tight">Vextra</span>
         </div>
 
         <div className="relative max-w-xl">
@@ -257,8 +257,8 @@ export function LoginPage() {
             Sachez quand vos tâches cessent de parler.
           </p>
           <p className="mt-5 max-w-lg text-lg leading-8 text-sidebar-muted">
-            CronPing reçoit uniquement les heartbeats. Le contenu de vos
-            scripts, commandes et journaux reste sur vos serveurs.
+            Vextra reçoit uniquement les heartbeats. Le contenu de vos scripts,
+            commandes et journaux reste sur vos serveurs.
           </p>
           <ul className="mt-8 space-y-3 text-sm text-sidebar-muted">
             <li className="flex items-center gap-3">
@@ -317,9 +317,7 @@ export function LoginPage() {
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
             <BrandMark />
-            <span className="text-lg font-semibold tracking-tight">
-              CronPing
-            </span>
+            <span className="text-lg font-semibold tracking-tight">Vextra</span>
           </div>
 
           <div

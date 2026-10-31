@@ -1,7 +1,7 @@
 import type {
   AuthenticatedSessionResponse,
   SignUpResponse,
-} from '@cronping/contracts'
+} from '@vextra/contracts'
 
 import { ApiError, apiRequest } from '../../../api/client.ts'
 import { DEMO_ACCOUNT } from '../../../demo/demo-account.ts'
