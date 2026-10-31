@@ -13,6 +13,7 @@ function createApp() {
     monitorRoutes: new Hono(),
     notificationRoutes: new Hono(),
     pingRoutes: new Hono(),
+    statusPageRoutes: new Hono(),
     workspaceRoutes: new Hono(),
   })
 }
@@ -55,6 +56,7 @@ describe('rate limiting wiring', () => {
       pingRoutes: new Hono()
         .post('/api/ping', (context) => context.json({ ok: 1 }))
         .get('/api/ping/:token', (context) => context.json({ ok: 1 })),
+      statusPageRoutes: new Hono(),
       workspaceRoutes: new Hono(),
       rateLimiters: { auth: { allow }, ping: { allow } },
     })

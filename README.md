@@ -24,6 +24,10 @@ Guide complet, avec Supabase, HTTPS, e-mails et sauvegardes :
 Les moniteurs peuvent suivre un intervalle ou une expression cron avec fuseau
 horaire ([ADR 0012](docs/adr/0012-planification-par-expression-cron.md)).
 
+Une page de statut publique, sans compte, peut exposer les moniteurs de votre
+choix à l'adresse `/status/<adresse>`
+([ADR 0013](docs/adr/0013-page-de-statut-publique.md)).
+
 ## État actuel
 
 Le dépôt contient le socle de la V1 :

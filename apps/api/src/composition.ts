@@ -56,6 +56,15 @@ import {
   SupabaseMonitorSchedule,
   type MonitorScheduleRpcClient,
 } from './features/monitoring/adapters/outbound/supabase-monitor-schedule.ts'
+import {
+  ManageStatusPage,
+  ReadPublicStatusPage,
+} from './features/statuspage/application/status-page.ts'
+import { createStatusPageRoutes } from './features/statuspage/adapters/inbound/http/status-page-routes.ts'
+import {
+  SupabasePublicStatusPage,
+  SupabaseStatusPageSettings,
+} from './features/statuspage/adapters/outbound/supabase-status-page.ts'
 import { MonitorReadService } from './features/monitoring/application/monitor-read.ts'
 import {
   RecordHeartbeat,
@@ -338,6 +347,21 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     }
   }
 
+  const authenticateStatusPage = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    return {
+      settings: new ManageStatusPage(
+        new SupabaseStatusPageSettings(session.client),
+      ),
+      tenantId: session.account.tenantId,
+    }
+  }
+
   const authenticateChannels = async (context: Context) => {
     const session = await resolveSession(context)
 
@@ -435,6 +459,12 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
       allowedOrigin: environment.APP_ORIGIN,
       authenticate: authenticateLive,
       connect: connectLive,
+    }),
+    statusPageRoutes: createStatusPageRoutes({
+      authenticate: authenticateStatusPage,
+      publicPage: new ReadPublicStatusPage(
+        new SupabasePublicStatusPage(supabase),
+      ),
     }),
     workspaceRoutes: createWorkspaceRoutes({
       authenticate: authenticateWorkspace,

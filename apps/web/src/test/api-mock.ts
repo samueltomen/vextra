@@ -161,6 +161,10 @@ export type ApiMockOptions = Readonly<{
 
 export function installApiMock(options: ApiMockOptions = {}) {
   let authenticated = options.authenticated ?? true
+  let statusPage: {
+    monitorIds: string[]
+    page: Record<string, unknown> | null
+  } = { monitorIds: [], page: null }
   const channels: {
     createdAt: string
     enabled: boolean
@@ -294,6 +298,51 @@ export function installApiMock(options: ApiMockOptions = {}) {
 
           return new Response(null, { status: 204 })
         }
+      }
+
+      if (url.pathname === '/api/status-page' && method === 'GET') {
+        return jsonResponse({ data: statusPage })
+      }
+
+      if (url.pathname === '/api/status-page' && method === 'PUT') {
+        const body = JSON.parse(String(init?.body)) as {
+          monitorIds: string[]
+          slug: string
+          title: string
+        }
+
+        if (body.slug === 'pris') {
+          return errorResponse(409, 'slug_taken')
+        }
+
+        statusPage = {
+          monitorIds: body.monitorIds,
+          page: { description: null, enabled: true, ...body },
+        }
+
+        return jsonResponse({ data: statusPage })
+      }
+
+      if (url.pathname.startsWith('/api/status/') && method === 'GET') {
+        return url.pathname.endsWith('/acme-status')
+          ? jsonResponse({
+              data: {
+                description: null,
+                generatedAt: new Date().toISOString(),
+                incidents: [
+                  {
+                    monitor: 'API publique',
+                    openedAt: new Date(Date.now() - 86_400_000).toISOString(),
+                    resolvedAt: null,
+                  },
+                ],
+                monitors: [
+                  { name: 'API publique', status: 'late', uptime30d: 99.5 },
+                ],
+                title: 'Acme',
+              },
+            })
+          : errorResponse(404, 'not_found')
       }
 
       if (url.pathname === '/api/folders' && method === 'GET') {

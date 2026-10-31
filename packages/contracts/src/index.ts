@@ -117,3 +117,18 @@ export type {
   Preferences,
   UpdatePreferencesRequest,
 } from './workspace/workspace.ts'
+
+export {
+  MAX_STATUS_PAGE_MONITORS,
+  publicStatusPageSchema,
+  saveStatusPageRequestSchema,
+  statusPageResponseSchema,
+  statusPageSlugSchema,
+} from './status/status-page.ts'
+
+export type {
+  PublicStatusPage,
+  PublicStatusPageResponse,
+  SaveStatusPageRequest,
+  StatusPageResponse,
+} from './status/status-page.ts'

@@ -453,6 +453,11 @@ export function AppShell() {
     },
   })
 
+  // Public status pages are served without a session or the application shell.
+  if (pathname.startsWith('/status/')) {
+    return <Outlet />
+  }
+
   if (pathname === '/login') {
     if (accountQuery.isPending) {
       return (

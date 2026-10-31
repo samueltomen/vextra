@@ -24,3 +24,4 @@ Décisions d'architecture (`docs/adr/`) :
 - [ADR 0010 — Rapport hebdomadaire](adr/0010-rapport-hebdomadaire.md)
 - [ADR 0011 — Auto-hébergement](adr/0011-auto-hebergement.md)
 - [ADR 0012 — Planification par expression cron](adr/0012-planification-par-expression-cron.md)
+- [ADR 0013 — Page de statut publique](adr/0013-page-de-statut-publique.md)
