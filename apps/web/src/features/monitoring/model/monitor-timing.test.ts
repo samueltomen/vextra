@@ -9,6 +9,7 @@ function monitor(overrides: Partial<MonitorView>): MonitorView {
   return {
     alertAtMs: NOW_MS + 600_000,
     createdAtMs: NOW_MS - 600_000,
+    folderId: null,
     graceMinutes: 5,
     id: 'monitor',
     incidentOpenedAtMs: null,
@@ -16,6 +17,7 @@ function monitor(overrides: Partial<MonitorView>): MonitorView {
     lastHeartbeatAtMs: NOW_MS - 600_000,
     localLabel: 'Monitor',
     status: 'healthy',
+    totalPings: 0,
     ...overrides,
   }
 }

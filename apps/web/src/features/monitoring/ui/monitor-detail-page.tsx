@@ -46,7 +46,10 @@ import {
   formatRelativeTime,
   statusLabel,
 } from '../model/monitor-format.ts'
+import { setMonitorFolder } from '../../workspace/api/workspace-api.ts'
+import { useFolders } from '../../workspace/query/use-folders.ts'
 import { AvailabilityBar } from './availability-bar.tsx'
+import { MonitorMetricsPanel } from './monitor-metrics-panel.tsx'
 import { DurationPicker } from './duration-picker.tsx'
 import {
   GRACE_PRESETS,
@@ -105,6 +108,12 @@ export function MonitorDetailPage({
   const [labelDraft, setLabelDraft] = useState('')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const foldersQuery = useFolders()
+  const moveToFolder = useMutation({
+    mutationFn: (folderId: string | null) =>
+      setMonitorFolder(monitorId, folderId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['monitors'] }),
+  })
   const nowMs = useNow()
   const accountQuery = useCurrentAccount()
   const monitorQuery = useQuery({
@@ -338,6 +347,25 @@ export function MonitorDetailPage({
               Mettre en pause
             </Button>
           )}
+          <label className="ml-auto flex items-center gap-2 text-sm text-muted">
+            Dossier
+            <select
+              aria-label="Dossier du moniteur"
+              className="min-h-9 rounded-md border border-line bg-canvas px-2 text-sm text-ink outline-none focus:border-action"
+              disabled={moveToFolder.isPending}
+              onChange={(event) =>
+                moveToFolder.mutate(event.target.value || null)
+              }
+              value={monitor.folderId ?? ''}
+            >
+              <option value="">Sans dossier</option>
+              {(foldersQuery.data ?? []).map((folder) => (
+                <option key={folder.id} value={folder.id}>
+                  {folder.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </header>
 
@@ -395,6 +423,12 @@ export function MonitorDetailPage({
           value={formatRelativeTime(monitor.lastHeartbeatAtMs)}
         />
       </section>
+
+      <MonitorMetricsPanel
+        intervalMinutes={monitor.intervalMinutes}
+        monitorId={monitor.id}
+        nowMs={nowMs}
+      />
 
       <section className="rounded-xl border border-line bg-surface p-5 shadow-card sm:p-6">
         <h2 className="mb-4 text-lg font-semibold">

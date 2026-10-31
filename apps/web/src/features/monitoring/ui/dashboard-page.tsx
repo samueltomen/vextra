@@ -24,6 +24,12 @@ import {
 } from '../model/monitor.ts'
 import { sortMonitors, type MonitorSort } from '../model/monitor-timing.ts'
 import { HealthBanner } from './health-banner.tsx'
+import {
+  matchesFolder,
+  useFolders,
+  type FolderFilter,
+} from '../../workspace/query/use-folders.ts'
+import { FolderBar } from '../../workspace/ui/folder-bar.tsx'
 import { MonitorListItem } from './monitor-list-item.tsx'
 import { StatusSummary } from './status-summary.tsx'
 
@@ -138,6 +144,8 @@ function OnboardingCard({ onCreate }: Readonly<{ onCreate: () => void }>) {
 
 export function DashboardPage() {
   const [filter, setFilter] = useState<StatusFilter>('all')
+  const [folderFilter, setFolderFilter] = useState<FolderFilter>('all')
+  const foldersQuery = useFolders()
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<MonitorSort>('priority')
   const [view, setView] = useState<DashboardView>(readStoredView)
@@ -169,6 +177,7 @@ export function DashboardPage() {
     monitors.filter(
       (monitor) =>
         matchesFilter(monitor.status, filter) &&
+        matchesFolder(monitor.folderId, folderFilter) &&
         (normalizedSearch.length === 0 ||
           monitor.localLabel.toLowerCase().includes(normalizedSearch) ||
           monitor.id.toLowerCase().includes(normalizedSearch)),
@@ -176,6 +185,13 @@ export function DashboardPage() {
     sort,
   )
   const summary = summarizeMonitors(monitors)
+  const folderCounts: Record<string, number> = {}
+
+  for (const monitor of monitors) {
+    const key = monitor.folderId ?? 'none'
+
+    folderCounts[key] = (folderCounts[key] ?? 0) + 1
+  }
   const goToCreate = () => void navigate({ to: '/monitors/new' })
 
   function changeView(next: DashboardView) {
@@ -224,6 +240,16 @@ export function DashboardPage() {
         onSelect={setFilter}
         summary={summary}
       />
+
+      {monitors.length > 0 ? (
+        <FolderBar
+          activeFilter={folderFilter}
+          counts={folderCounts}
+          folders={foldersQuery.data ?? []}
+          onSelect={setFolderFilter}
+          total={monitors.length}
+        />
+      ) : null}
 
       <section aria-labelledby="monitor-list-title">
         <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -349,6 +375,7 @@ export function DashboardPage() {
               onClick={() => {
                 setQuery('')
                 setFilter('all')
+                setFolderFilter('all')
               }}
               type="button"
             >

@@ -16,6 +16,7 @@ let monitors: MonitorView[] = [
   {
     alertAtMs: nowMs + 3_600_000,
     createdAtMs: nowMs - 86_400_000,
+    folderId: '30000000-0000-4000-8000-000000000001',
     graceMinutes: 30,
     id: demoId('1'),
     incidentOpenedAtMs: null,
@@ -23,10 +24,12 @@ let monitors: MonitorView[] = [
     lastHeartbeatAtMs: nowMs - 2_520_000,
     localLabel: 'Sauvegarde PostgreSQL',
     status: 'healthy',
+    totalPings: 0,
   },
   {
     alertAtMs: nowMs - 360_000,
     createdAtMs: nowMs - 86_400_000,
+    folderId: '30000000-0000-4000-8000-000000000001',
     graceMinutes: 3,
     id: demoId('2'),
     incidentOpenedAtMs: nowMs - 360_000,
@@ -34,10 +37,12 @@ let monitors: MonitorView[] = [
     lastHeartbeatAtMs: nowMs - 1_440_000,
     localLabel: 'Synchronisation Stripe',
     status: 'late',
+    totalPings: 0,
   },
   {
     alertAtMs: nowMs + 345_600_000,
     createdAtMs: nowMs - 604_800_000,
+    folderId: null,
     graceMinutes: 120,
     id: demoId('3'),
     incidentOpenedAtMs: null,
@@ -45,10 +50,12 @@ let monitors: MonitorView[] = [
     lastHeartbeatAtMs: nowMs - 345_600_000,
     localLabel: 'Rapport hebdomadaire',
     status: 'paused',
+    totalPings: 0,
   },
   {
     alertAtMs: nowMs + 21_600_000,
     createdAtMs: nowMs - 60_000,
+    folderId: null,
     graceMinutes: 20,
     id: demoId('4'),
     incidentOpenedAtMs: null,
@@ -56,6 +63,7 @@ let monitors: MonitorView[] = [
     lastHeartbeatAtMs: null,
     localLabel: 'Nettoyage des médias',
     status: 'pending',
+    totalPings: 0,
   },
 ]
 
@@ -92,6 +100,7 @@ export async function createDemoMonitor(input: DemoCreateInput) {
     alertAtMs:
       createdAtMs + (input.intervalMinutes + input.graceMinutes) * 60_000,
     createdAtMs,
+    folderId: null,
     graceMinutes: input.graceMinutes,
     id: crypto.randomUUID(),
     incidentOpenedAtMs: null,
@@ -99,6 +108,7 @@ export async function createDemoMonitor(input: DemoCreateInput) {
     lastHeartbeatAtMs: null,
     localLabel: input.localLabel.trim(),
     status: 'pending',
+    totalPings: 0,
   }
 
   monitors = [monitor, ...monitors]
@@ -107,6 +117,15 @@ export async function createDemoMonitor(input: DemoCreateInput) {
     heartbeatToken: `cp_demo_${crypto.randomUUID().replaceAll('-', '')}`,
     monitor: { ...monitor },
   }
+}
+
+export function setDemoMonitorFolder(
+  monitorId: string,
+  folderId: string | null,
+): void {
+  monitors = monitors.map((monitor) =>
+    monitor.id === monitorId ? { ...monitor, folderId } : monitor,
+  )
 }
 
 export async function renameDemoMonitor(

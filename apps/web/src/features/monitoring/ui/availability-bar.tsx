@@ -1,3 +1,4 @@
+import { timeZoneOption } from '../../../lib/display-time.ts'
 import type {
   AvailabilityDay,
   AvailabilityDayState,
@@ -15,6 +16,7 @@ function describeDay(day: AvailabilityDay): string {
   const date = new Intl.DateTimeFormat('fr-FR', {
     day: 'numeric',
     month: 'short',
+    ...timeZoneOption(),
   }).format(day.startMs)
 
   switch (day.state) {

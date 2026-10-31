@@ -34,6 +34,10 @@ const STATUS_CONFIG = {
     className: 'border-danger-border bg-danger-bg text-danger',
     label: 'Échec définitif',
   },
+  skipped: {
+    className: 'border-neutral-border bg-neutral-bg text-neutral',
+    label: 'Ignoré (préférences)',
+  },
 } as const
 
 function DeliveryRow({

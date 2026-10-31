@@ -5,6 +5,7 @@ export type StatusFilter = 'all' | MonitorStatus
 export type MonitorView = Readonly<{
   alertAtMs: number
   createdAtMs: number
+  folderId: string | null
   graceMinutes: number
   id: string
   incidentOpenedAtMs: number | null
@@ -12,6 +13,7 @@ export type MonitorView = Readonly<{
   localLabel: string
   lastHeartbeatAtMs: number | null
   status: MonitorStatus
+  totalPings: number
 }>
 
 export type MonitorSummary = Readonly<{

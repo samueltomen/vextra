@@ -6,6 +6,7 @@ function monitor(status: MonitorView['status']): MonitorView {
   return {
     alertAtMs: 0,
     createdAtMs: 0,
+    folderId: null,
     graceMinutes: 2,
     id: status,
     incidentOpenedAtMs: null,
@@ -13,6 +14,7 @@ function monitor(status: MonitorView['status']): MonitorView {
     localLabel: status,
     lastHeartbeatAtMs: null,
     status,
+    totalPings: 0,
   }
 }
 
