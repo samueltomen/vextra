@@ -171,6 +171,22 @@ La CI (`.github/workflows/ci.yml`) exécute `pnpm check` et les tests de base. L
 workflow `deploy.yml` est manuel et exige les secrets GitHub
 `CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ACCOUNT_ID`.
 
+## Organisation, métriques et préférences
+
+- **Dossiers** : dossiers plats par espace, création, renommage et suppression
+  depuis le dashboard, rangement d'un moniteur depuis sa page
+  ([ADR 0003](docs/adr/0003-dossiers-de-moniteurs.md)).
+- **Métriques** : compteurs de heartbeats par jour (90 jours conservés),
+  intervalle moyen et plus long intervalle, sans contenu ni IP
+  ([ADR 0004](docs/adr/0004-metriques-heartbeat-agregees.md)).
+- **Préférences** : nom affiché, fuseau horaire et alertes e-mail à l'ouverture
+  ou à la résolution d'un incident
+  ([ADR 0005](docs/adr/0005-preferences-de-compte.md)).
+
+Ces fonctions s'appuient sur trois migrations (`20261031100000`,
+`20261031110000`, `20261031120000`) à appliquer avec `supabase db push` avant de
+déployer l'API.
+
 ## Commandes
 
 ```bash

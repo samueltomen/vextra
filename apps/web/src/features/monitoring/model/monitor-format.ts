@@ -1,3 +1,4 @@
+import { timeZoneOption } from '../../../lib/display-time.ts'
 import type { MonitorStatus } from './monitor.ts'
 
 const MINUTE_MS = 60_000
@@ -29,6 +30,7 @@ export function formatDateTime(timestampMs: number | null): string {
   return new Intl.DateTimeFormat('fr-FR', {
     dateStyle: 'medium',
     timeStyle: 'short',
+    ...timeZoneOption(),
   }).format(timestampMs)
 }
 

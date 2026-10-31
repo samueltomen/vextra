@@ -11,6 +11,7 @@ export const TEST_ACCOUNT = {
 type MonitorRow = {
   alertAt: string
   createdAt: string
+  folderId: string | null
   graceSeconds: number
   id: string
   incidentOpenedAt: string | null
@@ -18,7 +19,10 @@ type MonitorRow = {
   lastHeartbeatAt: string | null
   pausedAt: string | null
   status: 'healthy' | 'late' | 'paused' | 'pending'
+  totalPings: number
 }
+
+export const TEST_FOLDER_ID = '30000000-0000-4000-8000-000000000001'
 
 export const TEST_MONITOR_LABELS = {
   '20000000-0000-4000-8000-000000000001': 'Sauvegarde PostgreSQL',
@@ -32,6 +36,7 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
     {
       alertAt: new Date(nowMs + 60 * 60_000).toISOString(),
       createdAt: new Date(nowMs - 86_400_000).toISOString(),
+      folderId: null,
       graceSeconds: 1_800,
       id: '20000000-0000-4000-8000-000000000001',
       incidentOpenedAt: null,
@@ -39,10 +44,12 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       lastHeartbeatAt: new Date(nowMs - 42 * 60_000).toISOString(),
       pausedAt: null,
       status: 'healthy',
+      totalPings: 0,
     },
     {
       alertAt: new Date(nowMs - 6 * 60_000).toISOString(),
       createdAt: new Date(nowMs - 86_400_000).toISOString(),
+      folderId: null,
       graceSeconds: 180,
       id: '20000000-0000-4000-8000-000000000002',
       incidentOpenedAt: new Date(nowMs - 6 * 60_000).toISOString(),
@@ -50,10 +57,12 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       lastHeartbeatAt: new Date(nowMs - 24 * 60_000).toISOString(),
       pausedAt: null,
       status: 'late',
+      totalPings: 0,
     },
     {
       alertAt: new Date(nowMs + 4 * 86_400_000).toISOString(),
       createdAt: new Date(nowMs - 7 * 86_400_000).toISOString(),
+      folderId: null,
       graceSeconds: 7_200,
       id: '20000000-0000-4000-8000-000000000003',
       incidentOpenedAt: null,
@@ -61,10 +70,12 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       lastHeartbeatAt: new Date(nowMs - 4 * 86_400_000).toISOString(),
       pausedAt: new Date(nowMs - 86_400_000).toISOString(),
       status: 'paused',
+      totalPings: 0,
     },
     {
       alertAt: new Date(nowMs + 6 * 60 * 60_000).toISOString(),
       createdAt: new Date(nowMs - 60_000).toISOString(),
+      folderId: null,
       graceSeconds: 1_200,
       id: '20000000-0000-4000-8000-000000000004',
       incidentOpenedAt: null,
@@ -72,8 +83,22 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       lastHeartbeatAt: null,
       pausedAt: null,
       status: 'pending',
+      totalPings: 0,
     },
   ]
+}
+
+const DEFAULT_METRICS = {
+  days: [
+    {
+      day: new Date().toISOString().slice(0, 10),
+      gapCount: 2,
+      gapMaxSeconds: 3_700,
+      gapSumSeconds: 7_200,
+      pings: 3,
+    },
+  ],
+  totalPings: 42,
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -90,11 +115,22 @@ function errorResponse(status: number, code: string): Response {
 export type ApiMockOptions = Readonly<{
   authenticated?: boolean
   loginStatus?: number
+  folders?: { id: string; name: string }[]
+  metrics?: unknown
   monitors?: MonitorRow[]
 }>
 
 export function installApiMock(options: ApiMockOptions = {}) {
   let authenticated = options.authenticated ?? true
+  const folders = [
+    ...(options.folders ?? [{ id: TEST_FOLDER_ID, name: 'Production' }]),
+  ]
+  let preferences = {
+    displayName: null as string | null,
+    notifyOnOpen: true,
+    notifyOnResolve: true,
+    timezone: 'Europe/Paris',
+  }
   const monitors = [...(options.monitors ?? createMonitorRows())]
   const incidents = monitors
     .filter((monitor) => monitor.status === 'late')
@@ -110,6 +146,85 @@ export function installApiMock(options: ApiMockOptions = {}) {
     async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input), window.location.origin)
       const method = init?.method ?? 'GET'
+
+      if (url.pathname === '/api/folders' && method === 'GET') {
+        return jsonResponse({ data: { folders } })
+      }
+
+      if (url.pathname === '/api/folders' && method === 'POST') {
+        const body = JSON.parse(String(init?.body)) as { name: string }
+
+        if (folders.some((folder) => folder.name === body.name)) {
+          return errorResponse(409, 'folder_name_taken')
+        }
+
+        const folder = { id: crypto.randomUUID(), name: body.name }
+
+        folders.push(folder)
+
+        return jsonResponse({ data: { folder } }, 201)
+      }
+
+      if (url.pathname.startsWith('/api/folders/') && method === 'PATCH') {
+        const id = url.pathname.split('/').at(-1)
+        const body = JSON.parse(String(init?.body)) as { name: string }
+        const folder = folders.find((candidate) => candidate.id === id)
+
+        if (folder) {
+          folder.name = body.name
+        }
+
+        return folder
+          ? jsonResponse({ data: { folder } })
+          : errorResponse(404, 'folder_not_found')
+      }
+
+      if (url.pathname.startsWith('/api/folders/') && method === 'DELETE') {
+        const id = url.pathname.split('/').at(-1)
+        const index = folders.findIndex((candidate) => candidate.id === id)
+
+        if (index >= 0) {
+          folders.splice(index, 1)
+          monitors.forEach((monitor) => {
+            if (monitor.folderId === id) {
+              monitor.folderId = null
+            }
+          })
+        }
+
+        return new Response(null, { status: index >= 0 ? 204 : 404 })
+      }
+
+      if (url.pathname.endsWith('/folder') && method === 'PUT') {
+        const monitorId = url.pathname.split('/').at(-2)
+        const body = JSON.parse(String(init?.body)) as {
+          folderId: string | null
+        }
+        const monitor = monitors.find((candidate) => candidate.id === monitorId)
+
+        if (monitor) {
+          monitor.folderId = body.folderId
+        }
+
+        return new Response(null, { status: monitor ? 204 : 404 })
+      }
+
+      if (url.pathname === '/api/preferences' && method === 'GET') {
+        return jsonResponse({ data: { preferences } })
+      }
+
+      if (url.pathname === '/api/preferences' && method === 'PATCH') {
+        preferences = {
+          ...preferences,
+          ...(JSON.parse(String(init?.body)) as object),
+        }
+
+        return jsonResponse({ data: { preferences } })
+      }
+
+      if (url.pathname.endsWith('/metrics') && method === 'GET') {
+        return jsonResponse({ data: options.metrics ?? DEFAULT_METRICS })
+      }
 
       if (url.pathname === '/api/auth/me' && method === 'GET') {
         return authenticated
@@ -194,6 +309,7 @@ export function installApiMock(options: ApiMockOptions = {}) {
             nowMs + (body.intervalSeconds + body.graceSeconds) * 1_000,
           ).toISOString(),
           createdAt: new Date(nowMs).toISOString(),
+          folderId: null,
           graceSeconds: body.graceSeconds,
           id: '20000000-0000-4000-8000-000000000099',
           incidentOpenedAt: null,
@@ -201,6 +317,7 @@ export function installApiMock(options: ApiMockOptions = {}) {
           lastHeartbeatAt: null,
           pausedAt: null,
           status: 'pending',
+          totalPings: 0,
         }
 
         monitors.unshift(monitor)
@@ -322,5 +439,5 @@ export function installApiMock(options: ApiMockOptions = {}) {
 
   vi.stubGlobal('fetch', fetchMock)
 
-  return { fetchMock }
+  return { fetchMock, monitors, preferences: () => preferences }
 }

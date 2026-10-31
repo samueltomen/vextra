@@ -52,6 +52,7 @@ function toMonitorView(
   return {
     alertAtMs: Date.parse(monitor.alertAt),
     createdAtMs: Date.parse(monitor.createdAt),
+    folderId: monitor.folderId,
     graceMinutes: Math.round(monitor.graceSeconds / 60),
     id: monitor.id,
     incidentOpenedAtMs:
@@ -65,6 +66,7 @@ function toMonitorView(
         : Date.parse(monitor.lastHeartbeatAt),
     localLabel,
     status: monitor.status,
+    totalPings: monitor.totalPings,
   }
 }
 
@@ -133,6 +135,7 @@ export async function createMonitor(
     monitor: {
       alertAtMs: Date.parse(response.data.alertAt),
       createdAtMs: nowMs,
+      folderId: null,
       graceMinutes: draft.graceMinutes,
       id: response.data.id,
       incidentOpenedAtMs: null,
@@ -140,6 +143,7 @@ export async function createMonitor(
       lastHeartbeatAtMs: null,
       localLabel: draft.localLabel.trim(),
       status: response.data.status,
+      totalPings: 0,
     },
   }
 }

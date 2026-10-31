@@ -64,7 +64,9 @@ describe('CommandPalette', () => {
       await screen.findByRole('heading', { level: 1, name: 'Réglages' }),
     ).toBeInTheDocument()
     await waitFor(() =>
-      expect(screen.queryByRole('combobox')).not.toBeInTheDocument(),
+      expect(
+        screen.queryByPlaceholderText('Aller à… ou rechercher un moniteur'),
+      ).not.toBeInTheDocument(),
     )
   })
 

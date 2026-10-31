@@ -10,7 +10,7 @@ export type NotificationDeliveryView = Readonly<{
   id: string
   kind: 'incident_opened' | 'incident_resolved'
   monitorId: string
-  status: 'pending' | 'processing' | 'sent' | 'failed' | 'dead'
+  status: 'pending' | 'processing' | 'sent' | 'failed' | 'dead' | 'skipped'
   updatedAtMs: number
 }>
 

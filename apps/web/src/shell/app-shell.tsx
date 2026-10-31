@@ -28,6 +28,7 @@ import {
 import { listMonitors } from '../features/monitoring/api/monitoring-api.ts'
 import { summarizeMonitors } from '../features/monitoring/model/monitor.ts'
 import { isDemoModeEnabled } from '../demo/demo-mode.ts'
+import { usePreferences } from '../features/workspace/query/use-preferences.ts'
 import { CommandPalette } from './command-palette.tsx'
 import { ThemeCycleButton, ThemeToggle } from './theme-toggle.tsx'
 
@@ -202,6 +203,8 @@ function AppFrame({
   onLogout: () => void
 }>) {
   const [paletteOpen, setPaletteOpen] = useState(false)
+
+  usePreferences()
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {

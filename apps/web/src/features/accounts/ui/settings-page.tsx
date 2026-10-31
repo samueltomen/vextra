@@ -5,6 +5,7 @@ import { Bell, Mail, ShieldAlert, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { deleteAccount } from '../api/account-api.ts'
+import { PreferencesCard } from '../../workspace/ui/preferences-card.tsx'
 import { useCurrentAccount } from '../query/use-current-account.ts'
 
 export function SettingsPage() {
@@ -33,6 +34,8 @@ export function SettingsPage() {
           votre espace personnel.
         </p>
       </header>
+
+      <PreferencesCard />
 
       <section className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border border-line bg-surface p-4 sm:p-5">
