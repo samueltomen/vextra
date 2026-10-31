@@ -9,5 +9,6 @@ Ce dossier regroupe les documents de référence du projet :
 - [Preuves TDD de création d'un moniteur](releases/v0.1.0/create-monitor.tdd.md)
 - [Preuves TDD du prototype UI](releases/v0.1.0/ui-v1.tdd.md)
 
-Les décisions d'architecture seront ajoutées dans `docs/adr/` après validation
-des ADR proposés dans le plan.
+Décisions d'architecture (`docs/adr/`) :
+
+- [ADR 0001 — Déploiement sur une même origine](adr/0001-deploiement-meme-origine.md)
