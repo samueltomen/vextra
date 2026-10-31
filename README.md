@@ -28,6 +28,9 @@ Une page de statut publique, sans compte, peut exposer les moniteurs de votre
 choix à l'adresse `/status/<adresse>`
 ([ADR 0013](docs/adr/0013-page-de-statut-publique.md)).
 
+Des fenêtres de maintenance suspendent incidents et alertes pendant une
+opération planifiée ([ADR 0015](docs/adr/0015-fenetres-de-maintenance.md)).
+
 ## État actuel
 
 Le dépôt contient le socle de la V1 :

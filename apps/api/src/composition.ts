@@ -65,6 +65,9 @@ import {
   SupabasePublicStatusPage,
   SupabaseStatusPageSettings,
 } from './features/statuspage/adapters/outbound/supabase-status-page.ts'
+import { ManageMaintenance } from './features/maintenance/application/maintenance.ts'
+import { createMaintenanceRoutes } from './features/maintenance/adapters/inbound/http/maintenance-routes.ts'
+import { SupabaseMaintenance } from './features/maintenance/adapters/outbound/supabase-maintenance.ts'
 import { MonitorReadService } from './features/monitoring/application/monitor-read.ts'
 import {
   RecordHeartbeat,
@@ -362,6 +365,21 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     }
   }
 
+  const authenticateMaintenance = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    return {
+      maintenance: new ManageMaintenance(
+        new SupabaseMaintenance(session.client),
+      ),
+      tenantId: session.account.tenantId,
+    }
+  }
+
   const authenticateChannels = async (context: Context) => {
     const session = await resolveSession(context)
 
@@ -459,6 +477,9 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
       allowedOrigin: environment.APP_ORIGIN,
       authenticate: authenticateLive,
       connect: connectLive,
+    }),
+    maintenanceRoutes: createMaintenanceRoutes({
+      authenticate: authenticateMaintenance,
     }),
     statusPageRoutes: createStatusPageRoutes({
       authenticate: authenticateStatusPage,
