@@ -518,6 +518,27 @@ describe('monitor details', () => {
     })
   })
 
+  it('warns when a late monitor has its alerts muted', async () => {
+    const monitor = monitorsWithFolder()[0]!
+
+    await renderApp(`/monitors/${MONITOR_ID}`, {
+      monitors: [{ ...monitor, alertsEnabled: false, status: 'late' as const }],
+    })
+
+    expect(
+      await screen.findByText(/en retard et ses alertes sont désactivées/u),
+    ).toBeInTheDocument()
+  })
+
+  it('does not warn when alerts are on or the monitor is healthy', async () => {
+    await renderApp(`/monitors/${MONITOR_ID}`, {
+      monitors: monitorsWithFolder(),
+    })
+
+    await screen.findByLabelText(/Alertes e-mail de ce moniteur/)
+    expect(screen.queryByText(/alertes sont désactivées/u)).toBeNull()
+  })
+
   it('offers to clone a monitor with its schedule', async () => {
     await renderApp(`/monitors/${MONITOR_ID}`, {
       monitors: monitorsWithFolder(),

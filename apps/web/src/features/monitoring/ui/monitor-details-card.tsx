@@ -186,6 +186,17 @@ export function MonitorDetailsCard({
         </div>
       </form>
 
+      {!monitor.alertsEnabled && monitor.status === 'late' ? (
+        <p
+          className="mt-5 rounded-lg border border-warning-border bg-warning-bg p-3 text-sm text-warning"
+          role="alert"
+        >
+          Ce moniteur est en retard et ses alertes sont désactivées : personne
+          n’est prévenu. Réactivez-les ci-dessous pour être alerté lors du
+          prochain incident.
+        </p>
+      ) : null}
+
       <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-lg border border-line bg-canvas/40 p-3">
         <input
           checked={monitor.alertsEnabled}
@@ -205,8 +216,8 @@ export function MonitorDetailsCard({
           </span>
           <span className="block text-xs text-muted">
             {monitor.alertsEnabled
-              ? 'Vous recevez un e-mail à l’ouverture et à la résolution d’un incident.'
-              : 'Désactivées : les incidents restent enregistrés, mais aucun e-mail n’est envoyé.'}
+              ? 'Vous êtes alerté (e-mail et canaux) à l’ouverture et à la résolution d’un incident.'
+              : 'Désactivées : les incidents restent enregistrés, mais aucune alerte (e-mail ou canal) n’est envoyée.'}
           </span>
         </span>
       </label>
