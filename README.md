@@ -40,6 +40,9 @@ Une équipe peut partager un espace avec des rôles propriétaire, membre et
 lecture seule, via des liens d'invitation à usage unique
 ([ADR 0017](docs/adr/0017-equipes-roles-et-invitations.md)).
 
+Audit de sécurité avant production :
+[docs/audits/securite-avant-production.md](docs/audits/securite-avant-production.md).
+
 ## État actuel
 
 Le dépôt contient le socle de la V1 :

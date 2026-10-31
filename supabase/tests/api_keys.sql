@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(12);
 
 insert into auth.users (id, email)
 values
@@ -54,6 +54,34 @@ select throws_ok(
 );
 
 reset role;
+
+-- A member (not the owner) of tenant A cannot manage keys.
+insert into public.tenant_memberships (tenant_id, user_id, role)
+values (current_setting('test.tenant_a')::uuid,
+        'da000000-0000-4000-8000-000000000002', 'member');
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub',
+  'da000000-0000-4000-8000-000000000002', true);
+
+select throws_ok(
+  format($$insert into public.api_keys (tenant_id, name, key_prefix, key_hash)
+    values (%L, 'Member key', 'vx_abcdef3', repeat('d', 64))$$,
+    current_setting('test.tenant_a')),
+  '42501', null,
+  'a member cannot create an api key'
+);
+
+update public.api_keys set revoked_at = now() where name = 'CI';
+
+reset role;
+
+select is(
+  (select revoked_at is null from public.api_keys
+   where key_hash = repeat('a', 64)),
+  true,
+  'a member cannot revoke an api key'
+);
 
 select is(
   public.authenticate_api_key(repeat('a', 64)),

@@ -3,6 +3,7 @@ import { Check, Clipboard, KeyRound, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 
 import { ApiError } from '../../../api/client.ts'
+import { useCurrentAccount } from '../../accounts/query/use-current-account.ts'
 import {
   createApiKey,
   listApiKeys,
@@ -18,6 +19,10 @@ const formatter = new Intl.DateTimeFormat('fr-FR', {
 })
 
 function describeError(error: unknown): string {
+  if (error instanceof ApiError && error.code === 'forbidden') {
+    return 'Seul le propriétaire de l’espace peut gérer les clés.'
+  }
+
   if (error instanceof ApiError && error.code === 'limit_reached') {
     return 'Limite de 10 clés actives atteinte. Révoquez-en une.'
   }
@@ -27,6 +32,7 @@ function describeError(error: unknown): string {
 
 export function ApiKeysCard() {
   const queryClient = useQueryClient()
+  const isOwner = useCurrentAccount().data?.role === 'owner'
   const keysQuery = useQuery({ queryFn: listApiKeys, queryKey: QUERY_KEY })
   const [name, setName] = useState('')
   const [created, setCreated] = useState<CreatedApiKey | null>(null)
@@ -121,7 +127,7 @@ export function ApiKeysCard() {
                     : 'jamais utilisée'}
                 </p>
               </div>
-              {key.revokedAt ? null : (
+              {key.revokedAt || !isOwner ? null : (
                 <button
                   aria-label={`Révoquer la clé ${key.name}`}
                   className="grid size-9 place-items-center rounded-md border border-line text-muted hover:border-danger-border hover:text-danger"
@@ -139,25 +145,33 @@ export function ApiKeysCard() {
         <p className="mt-4 text-sm text-muted">Aucune clé d’API.</p>
       )}
 
-      <form className="mt-5 flex flex-wrap items-end gap-3" onSubmit={submit}>
-        <label className="block min-w-48 flex-1 text-sm">
-          <span className="mb-1.5 block font-medium">Nom de la clé</span>
-          <input
-            className="min-h-10 w-full rounded-md border border-line bg-canvas px-3 text-sm outline-none focus:border-action"
-            maxLength={60}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Tableau de bord interne"
-            value={name}
-          />
-        </label>
-        <button
-          className="min-h-10 rounded-md bg-action px-4 text-sm font-semibold text-action-fg disabled:opacity-60"
-          disabled={create.isPending || name.trim().length === 0}
-          type="submit"
-        >
-          Créer une clé
-        </button>
-      </form>
+      {isOwner ? (
+        <form className="mt-5 flex flex-wrap items-end gap-3" onSubmit={submit}>
+          <label className="block min-w-48 flex-1 text-sm">
+            <span className="mb-1.5 block font-medium">Nom de la clé</span>
+            <input
+              className="min-h-10 w-full rounded-md border border-line bg-canvas px-3 text-sm outline-none focus:border-action"
+              maxLength={60}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Tableau de bord interne"
+              value={name}
+            />
+          </label>
+          <button
+            className="min-h-10 rounded-md bg-action px-4 text-sm font-semibold text-action-fg disabled:opacity-60"
+            disabled={create.isPending || name.trim().length === 0}
+            type="submit"
+          >
+            Créer une clé
+          </button>
+        </form>
+      ) : (
+        <p className="mt-4 text-xs leading-5 text-muted">
+          Seul le propriétaire de l’espace peut créer ou révoquer des clés : une
+          clé donne accès à toutes les données de l’espace, même après le départ
+          de la personne qui l’a créée.
+        </p>
+      )}
       {create.isError ? (
         <p
           className="mt-3 rounded-lg border border-danger-border bg-danger-bg p-3 text-sm text-danger"

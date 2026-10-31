@@ -29,3 +29,4 @@ Décisions d'architecture (`docs/adr/`) :
 - [ADR 0015 — Fenêtres de maintenance](adr/0015-fenetres-de-maintenance.md)
 - [ADR 0016 — Clés d'API en lecture seule](adr/0016-cles-d-api-en-lecture-seule.md)
 - [ADR 0017 — Équipes, rôles et invitations](adr/0017-equipes-roles-et-invitations.md)
+- [Audit de sécurité avant production](audits/securite-avant-production.md)

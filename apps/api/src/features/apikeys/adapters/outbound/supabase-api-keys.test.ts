@@ -1,7 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 
-import { ApiKeyLimitError } from '../../application/api-keys.ts'
+import {
+  ApiKeyForbiddenError,
+  ApiKeyLimitError,
+} from '../../application/api-keys.ts'
 import {
   SupabaseApiKeyAuthenticator,
   SupabaseApiKeyStore,
@@ -86,16 +89,21 @@ describe('SupabaseApiKeyStore', () => {
     const limit = new SupabaseApiKeyStore(
       client({ data: null, error: { code: '54000' } }).supabase,
     )
-    const other = new SupabaseApiKeyStore(
-      client({ data: null, error: { code: '42501' } }).supabase,
-    )
-
     await expect(limit.insert('t1', input)).rejects.toBeInstanceOf(
       ApiKeyLimitError,
     )
-    await expect(other.insert('t1', input)).rejects.toThrow(
-      'api key creation failed',
+    const forbidden = new SupabaseApiKeyStore(
+      client({ data: null, error: { code: '42501' } }).supabase,
     )
+
+    await expect(forbidden.insert('t1', input)).rejects.toBeInstanceOf(
+      ApiKeyForbiddenError,
+    )
+    await expect(
+      new SupabaseApiKeyStore(
+        client({ data: null, error: { code: 'XX000' } }).supabase,
+      ).insert('t1', input),
+    ).rejects.toThrow('api key creation failed')
   })
 
   it('revokes an active key and fails closed on errors', async () => {

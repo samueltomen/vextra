@@ -4,6 +4,7 @@ import { Hono, type Context } from 'hono'
 import { toMonitorResponse } from '../../../../monitoring/adapters/inbound/http/monitor-routes.ts'
 import type { MonitorReadService } from '../../../../monitoring/application/monitor-read.ts'
 import {
+  ApiKeyForbiddenError,
   ApiKeyLimitError,
   type AuthenticateApiKey,
   type ManageApiKeys,
@@ -22,7 +23,7 @@ export type ApiKeyRoutesDependencies = Readonly<{
 
 function errorBody(
   context: Context,
-  status: 400 | 401 | 404 | 409 | 422 | 500,
+  status: 400 | 401 | 403 | 404 | 409 | 422 | 500,
   code: string,
   message: string,
 ) {
@@ -54,8 +55,12 @@ export function createApiKeyRoutes(
     try {
       return await handler(scope)
     } catch (error) {
-      return error instanceof ApiKeyLimitError
-        ? errorBody(context, 409, 'limit_reached', 'Too many active keys')
+      if (error instanceof ApiKeyLimitError) {
+        return errorBody(context, 409, 'limit_reached', 'Too many active keys')
+      }
+
+      return error instanceof ApiKeyForbiddenError
+        ? errorBody(context, 403, 'forbidden', 'Owner role required')
         : errorBody(context, 500, 'internal_error', 'Request failed')
     }
   }

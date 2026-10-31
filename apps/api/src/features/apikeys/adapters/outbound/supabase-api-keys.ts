@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ApiKeyView } from '@vextra/contracts'
 
 import {
+  ApiKeyForbiddenError,
   ApiKeyLimitError,
   type ApiKeyAuthenticatorPort,
   type ApiKeyStorePort,
@@ -69,6 +70,10 @@ export class SupabaseApiKeyStore implements ApiKeyStorePort {
     if (error || !data) {
       if (error?.code === '54000') {
         throw new ApiKeyLimitError()
+      }
+
+      if (error?.code === '42501') {
+        throw new ApiKeyForbiddenError()
       }
 
       throw new Error('api key creation failed')

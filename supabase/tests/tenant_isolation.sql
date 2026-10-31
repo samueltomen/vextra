@@ -128,7 +128,7 @@ select isnt(
 
 with changed as (
   update public.monitors
-  set enabled = false
+  set name = 'hijacked'
   where tenant_id = current_setting('test.bob_tenant_id')::uuid
   returning id
 )
