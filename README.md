@@ -4,6 +4,23 @@ CronPing est un SaaS multi-tenant de heartbeat pour tâches planifiées. Il
 détecte l'absence d'exécution d'un script et alerte son propriétaire sans
 recevoir ni stocker le contenu du script ou du cron.
 
+## Deux façons de l'utiliser
+
+- **Service hébergé** : rien à installer, aucune maintenance.
+- **Auto-hébergé** : une image Docker unique à brancher sur votre projet Supabase,
+  avec vos propres e-mails (SMTP ou Resend) et vos propres clés. Tout le code est
+  libre (MIT) et identique dans les deux cas.
+
+```bash
+git clone <ce dépôt> && cd <dossier>
+cp .env.example .env        # renseignez APP_ORIGIN, Supabase et deux secrets
+docker compose up -d --build
+```
+
+Guide complet, avec Supabase, HTTPS, e-mails et sauvegardes :
+[docs/self-hosting.md](docs/self-hosting.md)
+([ADR 0011](docs/adr/0011-auto-hebergement.md)).
+
 ## État actuel
 
 Le dépôt contient le socle de la V1 :

@@ -1,0 +1,17 @@
+.git
+.github
+node_modules
+**/node_modules
+**/dist
+**/dist-node
+**/coverage
+**/.wrangler
+**/.vite
+.env
+.env.*
+!.env.example
+**/.dev.vars
+supabase/.temp
+supabase/.branches
+docs/evidence
+*.log
