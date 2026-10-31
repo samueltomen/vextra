@@ -314,3 +314,9 @@ l'outillage et ne doivent jamais être commités.
 - L'isolation multi-tenant et RLS seront obligatoires pour toute donnée
   persistée.
 - Bootstrap et ses dérivés sont interdits.
+
+## Licence et contribution
+
+CronPing est un logiciel libre, distribué sous [licence MIT](LICENSE). Les
+contributions sont les bienvenues : voir [CONTRIBUTING.md](CONTRIBUTING.md), le
+[code de conduite](CODE_OF_CONDUCT.md) et la [politique de sécurité](SECURITY.md).
