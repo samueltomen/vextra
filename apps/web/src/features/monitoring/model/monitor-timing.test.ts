@@ -12,7 +12,9 @@ const NOW_MS = 1_000_000_000
 function monitor(overrides: Partial<MonitorView>): MonitorView {
   return {
     alertAtMs: NOW_MS + 600_000,
+    alertsEnabled: true,
     createdAtMs: NOW_MS - 600_000,
+    description: null,
     folderId: null,
     graceMinutes: 5,
     id: 'monitor',
@@ -20,6 +22,8 @@ function monitor(overrides: Partial<MonitorView>): MonitorView {
     intervalMinutes: 15,
     lastHeartbeatAtMs: NOW_MS - 600_000,
     localLabel: 'Monitor',
+    notes: null,
+    serverName: null,
     status: 'healthy',
     totalPings: 0,
     ...overrides,

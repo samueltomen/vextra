@@ -6,6 +6,8 @@ import {
   FolderNotFoundError,
   type FolderPort,
   type FolderRecord,
+  type MonitorDetailsChanges,
+  type MonitorDetailsPort,
   type PreferencesPort,
   type PreferencesRecord,
 } from '../../application/workspace.ts'
@@ -15,9 +17,16 @@ type DbError = Readonly<{ code?: string }> | null
 type FolderRow = Readonly<{ id: string; name: string }>
 
 type PreferencesRow = Readonly<{
+  default_sort: PreferencesRecord['dashboardSort']
+  default_view: PreferencesRecord['dashboardView']
+  default_folder_id: string | null
+  default_grace_minutes: number
+  default_interval_minutes: number
+  density: PreferencesRecord['density']
   display_name: string | null
   notify_on_open: boolean
   notify_on_resolve: boolean
+  time_format: PreferencesRecord['timeFormat']
   timezone: string
 }>
 
@@ -129,15 +138,41 @@ export class SupabaseFolderRepository implements FolderPort {
 
 function toPreferences(row: PreferencesRow): PreferencesRecord {
   return {
+    dashboardSort: row.default_sort,
+    dashboardView: row.default_view,
+    defaultFolderId: row.default_folder_id,
+    defaultGraceMinutes: row.default_grace_minutes,
+    defaultIntervalMinutes: row.default_interval_minutes,
+    density: row.density,
     displayName: row.display_name,
     notifyOnOpen: row.notify_on_open,
     notifyOnResolve: row.notify_on_resolve,
+    timeFormat: row.time_format,
     timezone: row.timezone,
   }
 }
 
 function toColumns(changes: Partial<PreferencesRecord>) {
   return {
+    ...(changes.dashboardSort !== undefined
+      ? { default_sort: changes.dashboardSort }
+      : {}),
+    ...(changes.dashboardView !== undefined
+      ? { default_view: changes.dashboardView }
+      : {}),
+    ...(changes.defaultFolderId !== undefined
+      ? { default_folder_id: changes.defaultFolderId }
+      : {}),
+    ...(changes.defaultGraceMinutes !== undefined
+      ? { default_grace_minutes: changes.defaultGraceMinutes }
+      : {}),
+    ...(changes.defaultIntervalMinutes !== undefined
+      ? { default_interval_minutes: changes.defaultIntervalMinutes }
+      : {}),
+    ...(changes.density !== undefined ? { density: changes.density } : {}),
+    ...(changes.timeFormat !== undefined
+      ? { time_format: changes.timeFormat }
+      : {}),
     ...(changes.displayName !== undefined
       ? { display_name: changes.displayName }
       : {}),
@@ -157,7 +192,9 @@ export class SupabasePreferencesRepository implements PreferencesPort {
   async find(tenantId: string): Promise<PreferencesRecord | null> {
     const { data, error } = await this.client
       .from('account_preferences')
-      .select('display_name, timezone, notify_on_open, notify_on_resolve')
+      .select(
+        'display_name, timezone, notify_on_open, notify_on_resolve, time_format, density, default_view, default_sort, default_interval_minutes, default_grace_minutes, default_folder_id',
+      )
       .eq('tenant_id', tenantId)
       .maybeSingle()
 
@@ -190,5 +227,38 @@ export class SupabasePreferencesRepository implements PreferencesPort {
     if (error) {
       throw new Error('preferences update failed')
     }
+  }
+}
+
+export class SupabaseMonitorDetailsRepository implements MonitorDetailsPort {
+  constructor(private readonly client: SupabaseClient) {}
+
+  async update(
+    tenantId: string,
+    monitorId: string,
+    changes: MonitorDetailsChanges,
+  ): Promise<boolean> {
+    const columns = {
+      ...(changes.name !== undefined ? { name: changes.name } : {}),
+      ...(changes.description !== undefined
+        ? { description: changes.description }
+        : {}),
+      ...(changes.notes !== undefined ? { notes: changes.notes } : {}),
+      ...(changes.alertsEnabled !== undefined
+        ? { alerts_enabled: changes.alertsEnabled }
+        : {}),
+    }
+    const { data, error } = await this.client
+      .from('monitors')
+      .update(columns)
+      .eq('tenant_id', tenantId)
+      .eq('id', monitorId)
+      .select('id')
+
+    if (error) {
+      throw new Error('monitor details update failed')
+    }
+
+    return (data ?? []).length > 0
   }
 }

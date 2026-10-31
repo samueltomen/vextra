@@ -10,9 +10,16 @@ let folders: DemoFolder[] = [
 ]
 
 let preferences: Preferences = {
+  dashboardSort: 'priority',
+  dashboardView: 'list',
+  defaultFolderId: null,
+  defaultGraceMinutes: 5,
+  defaultIntervalMinutes: 60,
+  density: 'compact',
   displayName: null,
   notifyOnOpen: true,
   notifyOnResolve: true,
+  timeFormat: '24h',
   timezone: 'Europe/Paris',
 }
 

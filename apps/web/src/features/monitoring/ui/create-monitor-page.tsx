@@ -1,7 +1,7 @@
 import { Button, Input } from '@heroui/react'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import {
   ArrowLeft,
   Check,
@@ -12,6 +12,9 @@ import {
   Timer,
 } from 'lucide-react'
 import { useState } from 'react'
+
+import { setMonitorFolder } from '../../workspace/api/workspace-api.ts'
+import { usePreferences } from '../../workspace/query/use-preferences.ts'
 
 import { CodeTabs } from '../../../components/code-tabs.tsx'
 import { readFieldError } from '../../../lib/read-field-error.ts'
@@ -142,6 +145,40 @@ function SuccessState({
 }
 
 export function CreateMonitorPage() {
+  const preferences = usePreferences()
+  const search = useSearch({ from: '/monitors/new' })
+
+  if (preferences.isPending) {
+    return (
+      <p className="text-sm text-muted" role="status">
+        Chargement…
+      </p>
+    )
+  }
+
+  return (
+    <CreateMonitorForm
+      initialGrace={search.grace ?? preferences.data?.defaultGraceMinutes ?? 2}
+      initialInterval={
+        search.interval ?? preferences.data?.defaultIntervalMinutes ?? 5
+      }
+      initialLabel={search.name ?? ''}
+      defaultFolderId={preferences.data?.defaultFolderId ?? null}
+    />
+  )
+}
+
+function CreateMonitorForm({
+  defaultFolderId,
+  initialGrace,
+  initialInterval,
+  initialLabel,
+}: Readonly<{
+  defaultFolderId: string | null
+  initialGrace: number
+  initialInterval: number
+  initialLabel: string
+}>) {
   const [created, setCreated] = useState<CreatedMonitor | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const queryClient = useQueryClient()
@@ -149,15 +186,22 @@ export function CreateMonitorPage() {
   const mutation = useMutation({ mutationFn: createMonitor })
   const form = useForm({
     defaultValues: {
-      localLabel: '',
-      intervalMinutes: 5,
-      graceMinutes: 2,
+      localLabel: initialLabel,
+      intervalMinutes: initialInterval,
+      graceMinutes: initialGrace,
     },
     onSubmit: async ({ value }) => {
       setSubmitError(null)
 
       try {
         const result = await mutation.mutateAsync(value)
+
+        if (defaultFolderId) {
+          await setMonitorFolder(result.monitor.id, defaultFolderId).catch(
+            () => undefined,
+          )
+        }
+
         await queryClient.invalidateQueries({ queryKey: ['monitors'] })
         setCreated(result)
       } catch {

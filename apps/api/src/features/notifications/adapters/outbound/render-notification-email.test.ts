@@ -57,4 +57,28 @@ describe('renderNotificationEmail', () => {
     expect(email.text).toContain(`${APP_ORIGIN}/monitors/${MONITOR_ID}`)
     expect(email.text).not.toContain('.test//monitors')
   })
+
+  it('shows the monitor name, escaped, when it is known', () => {
+    const email = renderNotificationEmail({
+      appOrigin: APP_ORIGIN,
+      kind: 'incident_opened',
+      monitorId: MONITOR_ID,
+      monitorName: 'Sync <b>Stripe</b>',
+    })
+
+    expect(email.html).toContain('Sync &lt;b&gt;Stripe&lt;/b&gt;')
+    expect(email.html).not.toContain('<b>Stripe</b>')
+    expect(email.text).toContain('Nom : Sync <b>Stripe</b>')
+  })
+
+  it('omits the name block when the monitor has no name', () => {
+    const email = renderNotificationEmail({
+      appOrigin: APP_ORIGIN,
+      kind: 'incident_opened',
+      monitorId: MONITOR_ID,
+      monitorName: null,
+    })
+
+    expect(email.text).not.toContain('Nom :')
+  })
 })

@@ -17,3 +17,4 @@ Décisions d'architecture (`docs/adr/`) :
 - [ADR 0004 — Métriques de heartbeat agrégées](adr/0004-metriques-heartbeat-agregees.md)
 - [ADR 0005 — Préférences de compte](adr/0005-preferences-de-compte.md)
 - [ADR 0006 — Mises à jour en direct](adr/0006-mises-a-jour-en-direct.md)
+- [ADR 0007 — Personnalisation de la configuration](adr/0007-personnalisation-de-la-configuration.md)

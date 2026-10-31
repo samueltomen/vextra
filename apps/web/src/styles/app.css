@@ -76,6 +76,10 @@
     text-wrap: pretty;
   }
 
+  html[data-density='comfortable'] {
+    font-size: 16.5px;
+  }
+
   body {
     min-width: 320px;
     margin: 0;

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
+  Copy,
   Bell,
   CalendarClock,
   CirclePause,
@@ -50,6 +51,7 @@ import {
 import { setMonitorFolder } from '../../workspace/api/workspace-api.ts'
 import { useFolders } from '../../workspace/query/use-folders.ts'
 import { AvailabilityBar } from './availability-bar.tsx'
+import { MonitorDetailsCard } from './monitor-details-card.tsx'
 import { MonitorMetricsPanel } from './monitor-metrics-panel.tsx'
 import { DurationPicker } from './duration-picker.tsx'
 import {
@@ -350,6 +352,18 @@ export function MonitorDetailPage({
               Mettre en pause
             </Button>
           )}
+          <Link
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-line px-4 text-sm font-medium hover:border-border-strong"
+            search={{
+              grace: monitor.graceMinutes,
+              interval: monitor.intervalMinutes,
+              name: `${monitor.localLabel} (copie)`,
+            }}
+            to="/monitors/new"
+          >
+            <Copy aria-hidden="true" size={16} />
+            Cloner
+          </Link>
           <label className="ml-auto flex items-center gap-2 text-sm text-muted">
             Dossier
             <select
@@ -426,6 +440,8 @@ export function MonitorDetailPage({
           value={formatRelativeTime(monitor.lastHeartbeatAtMs)}
         />
       </section>
+
+      <MonitorDetailsCard key={monitor.id} monitor={monitor} />
 
       <MonitorMetricsPanel
         intervalMinutes={monitor.intervalMinutes}

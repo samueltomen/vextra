@@ -26,15 +26,38 @@ export const setMonitorFolderRequestSchema = z.strictObject({
   folderId: z.uuid().nullable(),
 })
 
+export const timeFormatSchema = z.enum(['12h', '24h'])
+export const densitySchema = z.enum(['compact', 'comfortable'])
+export const dashboardViewSchema = z.enum(['list', 'grid'])
+export const dashboardSortSchema = z.enum([
+  'priority',
+  'name',
+  'signal',
+  'recent',
+])
+
 export const preferencesSchema = z.strictObject({
+  dashboardSort: dashboardSortSchema,
+  dashboardView: dashboardViewSchema,
+  defaultFolderId: z.uuid().nullable(),
+  defaultGraceMinutes: z.number().int().min(0).max(10_080),
+  defaultIntervalMinutes: z.number().int().min(1).max(525_600),
+  density: densitySchema,
   displayName: z.string().nullable(),
   notifyOnOpen: z.boolean(),
   notifyOnResolve: z.boolean(),
+  timeFormat: timeFormatSchema,
   timezone: z.string(),
 })
 
 export const updatePreferencesRequestSchema = z
   .strictObject({
+    dashboardSort: dashboardSortSchema,
+    dashboardView: dashboardViewSchema,
+    defaultFolderId: z.uuid().nullable(),
+    defaultGraceMinutes: z.number().int().min(0).max(10_080),
+    defaultIntervalMinutes: z.number().int().min(1).max(525_600),
+    density: densitySchema,
     displayName: z
       .string()
       .trim()
@@ -43,6 +66,7 @@ export const updatePreferencesRequestSchema = z
       .nullable(),
     notifyOnOpen: z.boolean(),
     notifyOnResolve: z.boolean(),
+    timeFormat: timeFormatSchema,
     timezone: z
       .string()
       .min(1)

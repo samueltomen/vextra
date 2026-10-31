@@ -15,7 +15,9 @@ const demoId = (suffix: string) =>
 let monitors: MonitorView[] = [
   {
     alertAtMs: nowMs + 3_600_000,
+    alertsEnabled: true,
     createdAtMs: nowMs - 86_400_000,
+    description: null,
     folderId: '30000000-0000-4000-8000-000000000001',
     graceMinutes: 30,
     id: demoId('1'),
@@ -23,12 +25,16 @@ let monitors: MonitorView[] = [
     intervalMinutes: 1_440,
     lastHeartbeatAtMs: nowMs - 2_520_000,
     localLabel: 'Sauvegarde PostgreSQL',
+    notes: null,
+    serverName: null,
     status: 'healthy',
     totalPings: 0,
   },
   {
     alertAtMs: nowMs - 360_000,
+    alertsEnabled: true,
     createdAtMs: nowMs - 86_400_000,
+    description: null,
     folderId: '30000000-0000-4000-8000-000000000001',
     graceMinutes: 3,
     id: demoId('2'),
@@ -36,12 +42,16 @@ let monitors: MonitorView[] = [
     intervalMinutes: 15,
     lastHeartbeatAtMs: nowMs - 1_440_000,
     localLabel: 'Synchronisation Stripe',
+    notes: null,
+    serverName: null,
     status: 'late',
     totalPings: 0,
   },
   {
     alertAtMs: nowMs + 345_600_000,
+    alertsEnabled: true,
     createdAtMs: nowMs - 604_800_000,
+    description: null,
     folderId: null,
     graceMinutes: 120,
     id: demoId('3'),
@@ -49,12 +59,16 @@ let monitors: MonitorView[] = [
     intervalMinutes: 10_080,
     lastHeartbeatAtMs: nowMs - 345_600_000,
     localLabel: 'Rapport hebdomadaire',
+    notes: null,
+    serverName: null,
     status: 'paused',
     totalPings: 0,
   },
   {
     alertAtMs: nowMs + 21_600_000,
+    alertsEnabled: true,
     createdAtMs: nowMs - 60_000,
+    description: null,
     folderId: null,
     graceMinutes: 20,
     id: demoId('4'),
@@ -62,6 +76,8 @@ let monitors: MonitorView[] = [
     intervalMinutes: 360,
     lastHeartbeatAtMs: null,
     localLabel: 'Nettoyage des médias',
+    notes: null,
+    serverName: null,
     status: 'pending',
     totalPings: 0,
   },
@@ -99,7 +115,9 @@ export async function createDemoMonitor(input: DemoCreateInput) {
   const monitor: MonitorView = {
     alertAtMs:
       createdAtMs + (input.intervalMinutes + input.graceMinutes) * 60_000,
+    alertsEnabled: true,
     createdAtMs,
+    description: null,
     folderId: null,
     graceMinutes: input.graceMinutes,
     id: crypto.randomUUID(),
@@ -107,6 +125,8 @@ export async function createDemoMonitor(input: DemoCreateInput) {
     intervalMinutes: input.intervalMinutes,
     lastHeartbeatAtMs: null,
     localLabel: input.localLabel.trim(),
+    notes: null,
+    serverName: null,
     status: 'pending',
     totalPings: 0,
   }
@@ -250,4 +270,35 @@ export async function listDemoNotifications(): Promise<
       updatedAtMs: nowMs - 3_000_000,
     },
   ]
+}
+
+export async function updateDemoMonitorDetails(
+  monitorId: string,
+  changes: Readonly<{
+    alertsEnabled?: boolean
+    description?: string | null
+    name?: string | null
+    notes?: string | null
+  }>,
+): Promise<void> {
+  monitors = monitors.map((monitor) =>
+    monitor.id === monitorId
+      ? {
+          ...monitor,
+          ...(changes.alertsEnabled !== undefined
+            ? { alertsEnabled: changes.alertsEnabled }
+            : {}),
+          ...(changes.description !== undefined
+            ? { description: changes.description }
+            : {}),
+          ...(changes.name !== undefined
+            ? {
+                localLabel: changes.name ?? monitor.localLabel,
+                serverName: changes.name,
+              }
+            : {}),
+          ...(changes.notes !== undefined ? { notes: changes.notes } : {}),
+        }
+      : monitor,
+  )
 }

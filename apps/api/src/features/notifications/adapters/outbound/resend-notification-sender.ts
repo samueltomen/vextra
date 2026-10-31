@@ -18,12 +18,14 @@ export class ResendNotificationSender implements NotificationSender {
   async send(input: {
     kind: NotificationKind
     monitorId: string
+    monitorName: string | null
     to: string
   }): Promise<void> {
     const message = renderNotificationEmail({
       appOrigin: this.dependencies.appOrigin,
       kind: input.kind,
       monitorId: input.monitorId,
+      monitorName: input.monitorName,
     })
     const response = await fetch(RESEND_EMAILS_URL, {
       body: JSON.stringify({

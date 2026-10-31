@@ -8,6 +8,7 @@ export type ClaimedNotification = Readonly<{
   email: string
   kind: NotificationKind
   monitorId: string
+  monitorName: string | null
 }>
 
 export interface NotificationDeliveryQueue {
@@ -23,6 +24,7 @@ export interface NotificationSender {
   send(input: {
     kind: NotificationKind
     monitorId: string
+    monitorName: string | null
     to: string
   }): Promise<void>
 }
@@ -58,6 +60,7 @@ export class DeliverNotifications {
         await this.dependencies.sender.send({
           kind: notification.kind,
           monitorId: notification.monitorId,
+          monitorName: notification.monitorName,
           to: notification.email,
         })
         await this.dependencies.queue.complete({

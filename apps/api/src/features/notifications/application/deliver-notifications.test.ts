@@ -12,6 +12,7 @@ const DELIVERY = {
   email: 'owner@example.test',
   kind: 'incident_opened' as const,
   monitorId: '20000000-0000-4000-8000-000000000001',
+  monitorName: 'Sauvegarde nocturne',
 }
 
 function createQueue(
@@ -39,6 +40,7 @@ describe('DeliverNotifications', () => {
     expect(sender.send).toHaveBeenCalledWith({
       kind: 'incident_opened',
       monitorId: DELIVERY.monitorId,
+      monitorName: DELIVERY.monitorName,
       to: DELIVERY.email,
     })
     expect(queue.complete).toHaveBeenCalledWith({

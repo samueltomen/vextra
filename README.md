@@ -189,8 +189,15 @@ apparaît en quelques secondes sans recharger
 ([ADR 0006](docs/adr/0006-mises-a-jour-en-direct.md)). Le premier déploiement
 après cette version crée le Durable Object `TenantLiveHub` (migration `v1`).
 
-Ces fonctions s'appuient sur trois migrations (`20261031100000`,
-`20261031110000`, `20261031120000`) à appliquer avec `supabase db push` avant de
+Chaque moniteur a un **nom, une description et des notes** stockés côté serveur
+(le nom apparaît dans les e-mails), des **alertes activables par moniteur** et
+un bouton **Cloner**. Les réglages ajoutent le format de l'heure, la densité,
+la vue et le tri par défaut, ainsi que la fréquence, la marge et le dossier
+proposés à la création
+([ADR 0007](docs/adr/0007-personnalisation-de-la-configuration.md)).
+
+Ces fonctions s'appuient sur quatre migrations (`20261031100000`,
+`20261031110000`, `20261031120000`, `20261031130000`) à appliquer avec `supabase db push` avant de
 déployer l'API.
 
 ## Commandes

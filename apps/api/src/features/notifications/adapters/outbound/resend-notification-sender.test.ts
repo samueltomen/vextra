@@ -5,6 +5,7 @@ import { ResendNotificationSender } from './resend-notification-sender.ts'
 const INPUT = {
   kind: 'incident_opened' as const,
   monitorId: '20000000-0000-4000-8000-000000000001',
+  monitorName: 'Sauvegarde nocturne',
   to: 'owner@example.test',
 }
 

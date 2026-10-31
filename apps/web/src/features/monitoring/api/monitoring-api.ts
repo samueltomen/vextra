@@ -17,6 +17,7 @@ import {
   renameDemoMonitor,
   resumeDemoMonitor,
   rotateDemoMonitorToken,
+  updateDemoMonitorDetails,
   updateDemoMonitorSchedule,
 } from '../../../demo/demo-monitoring-store.ts'
 import { isDemoModeEnabled } from '../../../demo/demo-mode.ts'
@@ -51,7 +52,9 @@ function toMonitorView(
 ): MonitorView {
   return {
     alertAtMs: Date.parse(monitor.alertAt),
+    alertsEnabled: monitor.alertsEnabled,
     createdAtMs: Date.parse(monitor.createdAt),
+    description: monitor.description,
     folderId: monitor.folderId,
     graceMinutes: Math.round(monitor.graceSeconds / 60),
     id: monitor.id,
@@ -64,7 +67,9 @@ function toMonitorView(
       monitor.lastHeartbeatAt === null
         ? null
         : Date.parse(monitor.lastHeartbeatAt),
-    localLabel,
+    localLabel: monitor.name ?? localLabel,
+    notes: monitor.notes,
+    serverName: monitor.name,
     status: monitor.status,
     totalPings: monitor.totalPings,
   }
@@ -130,11 +135,20 @@ export async function createMonitor(
 
   saveLocalMonitorLabel(response.data.id, draft.localLabel)
 
+  if (draft.localLabel.trim().length > 0) {
+    // Best effort: the name is only a convenience, the monitor already exists.
+    await updateMonitorDetails(response.data.id, {
+      name: draft.localLabel.trim(),
+    }).catch(() => undefined)
+  }
+
   return {
     heartbeatToken: response.data.heartbeatToken,
     monitor: {
       alertAtMs: Date.parse(response.data.alertAt),
+      alertsEnabled: true,
       createdAtMs: nowMs,
+      description: null,
       folderId: null,
       graceMinutes: draft.graceMinutes,
       id: response.data.id,
@@ -142,6 +156,8 @@ export async function createMonitor(
       intervalMinutes: draft.intervalMinutes,
       lastHeartbeatAtMs: null,
       localLabel: draft.localLabel.trim(),
+      notes: null,
+      serverName: draft.localLabel.trim() || null,
       status: response.data.status,
       totalPings: 0,
     },
@@ -157,6 +173,28 @@ export async function renameMonitor(
   }
 
   saveLocalMonitorLabel(monitorId, label)
+  await updateMonitorDetails(monitorId, { name: label.trim() || null })
+}
+
+export type MonitorDetailsChanges = Readonly<{
+  alertsEnabled?: boolean
+  description?: string | null
+  name?: string | null
+  notes?: string | null
+}>
+
+export async function updateMonitorDetails(
+  monitorId: string,
+  changes: MonitorDetailsChanges,
+): Promise<void> {
+  if (isDemoModeEnabled()) {
+    return updateDemoMonitorDetails(monitorId, changes)
+  }
+
+  await apiRequest(`/api/monitors/${encodeURIComponent(monitorId)}/details`, {
+    body: JSON.stringify(changes),
+    method: 'PATCH',
+  })
 }
 
 export type MonitorScheduleDraft = Readonly<{

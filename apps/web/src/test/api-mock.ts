@@ -10,13 +10,17 @@ export const TEST_ACCOUNT = {
 
 type MonitorRow = {
   alertAt: string
+  alertsEnabled: boolean
   createdAt: string
+  description: string | null
   folderId: string | null
   graceSeconds: number
   id: string
   incidentOpenedAt: string | null
   intervalSeconds: number
   lastHeartbeatAt: string | null
+  name: string | null
+  notes: string | null
   pausedAt: string | null
   status: 'healthy' | 'late' | 'paused' | 'pending'
   totalPings: number
@@ -35,6 +39,8 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
   return [
     {
       alertAt: new Date(nowMs + 60 * 60_000).toISOString(),
+      alertsEnabled: true,
+      description: null,
       createdAt: new Date(nowMs - 86_400_000).toISOString(),
       folderId: null,
       graceSeconds: 1_800,
@@ -42,12 +48,16 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       incidentOpenedAt: null,
       intervalSeconds: 86_400,
       lastHeartbeatAt: new Date(nowMs - 42 * 60_000).toISOString(),
+      name: null,
+      notes: null,
       pausedAt: null,
       status: 'healthy',
       totalPings: 0,
     },
     {
       alertAt: new Date(nowMs - 6 * 60_000).toISOString(),
+      alertsEnabled: true,
+      description: null,
       createdAt: new Date(nowMs - 86_400_000).toISOString(),
       folderId: null,
       graceSeconds: 180,
@@ -55,12 +65,16 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       incidentOpenedAt: new Date(nowMs - 6 * 60_000).toISOString(),
       intervalSeconds: 900,
       lastHeartbeatAt: new Date(nowMs - 24 * 60_000).toISOString(),
+      name: null,
+      notes: null,
       pausedAt: null,
       status: 'late',
       totalPings: 0,
     },
     {
       alertAt: new Date(nowMs + 4 * 86_400_000).toISOString(),
+      alertsEnabled: true,
+      description: null,
       createdAt: new Date(nowMs - 7 * 86_400_000).toISOString(),
       folderId: null,
       graceSeconds: 7_200,
@@ -68,12 +82,16 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       incidentOpenedAt: null,
       intervalSeconds: 604_800,
       lastHeartbeatAt: new Date(nowMs - 4 * 86_400_000).toISOString(),
+      name: null,
+      notes: null,
       pausedAt: new Date(nowMs - 86_400_000).toISOString(),
       status: 'paused',
       totalPings: 0,
     },
     {
       alertAt: new Date(nowMs + 6 * 60 * 60_000).toISOString(),
+      alertsEnabled: true,
+      description: null,
       createdAt: new Date(nowMs - 60_000).toISOString(),
       folderId: null,
       graceSeconds: 1_200,
@@ -81,6 +99,8 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       incidentOpenedAt: null,
       intervalSeconds: 21_600,
       lastHeartbeatAt: null,
+      name: null,
+      notes: null,
       pausedAt: null,
       status: 'pending',
       totalPings: 0,
@@ -126,9 +146,16 @@ export function installApiMock(options: ApiMockOptions = {}) {
     ...(options.folders ?? [{ id: TEST_FOLDER_ID, name: 'Production' }]),
   ]
   let preferences = {
+    dashboardSort: 'priority',
+    dashboardView: 'list',
+    defaultFolderId: null as string | null,
+    defaultGraceMinutes: 2,
+    defaultIntervalMinutes: 5,
+    density: 'compact',
     displayName: null as string | null,
     notifyOnOpen: true,
     notifyOnResolve: true,
+    timeFormat: '24h',
     timezone: 'Europe/Paris',
   }
   const monitors = [...(options.monitors ?? createMonitorRows())]
@@ -146,6 +173,22 @@ export function installApiMock(options: ApiMockOptions = {}) {
     async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input), window.location.origin)
       const method = init?.method ?? 'GET'
+
+      if (url.pathname.endsWith('/details') && method === 'PATCH') {
+        const monitorId = url.pathname.split('/').at(-2)
+        const changes = JSON.parse(
+          String(init?.body),
+        ) as Partial<MonitorRow> & {
+          alertsEnabled?: boolean
+        }
+        const monitor = monitors.find((candidate) => candidate.id === monitorId)
+
+        if (monitor) {
+          Object.assign(monitor, changes)
+        }
+
+        return new Response(null, { status: monitor ? 204 : 404 })
+      }
 
       if (url.pathname === '/api/monitors/activity' && method === 'GET') {
         return jsonResponse({
@@ -323,13 +366,17 @@ export function installApiMock(options: ApiMockOptions = {}) {
           alertAt: new Date(
             nowMs + (body.intervalSeconds + body.graceSeconds) * 1_000,
           ).toISOString(),
+          alertsEnabled: true,
           createdAt: new Date(nowMs).toISOString(),
+          description: null,
           folderId: null,
           graceSeconds: body.graceSeconds,
           id: '20000000-0000-4000-8000-000000000099',
           incidentOpenedAt: null,
           intervalSeconds: body.intervalSeconds,
           lastHeartbeatAt: null,
+          name: null,
+          notes: null,
           pausedAt: null,
           status: 'pending',
           totalPings: 0,

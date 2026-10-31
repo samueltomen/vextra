@@ -62,16 +62,30 @@ export class ManageFolders {
 }
 
 export type PreferencesRecord = Readonly<{
+  dashboardSort: 'name' | 'priority' | 'recent' | 'signal'
+  dashboardView: 'grid' | 'list'
+  defaultFolderId: string | null
+  defaultGraceMinutes: number
+  defaultIntervalMinutes: number
+  density: 'comfortable' | 'compact'
   displayName: string | null
   notifyOnOpen: boolean
   notifyOnResolve: boolean
+  timeFormat: '12h' | '24h'
   timezone: string
 }>
 
 export const DEFAULT_PREFERENCES: PreferencesRecord = {
+  dashboardSort: 'priority',
+  dashboardView: 'list',
+  defaultFolderId: null,
+  defaultGraceMinutes: 5,
+  defaultIntervalMinutes: 60,
+  density: 'compact',
   displayName: null,
   notifyOnOpen: true,
   notifyOnResolve: true,
+  timeFormat: '24h',
   timezone: 'Europe/Paris',
 }
 
@@ -105,5 +119,32 @@ export class AccountPreferencesService {
     }
 
     return next
+  }
+}
+
+export type MonitorDetailsChanges = Readonly<{
+  alertsEnabled?: boolean
+  description?: string | null
+  name?: string | null
+  notes?: string | null
+}>
+
+export interface MonitorDetailsPort {
+  update(
+    tenantId: string,
+    monitorId: string,
+    changes: MonitorDetailsChanges,
+  ): Promise<boolean>
+}
+
+export class ManageMonitorDetails {
+  constructor(private readonly port: MonitorDetailsPort) {}
+
+  update(
+    tenantId: string,
+    monitorId: string,
+    changes: MonitorDetailsChanges,
+  ): Promise<boolean> {
+    return this.port.update(tenantId, monitorId, changes)
   }
 }

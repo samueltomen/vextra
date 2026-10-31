@@ -2,6 +2,7 @@ import {
   folderNameRequestSchema,
   monitorIdSchema,
   setMonitorFolderRequestSchema,
+  updateMonitorDetailsRequestSchema,
   updatePreferencesRequestSchema,
 } from '@cronping/contracts'
 import { Hono, type Context } from 'hono'
@@ -12,10 +13,13 @@ import {
   FolderNotFoundError,
   type AccountPreferencesService,
   type ManageFolders,
+  type ManageMonitorDetails,
+  type MonitorDetailsChanges,
   type PreferencesRecord,
 } from '../../../application/workspace.ts'
 
 export type WorkspaceScope = Readonly<{
+  details: Pick<ManageMonitorDetails, 'update'>
   folders: Pick<
     ManageFolders,
     'assign' | 'create' | 'list' | 'remove' | 'rename'
@@ -213,6 +217,37 @@ export function createWorkspaceRoutes(
       )
 
       return assigned
+        ? context.body(null, 204)
+        : errorBody(context, 404, 'monitor_not_found', 'Monitor not found')
+    }),
+  )
+
+  routes.patch('/api/monitors/:monitorId/details', (context) =>
+    withScope(context, async (scope) => {
+      const monitorId = monitorIdSchema.safeParse(
+        context.req.param('monitorId'),
+      )
+
+      if (!monitorId.success) {
+        return errorBody(context, 404, 'monitor_not_found', 'Monitor not found')
+      }
+
+      const body = await readBody(context, updateMonitorDetailsRequestSchema)
+
+      if ('response' in body) {
+        return body.response
+      }
+
+      const changes = Object.fromEntries(
+        Object.entries(body.data).filter(([, value]) => value !== undefined),
+      ) as MonitorDetailsChanges
+      const updated = await scope.details.update(
+        scope.tenantId,
+        monitorId.data,
+        changes,
+      )
+
+      return updated
         ? context.body(null, 204)
         : errorBody(context, 404, 'monitor_not_found', 'Monitor not found')
     }),
