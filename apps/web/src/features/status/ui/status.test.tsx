@@ -48,7 +48,9 @@ describe('StatusPageCard', () => {
     fireEvent.change(screen.getByLabelText('Adresse'), {
       target: { value: 'Acme-Status' },
     })
-    fireEvent.click(screen.getAllByRole('checkbox', { name: /Sauvegarde/ })[0]!)
+    fireEvent.click(
+      (await screen.findAllByRole('checkbox', { name: /Sauvegarde/ }))[0]!,
+    )
     expect(save).toBeEnabled()
     fireEvent.click(save)
 

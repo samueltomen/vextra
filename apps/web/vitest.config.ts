@@ -3,6 +3,8 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     environment: 'jsdom',
+    // Parallel jsdom workers under coverage can exceed the 5 s default.
+    testTimeout: 15_000,
     // Node >= 25 expose un localStorage natif qui masque celui de jsdom.
     execArgv: ['--no-experimental-webstorage'],
     setupFiles: ['./src/test/setup.ts'],
