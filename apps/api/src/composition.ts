@@ -721,13 +721,30 @@ export async function runChannelDelivery(environment: WorkerEnvironment) {
  * trigger and the self-hosted scheduler.
  */
 export async function runScheduledTick(environment: WorkerEnvironment) {
+  const failed: string[] = []
+  // Each step is isolated: a failure (a missing function, a provider outage)
+  // must never stop detection or delivery of alerts for the other steps.
+  const step = async <T>(name: string, run: () => Promise<T>) => {
+    try {
+      return await run()
+    } catch {
+      failed.push(name)
+
+      return null
+    }
+  }
+
   // Exact cron deadlines first, so the check below never uses a provisional one.
-  const cron = await runCronDeadlineRefinement(environment)
-  const opened = await runScheduledCheck(environment)
-  const reminders = await runIncidentReminders(environment)
-  const delivery = await runNotificationDelivery(environment)
-  const channels = await runChannelDelivery(environment)
-  const weekly = await runWeeklyReports(environment)
+  const cron = await step('cron', () => runCronDeadlineRefinement(environment))
+  const opened = await step('check', () => runScheduledCheck(environment))
+  const reminders = await step('reminders', () =>
+    runIncidentReminders(environment),
+  )
+  const delivery = await step('email', () =>
+    runNotificationDelivery(environment),
+  )
+  const channels = await step('channels', () => runChannelDelivery(environment))
+  const weekly = await step('weekly', () => runWeeklyReports(environment))
 
   console.info(
     JSON.stringify({
@@ -735,6 +752,7 @@ export async function runScheduledTick(environment: WorkerEnvironment) {
       cron,
       delivery,
       event: 'cron.tick',
+      ...(failed.length > 0 ? { failed } : {}),
       opened,
       reminders,
       weekly,
