@@ -10,6 +10,7 @@ export default tseslint.config(
       '**/.wrangler/**',
       '**/coverage/**',
       '**/dist/**',
+      '**/dist-node/**',
       '**/node_modules/**',
       '**/routeTree.gen.ts',
     ],

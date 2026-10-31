@@ -73,7 +73,15 @@ export function createPingRoutes(dependencies: PingRoutesDependencies): Hono {
           : await dependencies.recordEvent(token, kind)
 
       return accepted ? context.body(null, 204) : rejected(context)
-    } catch {
+    } catch (error) {
+      // Never log the token: only the failing step (our own error message).
+      console.warn(
+        JSON.stringify({
+          event: 'ping.storage_failed',
+          reason: error instanceof Error ? error.message : 'unknown',
+        }),
+      )
+
       return context.json(
         {
           error: {
