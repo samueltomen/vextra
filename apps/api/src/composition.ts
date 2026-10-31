@@ -90,6 +90,11 @@ import {
   ManageFolders,
   ManageMonitorDetails,
 } from './features/workspace/application/workspace.ts'
+import {
+  SmtpNotificationSender,
+  SmtpWeeklyReportSender,
+  type MailTransport,
+} from './features/notifications/adapters/outbound/smtp-email-senders.ts'
 import { SupabaseWeeklyReportQueue } from './features/notifications/adapters/outbound/supabase-weekly-report-queue.ts'
 import { SendWeeklyReports } from './features/notifications/application/send-weekly-reports.ts'
 import {
@@ -127,6 +132,10 @@ export type WorkerEnvironment = Readonly<{
   SUPABASE_SERVICE_ROLE_KEY: string
   SUPABASE_URL: string
   AUTH_RATE_LIMITER?: RateLimitBinding
+  CLIENT_IP_HEADER?: string
+  EMAIL_FROM?: string
+  EMAIL_TRANSPORT?: MailTransport
+  SIGNUPS_ENABLED?: string
   TENANT_LIVE_HUB?: TenantLiveHubNamespace
   PING_RATE_LIMITER?: RateLimitBinding
 }>
@@ -398,7 +407,16 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
       authenticate: authenticateAccount,
     }),
     allowedOrigin: environment.APP_ORIGIN,
-    authRoutes: createAuthRoutes({ accounts, codec }),
+    ...(environment.CLIENT_IP_HEADER
+      ? { clientIpHeader: environment.CLIENT_IP_HEADER }
+      : {}),
+    authRoutes: createAuthRoutes({
+      accounts,
+      codec,
+      signupsEnabled: !['false', '0'].includes(
+        environment.SIGNUPS_ENABLED?.toLowerCase() ?? '',
+      ),
+    }),
     monitorRoutes: createMonitorRoutes({ authenticate: authenticateMonitor }),
     notificationRoutes: createNotificationRoutes({
       authenticate: authenticateNotifications,
@@ -441,11 +459,54 @@ export async function runScheduledCheck(
   return checker.execute(batchSize)
 }
 
+/** E-mail goes through Resend when configured, else through SMTP. */
+function createNotificationSender(environment: WorkerEnvironment) {
+  if (environment.RESEND_API_KEY && environment.RESEND_FROM_EMAIL) {
+    return new ResendNotificationSender({
+      apiKey: environment.RESEND_API_KEY,
+      appOrigin: environment.APP_ORIGIN,
+      from: environment.RESEND_FROM_EMAIL,
+    })
+  }
+
+  if (environment.EMAIL_TRANSPORT && environment.EMAIL_FROM) {
+    return new SmtpNotificationSender({
+      appOrigin: environment.APP_ORIGIN,
+      from: environment.EMAIL_FROM,
+      transport: environment.EMAIL_TRANSPORT,
+    })
+  }
+
+  return null
+}
+
+function createWeeklyReportSender(environment: WorkerEnvironment) {
+  if (environment.RESEND_API_KEY && environment.RESEND_FROM_EMAIL) {
+    return new ResendWeeklyReportSender({
+      apiKey: environment.RESEND_API_KEY,
+      appOrigin: environment.APP_ORIGIN,
+      from: environment.RESEND_FROM_EMAIL,
+    })
+  }
+
+  if (environment.EMAIL_TRANSPORT && environment.EMAIL_FROM) {
+    return new SmtpWeeklyReportSender({
+      appOrigin: environment.APP_ORIGIN,
+      from: environment.EMAIL_FROM,
+      transport: environment.EMAIL_TRANSPORT,
+    })
+  }
+
+  return null
+}
+
 export async function runNotificationDelivery(
   environment: WorkerEnvironment,
   batchSize = 10,
 ) {
-  if (!environment.RESEND_API_KEY || !environment.RESEND_FROM_EMAIL) {
+  const sender = createNotificationSender(environment)
+
+  if (!sender) {
     return null
   }
 
@@ -454,18 +515,16 @@ export async function runNotificationDelivery(
     queue: new SupabaseNotificationDeliveryQueue(
       client as unknown as NotificationDeliveryRpcClient,
     ),
-    sender: new ResendNotificationSender({
-      apiKey: environment.RESEND_API_KEY,
-      appOrigin: environment.APP_ORIGIN,
-      from: environment.RESEND_FROM_EMAIL,
-    }),
+    sender,
   })
 
   return deliver.execute(batchSize)
 }
 
 export async function runWeeklyReports(environment: WorkerEnvironment) {
-  if (!environment.RESEND_API_KEY || !environment.RESEND_FROM_EMAIL) {
+  const sender = createWeeklyReportSender(environment)
+
+  if (!sender) {
     return null
   }
 
@@ -473,11 +532,7 @@ export async function runWeeklyReports(environment: WorkerEnvironment) {
     queue: new SupabaseWeeklyReportQueue(
       createServiceSupabaseClient(environment),
     ),
-    sender: new ResendWeeklyReportSender({
-      apiKey: environment.RESEND_API_KEY,
-      appOrigin: environment.APP_ORIGIN,
-      from: environment.RESEND_FROM_EMAIL,
-    }),
+    sender,
   }).execute(Date.now())
 }
 
@@ -497,4 +552,28 @@ export async function runChannelDelivery(environment: WorkerEnvironment) {
     ),
     sender: new HttpChannelSender(),
   }).execute()
+}
+
+/**
+ * One scheduled pass: detect late monitors, enqueue reminders, then deliver
+ * e-mails, channel alerts and the weekly report. Shared by the Cloudflare cron
+ * trigger and the self-hosted scheduler.
+ */
+export async function runScheduledTick(environment: WorkerEnvironment) {
+  const opened = await runScheduledCheck(environment)
+  const reminders = await runIncidentReminders(environment)
+  const delivery = await runNotificationDelivery(environment)
+  const channels = await runChannelDelivery(environment)
+  const weekly = await runWeeklyReports(environment)
+
+  console.info(
+    JSON.stringify({
+      channels,
+      delivery,
+      event: 'cron.tick',
+      opened,
+      reminders,
+      weekly,
+    }),
+  )
 }

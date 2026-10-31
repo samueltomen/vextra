@@ -16,6 +16,8 @@ export type ApiApplicationDependencies = Readonly<{
   notificationRoutes: Hono
   pingRoutes: Hono
   workspaceRoutes: Hono
+  /** Header carrying the client IP (default: Cloudflare's). */
+  clientIpHeader?: string
   rateLimiters?: Readonly<{ auth: RateLimiter; ping: RateLimiter }>
 }>
 
@@ -50,6 +52,9 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
 
   if (dependencies.rateLimiters) {
     const authLimit = createRateLimitGuard({
+      ...(dependencies.clientIpHeader
+        ? { clientIpHeader: dependencies.clientIpHeader }
+        : {}),
       limiter: dependencies.rateLimiters.auth,
       scope: 'auth',
     })
@@ -59,6 +64,9 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
     app.use(
       '/api/ping/*',
       createRateLimitGuard({
+        ...(dependencies.clientIpHeader
+          ? { clientIpHeader: dependencies.clientIpHeader }
+          : {}),
         limiter: dependencies.rateLimiters.ping,
         methods: ['GET', 'HEAD', 'POST'],
         scope: 'ping',

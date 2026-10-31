@@ -1,10 +1,6 @@
 import {
   createApiFromEnvironment,
-  runChannelDelivery,
-  runIncidentReminders,
-  runNotificationDelivery,
-  runWeeklyReports,
-  runScheduledCheck,
+  runScheduledTick,
   type WorkerEnvironment,
 } from './composition.ts'
 
@@ -35,25 +31,6 @@ export default {
     environment: WorkerEnvironment,
     context: ScheduledContext,
   ) {
-    context.waitUntil(
-      (async () => {
-        const opened = await runScheduledCheck(environment)
-        const reminders = await runIncidentReminders(environment)
-        const delivery = await runNotificationDelivery(environment)
-        const channels = await runChannelDelivery(environment)
-        const weekly = await runWeeklyReports(environment)
-
-        console.info(
-          JSON.stringify({
-            channels,
-            delivery,
-            event: 'cron.tick',
-            opened,
-            reminders,
-            weekly,
-          }),
-        )
-      })(),
-    )
+    context.waitUntil(runScheduledTick(environment))
   },
 }
