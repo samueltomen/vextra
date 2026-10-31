@@ -10,6 +10,7 @@ export type ApiApplicationDependencies = Readonly<{
   accountRoutes: Hono
   allowedOrigin: string
   authRoutes: Hono
+  channelRoutes: Hono
   liveRoutes: Hono
   monitorRoutes: Hono
   notificationRoutes: Hono
@@ -70,6 +71,8 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
   app.use('/api/monitors', originGuard)
   app.use('/api/monitors/*', originGuard)
   app.use('/api/notifications', originGuard)
+  app.use('/api/channels', originGuard)
+  app.use('/api/channels/*', originGuard)
   app.use('/api/folders', originGuard)
   app.use('/api/folders/*', originGuard)
   app.use('/api/preferences', originGuard)
@@ -79,6 +82,7 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
   app.route('/', dependencies.monitorRoutes)
   app.route('/', dependencies.notificationRoutes)
   app.route('/', dependencies.workspaceRoutes)
+  app.route('/', dependencies.channelRoutes)
   app.route('/', dependencies.liveRoutes)
   app.route('/', dependencies.pingRoutes)
 

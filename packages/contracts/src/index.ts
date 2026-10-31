@@ -80,11 +80,17 @@ export type {
 } from './notifications/notification-delivery.ts'
 
 export {
+  CHANNEL_KINDS,
   MAX_DISPLAY_NAME_LENGTH,
   MAX_FOLDER_NAME_LENGTH,
+  channelKindSchema,
+  channelResponseSchema,
+  channelSchema,
+  createChannelRequestSchema,
   folderNameRequestSchema,
   folderResponseSchema,
   folderSchema,
+  listChannelsResponseSchema,
   listFoldersResponseSchema,
   metricsDaySchema,
   monitorActivityResponseSchema,
@@ -94,10 +100,14 @@ export {
   preferencesResponseSchema,
   preferencesSchema,
   setMonitorFolderRequestSchema,
+  reminderIntervalSchema,
+  updateChannelRequestSchema,
   updatePreferencesRequestSchema,
 } from './workspace/workspace.ts'
 
 export type {
+  Channel,
+  ChannelKind,
   Folder,
   MetricsDay,
   MonitorMetricsResponse,

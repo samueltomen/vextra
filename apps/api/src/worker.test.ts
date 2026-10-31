@@ -12,6 +12,41 @@ const ENVIRONMENT: WorkerEnvironment = {
   SUPABASE_URL: 'https://project.supabase.test',
 }
 
+function mockSupabase(overrides: Record<string, unknown> = {}) {
+  const responses: Record<string, unknown> = {
+    claim_channel_deliveries: [],
+    claim_notification_deliveries: [],
+    enqueue_incident_reminders: 0,
+    open_due_monitor_incidents: 0,
+    ...overrides,
+  }
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input)
+    const name = Object.keys(responses).find((key) => url.includes(key))
+
+    if (!name) {
+      throw new Error(`Unexpected request: ${url}`)
+    }
+
+    return Response.json(responses[name])
+  })
+
+  vi.stubGlobal('fetch', fetchMock)
+
+  return fetchMock
+}
+
+async function runScheduled(environment: typeof ENVIRONMENT) {
+  let scheduledTask: Promise<unknown> | undefined
+
+  worker.scheduled({}, environment, {
+    waitUntil(promise) {
+      scheduledTask = promise
+    },
+  })
+  await scheduledTask
+}
+
 describe('Cloudflare Worker entrypoint', () => {
   it('serves requests when configuration is present', async () => {
     const response = await worker.fetch(
@@ -37,80 +72,60 @@ describe('Cloudflare Worker entrypoint', () => {
     })
   })
 
-  it('runs the due-monitor checker through the scheduled handler', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      expect(String(input)).toContain('/rest/v1/rpc/open_due_monitor_incidents')
+  it('runs the checks, reminders and channel deliveries on each tick', async () => {
+    const fetchMock = mockSupabase({ open_due_monitor_incidents: 2 })
 
-      return Response.json(2)
-    })
-    vi.stubGlobal('fetch', fetchMock)
-    let scheduledTask: Promise<unknown> | undefined
+    await runScheduled(ENVIRONMENT)
 
-    worker.scheduled({}, ENVIRONMENT, {
-      waitUntil(promise) {
-        scheduledTask = promise
-      },
-    })
-    await scheduledTask
+    const urls = fetchMock.mock.calls.map(([input]) => String(input))
 
-    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(urls.some((url) => url.includes('open_due_monitor_incidents'))).toBe(
+      true,
+    )
+    expect(urls.some((url) => url.includes('enqueue_incident_reminders'))).toBe(
+      true,
+    )
+    expect(urls.some((url) => url.includes('claim_channel_deliveries'))).toBe(
+      true,
+    )
+    expect(
+      urls.some((url) => url.includes('claim_notification_deliveries')),
+    ).toBe(false)
   })
 
-  it('claims notification deliveries when Resend is configured', async () => {
-    const fetchMock = vi
-      .fn(async (input: RequestInfo | URL) => {
-        const url = String(input)
+  it('claims e-mail deliveries too when Resend is configured', async () => {
+    const fetchMock = mockSupabase()
 
-        if (url.includes('open_due_monitor_incidents')) {
-          return Response.json(0)
-        }
+    await runScheduled({
+      ...ENVIRONMENT,
+      RESEND_API_KEY: 're_test',
+      RESEND_FROM_EMAIL: 'CronPing <alerts@example.test>',
+    })
 
-        if (url.includes('claim_notification_deliveries')) {
-          return Response.json([])
-        }
-
-        throw new Error(`Unexpected request: ${url}`)
-      })
-      .mockName('fetch')
-    vi.stubGlobal('fetch', fetchMock)
-    let scheduledTask: Promise<unknown> | undefined
-
-    worker.scheduled(
-      {},
-      {
-        ...ENVIRONMENT,
-        RESEND_API_KEY: 're_test',
-        RESEND_FROM_EMAIL: 'CronPing <alerts@example.test>',
-      },
-      {
-        waitUntil(promise) {
-          scheduledTask = promise
-        },
-      },
-    )
-    await scheduledTask
-
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(
+      fetchMock.mock.calls.some(([input]) =>
+        String(input).includes('claim_notification_deliveries'),
+      ),
+    ).toBe(true)
   })
 
   it('logs one structured tick per scheduled run', async () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
 
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => Response.json(2)),
-    )
-    let scheduledTask: Promise<unknown> | undefined
-
-    worker.scheduled({}, ENVIRONMENT, {
-      waitUntil(promise) {
-        scheduledTask = promise
-      },
+    mockSupabase({
+      enqueue_incident_reminders: 1,
+      open_due_monitor_incidents: 2,
     })
-    await scheduledTask
+    await runScheduled(ENVIRONMENT)
 
     expect(info).toHaveBeenCalledWith(
-      JSON.stringify({ delivery: null, event: 'cron.tick', opened: 2 }),
+      JSON.stringify({
+        channels: { failed: 0, sent: 0 },
+        delivery: null,
+        event: 'cron.tick',
+        opened: 2,
+        reminders: 1,
+      }),
     )
     info.mockRestore()
   })

@@ -65,6 +65,19 @@ import { NotificationHistory } from './features/notifications/application/notifi
 import { createNotificationRoutes } from './features/notifications/adapters/inbound/http/notification-routes.ts'
 import { MonitorMetricsService } from './features/monitoring/application/monitor-metrics.ts'
 import { SupabaseMonitorMetrics } from './features/monitoring/adapters/outbound/supabase-monitor-metrics.ts'
+import { createChannelRoutes } from './features/channels/adapters/inbound/http/channel-routes.ts'
+import { HttpChannelSender } from './features/channels/adapters/outbound/http-channel-sender.ts'
+import {
+  SupabaseChannelDeliveryQueue,
+  SupabaseChannelRepository,
+  SupabaseChannelSecrets,
+  SupabaseIncidentReminders,
+} from './features/channels/adapters/outbound/supabase-channels.ts'
+import {
+  DeliverChannelAlerts,
+  EnqueueIncidentReminders,
+  ManageChannels,
+} from './features/channels/application/channels.ts'
 import { createLiveRoutes } from './features/live/adapters/inbound/http/live-routes.ts'
 import { createWorkspaceRoutes } from './features/workspace/adapters/inbound/http/workspace-routes.ts'
 import {
@@ -308,6 +321,26 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     }
   }
 
+  const authenticateChannels = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    return {
+      channels: new ManageChannels({
+        appOrigin: environment.APP_ORIGIN,
+        channels: new SupabaseChannelRepository(session.client),
+        secrets: new SupabaseChannelSecrets(
+          createServiceSupabaseClient(environment),
+        ),
+        sender: new HttpChannelSender(),
+      }),
+      tenantId: session.account.tenantId,
+    }
+  }
+
   const authenticateLive = async (context: Context) => {
     const session = await resolveSession(context)
 
@@ -369,6 +402,9 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
       execute: (token) => recordHeartbeat.execute(token),
       recordEvent: (token, kind) => recordRunEvent.execute(token, kind),
     }),
+    channelRoutes: createChannelRoutes({
+      authenticate: authenticateChannels,
+    }),
     liveRoutes: createLiveRoutes({
       allowedOrigin: environment.APP_ORIGIN,
       authenticate: authenticateLive,
@@ -421,4 +457,22 @@ export async function runNotificationDelivery(
   })
 
   return deliver.execute(batchSize)
+}
+
+export async function runIncidentReminders(
+  environment: WorkerEnvironment,
+): Promise<number> {
+  return new EnqueueIncidentReminders(
+    new SupabaseIncidentReminders(createServiceSupabaseClient(environment)),
+  ).execute()
+}
+
+export async function runChannelDelivery(environment: WorkerEnvironment) {
+  return new DeliverChannelAlerts({
+    appOrigin: environment.APP_ORIGIN,
+    queue: new SupabaseChannelDeliveryQueue(
+      createServiceSupabaseClient(environment),
+    ),
+    sender: new HttpChannelSender(),
+  }).execute()
 }
