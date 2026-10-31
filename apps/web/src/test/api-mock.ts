@@ -26,6 +26,7 @@ type MonitorRow = {
   pausedAt: string | null
   runningSince: string | null
   status: 'healthy' | 'late' | 'paused' | 'pending'
+  tags: string[]
   totalPings: number
 }
 
@@ -58,6 +59,7 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       pausedAt: null,
       runningSince: null,
       status: 'healthy',
+      tags: [],
       totalPings: 0,
     },
     {
@@ -78,6 +80,7 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       pausedAt: null,
       runningSince: null,
       status: 'late',
+      tags: [],
       totalPings: 0,
     },
     {
@@ -98,6 +101,7 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       pausedAt: new Date(nowMs - 86_400_000).toISOString(),
       runningSince: null,
       status: 'paused',
+      tags: [],
       totalPings: 0,
     },
     {
@@ -118,6 +122,7 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       pausedAt: null,
       runningSince: null,
       status: 'pending',
+      tags: [],
       totalPings: 0,
     },
   ]
@@ -548,6 +553,7 @@ export function installApiMock(options: ApiMockOptions = {}) {
           pausedAt: null,
           runningSince: null,
           status: 'pending',
+          tags: [],
           totalPings: 0,
         }
 

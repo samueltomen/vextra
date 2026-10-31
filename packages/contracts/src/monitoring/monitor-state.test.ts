@@ -11,6 +11,7 @@ const MONITOR = {
   createdAt: '2026-10-24T12:00:00.000Z',
   cronExpression: null,
   cronTimezone: null,
+  tags: ['prod'],
   description: null,
   folderId: null,
   graceSeconds: 30,

@@ -32,6 +32,7 @@ let monitors: MonitorView[] = [
     runningSinceMs: null,
     serverName: null,
     status: 'healthy',
+    tags: ['prod', 'db'],
     totalPings: 0,
   },
   {
@@ -52,6 +53,7 @@ let monitors: MonitorView[] = [
     runningSinceMs: null,
     serverName: null,
     status: 'late',
+    tags: ['prod', 'paiement'],
     totalPings: 0,
   },
   {
@@ -72,6 +74,7 @@ let monitors: MonitorView[] = [
     runningSinceMs: null,
     serverName: null,
     status: 'paused',
+    tags: ['staging'],
     totalPings: 0,
   },
   {
@@ -92,6 +95,7 @@ let monitors: MonitorView[] = [
     runningSinceMs: null,
     serverName: null,
     status: 'pending',
+    tags: ['prod'],
     totalPings: 0,
   },
 ]
@@ -146,6 +150,7 @@ export async function createDemoMonitor(input: DemoCreateInput) {
     runningSinceMs: null,
     serverName: null,
     status: 'pending',
+    tags: [],
     totalPings: 0,
   }
 
@@ -303,6 +308,7 @@ export async function updateDemoMonitorDetails(
     description?: string | null
     name?: string | null
     notes?: string | null
+    tags?: readonly string[]
   }>,
 ): Promise<void> {
   monitors = monitors.map((monitor) =>
@@ -312,6 +318,7 @@ export async function updateDemoMonitorDetails(
           ...(changes.alertsEnabled !== undefined
             ? { alertsEnabled: changes.alertsEnabled }
             : {}),
+          ...(changes.tags !== undefined ? { tags: changes.tags } : {}),
           ...(changes.description !== undefined
             ? { description: changes.description }
             : {}),

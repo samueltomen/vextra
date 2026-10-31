@@ -254,6 +254,7 @@ export class SupabaseMonitorDetailsRepository implements MonitorDetailsPort {
         ? { description: changes.description }
         : {}),
       ...(changes.notes !== undefined ? { notes: changes.notes } : {}),
+      ...(changes.tags !== undefined ? { tags: [...changes.tags] } : {}),
       ...(changes.alertsEnabled !== undefined
         ? { alerts_enabled: changes.alertsEnabled }
         : {}),

@@ -28,6 +28,7 @@ function monitor(overrides: Partial<MonitorView>): MonitorView {
     runningSinceMs: null,
     serverName: null,
     status: 'healthy',
+    tags: [],
     totalPings: 0,
     ...overrides,
   }

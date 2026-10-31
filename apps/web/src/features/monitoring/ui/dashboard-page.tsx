@@ -35,6 +35,8 @@ import {
 } from '../../workspace/query/use-folders.ts'
 import { usePreferences } from '../../workspace/query/use-preferences.ts'
 import { getMonitorsActivity } from '../../workspace/api/workspace-api.ts'
+import { matchesTag } from '../model/tags.ts'
+import { TagBar } from './tag-bar.tsx'
 import { FolderBar } from '../../workspace/ui/folder-bar.tsx'
 import { MonitorListItem } from './monitor-list-item.tsx'
 import { StatusSummary } from './status-summary.tsx'
@@ -151,6 +153,7 @@ function OnboardingCard({ onCreate }: Readonly<{ onCreate: () => void }>) {
 export function DashboardPage() {
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [folderFilter, setFolderFilter] = useState<FolderFilter>('all')
+  const [tagFilter, setTagFilter] = useState<string | null>(null)
   const foldersQuery = useFolders()
   const activityQuery = useQuery({
     queryFn: getMonitorsActivity,
@@ -194,9 +197,11 @@ export function DashboardPage() {
       (monitor) =>
         matchesFilter(monitor.status, filter) &&
         matchesFolder(monitor.folderId, folderFilter) &&
+        matchesTag(monitor.tags, tagFilter) &&
         (normalizedSearch.length === 0 ||
           monitor.localLabel.toLowerCase().includes(normalizedSearch) ||
-          monitor.id.toLowerCase().includes(normalizedSearch)),
+          monitor.id.toLowerCase().includes(normalizedSearch) ||
+          monitor.tags.some((tag) => tag.includes(normalizedSearch))),
     ),
     sort,
   )
@@ -266,6 +271,12 @@ export function DashboardPage() {
           total={monitors.length}
         />
       ) : null}
+
+      <TagBar
+        monitors={monitors}
+        onSelect={setTagFilter}
+        selected={tagFilter}
+      />
 
       <section aria-labelledby="monitor-list-title">
         <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
