@@ -15,6 +15,10 @@ Libre (MIT), multi-équipe, hébergeable chez vous en une commande.
 
 </div>
 
+<p align="center">
+  <img src="docs/images/dashboard.png" alt="Tableau de bord Vextra : moniteurs, statuts et échéances" width="860">
+</p>
+
 ---
 
 ## Le principe
@@ -70,6 +74,10 @@ sorties : un heartbeat est une requête vide.
 - Session dans un cookie chiffré `__Host-`, `HttpOnly`, `SameSite=Strict`.
 - Limitation de débit, garde d'origine sur toute écriture, CSP stricte.
 - Audit de sécurité publié : [docs/audits/securite-avant-production.md](docs/audits/securite-avant-production.md).
+
+<p align="center">
+  <img src="docs/images/monitor.png" alt="Page d'un moniteur : disponibilité, incidents et historique des exécutions" width="860">
+</p>
 
 ## Deux façons de l'utiliser
 
