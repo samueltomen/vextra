@@ -117,6 +117,66 @@ describe('SupabaseAccountsGateway', () => {
     ).resolves.toEqual({ session: null, user: USER })
   })
 
+  it('logs the provider error code on signup failure without leaking credentials', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const client = createClient({
+      signUp: vi.fn(async () => ({
+        data: { session: null, user: null },
+        error: { code: 'signup_disabled', message: 'x', status: 422 },
+      })),
+    })
+
+    await expect(
+      new SupabaseAccountsGateway(client, () => client).signUp({
+        email: 'secret@example.test',
+        password: 'correct horse battery staple',
+      }),
+    ).rejects.toBeInstanceOf(AccountCreationError)
+
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({
+        code: 'signup_disabled',
+        event: 'auth.signup_failed',
+        status: 422,
+      }),
+    )
+    warn.mockRestore()
+  })
+
+  it('logs when the personal tenant cannot be resolved', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const client = {
+      ...createClient(),
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            order: () => ({
+              limit: () => ({
+                maybeSingle: async () => ({
+                  data: null,
+                  error: { code: '42501' },
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    } as unknown as SupabaseClient
+
+    await new SupabaseAccountsGateway(
+      client,
+      () => client,
+    ).resolvePrimaryTenantId({
+      accessToken: 't',
+      userId: 'u',
+    })
+
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({ code: '42501', event: 'auth.tenant_lookup_failed' }),
+    )
+    warn.mockRestore()
+  })
+
   it('rejects invalid or incomplete refreshed sessions', async () => {
     const errorClient = createClient({
       refreshSession: vi.fn(async () => ({

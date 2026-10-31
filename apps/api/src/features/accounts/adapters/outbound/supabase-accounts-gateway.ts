@@ -60,6 +60,13 @@ export class SupabaseAccountsGateway implements AccountsGateway {
     const { data, error } = await this.client.auth.signUp(credentials)
 
     if (error || !data.user) {
+      console.warn(
+        JSON.stringify({
+          code: error?.code ?? null,
+          event: 'auth.signup_failed',
+          status: error?.status ?? null,
+        }),
+      )
       throw new AccountCreationError()
     }
 
@@ -122,6 +129,13 @@ export class SupabaseAccountsGateway implements AccountsGateway {
       .maybeSingle()
 
     if (error || !data) {
+      console.warn(
+        JSON.stringify({
+          code: error?.code ?? null,
+          event: 'auth.tenant_lookup_failed',
+        }),
+      )
+
       return null
     }
 
