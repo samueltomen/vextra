@@ -51,6 +51,22 @@ export class ResendNotificationSender implements NotificationSender {
     })
 
     if (!response.ok) {
+      const body: unknown = await response.json().catch(() => null)
+      const name =
+        typeof body === 'object' &&
+        body !== null &&
+        'name' in body &&
+        typeof body.name === 'string'
+          ? body.name
+          : null
+
+      console.warn(
+        JSON.stringify({
+          event: 'notification.provider_rejected',
+          name,
+          status: response.status,
+        }),
+      )
       throw new Error('email delivery failed')
     }
   }

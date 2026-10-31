@@ -58,4 +58,36 @@ describe('ResendNotificationSender', () => {
 
     await expect(sender.send(INPUT)).rejects.toThrow('email delivery failed')
   })
+
+  it('logs the Resend status and error name without the message or recipient', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json(
+          {
+            message: 'domain not verified for owner@example.test',
+            name: 'validation_error',
+            statusCode: 403,
+          },
+          { status: 403 },
+        ),
+      ),
+    )
+    const sender = new ResendNotificationSender({
+      apiKey: 're_test',
+      from: 'CronPing <alerts@example.test>',
+    })
+
+    await expect(sender.send(INPUT)).rejects.toThrow('email delivery failed')
+
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({
+        event: 'notification.provider_rejected',
+        name: 'validation_error',
+        status: 403,
+      }),
+    )
+    warn.mockRestore()
+  })
 })
