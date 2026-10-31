@@ -21,6 +21,7 @@ function monitor(status: MonitorView['status']): MonitorView {
     runningSinceMs: null,
     serverName: null,
     status,
+    tags: [],
     totalPings: 0,
   }
 }

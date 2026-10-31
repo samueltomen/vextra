@@ -82,6 +82,7 @@ function toMonitorView(
       monitor.runningSince === null ? null : Date.parse(monitor.runningSince),
     serverName: monitor.name,
     status: monitor.status,
+    tags: monitor.tags,
     totalPings: monitor.totalPings,
   }
 }
@@ -188,6 +189,7 @@ export async function createMonitor(
       runningSinceMs: null,
       serverName: draft.localLabel.trim() || null,
       status: response.data.status,
+      tags: [],
       totalPings: 0,
     },
   }
@@ -210,6 +212,7 @@ export type MonitorDetailsChanges = Readonly<{
   description?: string | null
   name?: string | null
   notes?: string | null
+  tags?: readonly string[]
 }>
 
 export async function updateMonitorDetails(

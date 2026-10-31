@@ -275,6 +275,17 @@ describe('SupabaseMonitorDetailsRepository', () => {
     expect(updated.calls).toContainEqual(['eq', ['tenant_id', 't']])
   })
 
+  it('stores the tags as a plain array', async () => {
+    const updated = client({ data: [{ id: 'm1' }] })
+
+    await new SupabaseMonitorDetailsRepository(updated.supabase).update(
+      't',
+      'm1',
+      { tags: ['prod', 'db'] },
+    )
+    expect(updated.calls).toContainEqual(['update', [{ tags: ['prod', 'db'] }]])
+  })
+
   it('reports an unknown monitor and fails closed on errors', async () => {
     await expect(
       new SupabaseMonitorDetailsRepository(

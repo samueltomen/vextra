@@ -131,6 +131,7 @@ export type MonitorDetailsChanges = Readonly<{
   description?: string | null
   name?: string | null
   notes?: string | null
+  tags?: readonly string[]
 }>
 
 export interface MonitorDetailsPort {

@@ -67,3 +67,39 @@ describe('updateMonitorScheduleRequestSchema', () => {
     ).toBe(false)
   })
 })
+
+describe('monitor tags', () => {
+  it('normalizes, deduplicates and accepts valid tags', async () => {
+    const { updateMonitorDetailsRequestSchema } =
+      await import('./update-monitor.ts')
+
+    expect(
+      updateMonitorDetailsRequestSchema.parse({
+        tags: [' Prod ', 'db-backup', 'prod'],
+      }).tags,
+    ).toEqual(['prod', 'db-backup'])
+  })
+
+  it.each([['bad tag'], ['-x'], ['a'.repeat(25)], ['é']])(
+    'rejects the tag %s',
+    async (tag) => {
+      const { updateMonitorDetailsRequestSchema } =
+        await import('./update-monitor.ts')
+
+      expect(
+        updateMonitorDetailsRequestSchema.safeParse({ tags: [tag] }).success,
+      ).toBe(false)
+    },
+  )
+
+  it('rejects more than ten tags', async () => {
+    const { updateMonitorDetailsRequestSchema } =
+      await import('./update-monitor.ts')
+
+    expect(
+      updateMonitorDetailsRequestSchema.safeParse({
+        tags: Array.from({ length: 11 }, (_, i) => `t${i}`),
+      }).success,
+    ).toBe(false)
+  })
+})

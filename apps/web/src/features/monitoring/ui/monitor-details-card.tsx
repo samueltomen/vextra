@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react'
 
 import { updateMonitorDetails } from '../api/monitoring-api.ts'
 import type { MonitorView } from '../model/monitor.ts'
+import { MAX_TAGS, normalizeTag } from '../model/tags.ts'
 
 const MAX_DESCRIPTION = 200
 const MAX_NOTES = 2000
@@ -14,6 +15,9 @@ export function MonitorDetailsCard({
   const queryClient = useQueryClient()
   const [description, setDescription] = useState(monitor.description ?? '')
   const [notes, setNotes] = useState(monitor.notes ?? '')
+  const [tags, setTags] = useState<readonly string[]>(monitor.tags)
+  const [tagInput, setTagInput] = useState('')
+  const [tagError, setTagError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: ['monitors'] })
@@ -22,6 +26,7 @@ export function MonitorDetailsCard({
       updateMonitorDetails(monitor.id, {
         description: description.trim() || null,
         notes: notes.trim() || null,
+        tags,
       }),
     onSuccess: async () => {
       setSaved(true)
@@ -33,6 +38,38 @@ export function MonitorDetailsCard({
       updateMonitorDetails(monitor.id, { alertsEnabled: enabled }),
     onSuccess: refresh,
   })
+
+  function addTag() {
+    const raw = tagInput.trim()
+
+    if (raw.length === 0) {
+      return
+    }
+
+    const tag = normalizeTag(raw)
+
+    if (tag === null) {
+      setTagError(
+        'Tag invalide : 24 caractères max, lettres, chiffres, - ou _.',
+      )
+
+      return
+    }
+
+    if (!tags.includes(tag)) {
+      if (tags.length >= MAX_TAGS) {
+        setTagError(`${MAX_TAGS} tags maximum par moniteur.`)
+
+        return
+      }
+
+      setTags([...tags, tag])
+      setSaved(false)
+    }
+
+    setTagInput('')
+    setTagError(null)
+  }
 
   function submit(event: FormEvent) {
     event.preventDefault()
@@ -83,6 +120,51 @@ export function MonitorDetailsCard({
             value={notes}
           />
         </label>
+        <div className="text-sm">
+          <label
+            className="mb-1.5 block font-medium"
+            htmlFor="monitor-tag-input"
+          >
+            Tags
+          </label>
+          {tags.length > 0 ? (
+            <ul className="mb-2 flex flex-wrap gap-1.5">
+              {tags.map((tag) => (
+                <li key={tag}>
+                  <button
+                    aria-label={`Retirer le tag ${tag}`}
+                    className="rounded-full border border-line px-2.5 py-0.5 text-xs hover:border-danger-border hover:text-danger"
+                    onClick={() => {
+                      setSaved(false)
+                      setTags(tags.filter((candidate) => candidate !== tag))
+                    }}
+                    type="button"
+                  >
+                    {tag} ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <input
+            className="min-h-10 w-full rounded-md border border-line bg-canvas px-3 text-sm outline-none placeholder:text-muted focus:border-action"
+            id="monitor-tag-input"
+            onChange={(event) => setTagInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ',') {
+                event.preventDefault()
+                addTag()
+              }
+            }}
+            placeholder="prod, base-de-données… (Entrée pour ajouter)"
+            value={tagInput}
+          />
+          {tagError ? (
+            <p className="mt-1.5 text-xs text-danger" role="alert">
+              {tagError}
+            </p>
+          ) : null}
+        </div>
         <div className="flex items-center gap-3">
           <button
             className="min-h-9 rounded-md bg-action px-4 text-sm font-semibold text-action-fg disabled:opacity-60"

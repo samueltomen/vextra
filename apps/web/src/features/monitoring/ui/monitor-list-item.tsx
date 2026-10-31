@@ -102,6 +102,18 @@ export function MonitorListItem({
           <span className="mx-1.5">·</span>
           <span className="font-mono">{monitor.id.slice(0, 8)}</span>
         </p>
+        {monitor.tags.length > 0 ? (
+          <p className="mt-1.5 flex flex-wrap gap-1">
+            {monitor.tags.map((tag) => (
+              <span
+                className="rounded-full border border-line px-2 py-0.5 text-[11px] text-muted"
+                key={tag}
+              >
+                {tag}
+              </span>
+            ))}
+          </p>
+        ) : null}
       </div>
     </div>
   )

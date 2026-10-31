@@ -11,6 +11,7 @@ const ROW = {
   created_at: '2026-10-24T12:00:00.000Z',
   cron_expression: null,
   cron_timezone: null,
+  tags: ['prod'],
   description: null,
   folder_id: null,
   grace_seconds: 30,
@@ -44,6 +45,7 @@ describe('SupabaseMonitorQueryRepository', () => {
         createdAtMs: Date.parse(ROW.created_at),
         cronExpression: null,
         cronTimezone: null,
+        tags: ['prod'],
         description: null,
         folderId: null,
         graceSeconds: 30,
@@ -63,7 +65,7 @@ describe('SupabaseMonitorQueryRepository', () => {
 
     expect(from).toHaveBeenCalledWith('monitors')
     expect(select).toHaveBeenCalledWith(
-      'id, tenant_id, interval_seconds, grace_seconds, status, last_heartbeat_at, alert_at, incident_opened_at, paused_at, created_at, folder_id, total_pings, name, description, notes, alerts_enabled, running_since, cron_expression, cron_timezone',
+      'id, tenant_id, interval_seconds, grace_seconds, status, last_heartbeat_at, alert_at, incident_opened_at, paused_at, created_at, folder_id, total_pings, name, description, notes, alerts_enabled, running_since, cron_expression, cron_timezone, tags',
     )
     expect(eq).toHaveBeenCalledWith('tenant_id', ROW.tenant_id)
   })

@@ -21,6 +21,7 @@ export type MonitorView = Readonly<{
   /** Server-side name; `localLabel` is the name actually displayed. */
   serverName: string | null
   status: MonitorStatus
+  tags: readonly string[]
   totalPings: number
 }>
 

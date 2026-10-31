@@ -3,6 +3,7 @@ import type { MonitorStatus } from '@vextra/domain'
 export type MonitorStateRecord = Readonly<{
   alertAtMs: number
   alertsEnabled: boolean
+  tags: readonly string[]
   createdAtMs: number
   cronExpression: string | null
   cronTimezone: string | null

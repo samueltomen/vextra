@@ -26,12 +26,26 @@ const optionalText = (max: number) =>
     .transform((value) => (value.length === 0 ? null : value))
     .nullable()
 
+export const MAX_MONITOR_TAGS = 10
+
+export const monitorTagSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9][a-z0-9_-]{0,23}$/, 'Invalid tag')
+
+export const monitorTagsSchema = z
+  .array(monitorTagSchema)
+  .max(MAX_MONITOR_TAGS)
+  .transform((tags) => [...new Set(tags)])
+
 export const updateMonitorDetailsRequestSchema = z
   .strictObject({
     alertsEnabled: z.boolean(),
     description: optionalText(MAX_MONITOR_DESCRIPTION_LENGTH),
     name: optionalText(MAX_MONITOR_NAME_LENGTH),
     notes: optionalText(MAX_MONITOR_NOTES_LENGTH),
+    tags: monitorTagsSchema,
   })
   .partial()
   .refine((value) => Object.keys(value).length > 0, 'No change requested')

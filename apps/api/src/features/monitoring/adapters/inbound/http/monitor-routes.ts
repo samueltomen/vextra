@@ -510,6 +510,7 @@ function toMonitorResponse(monitor: MonitorStateRecord) {
   return {
     alertAt: new Date(monitor.alertAtMs).toISOString(),
     alertsEnabled: monitor.alertsEnabled,
+    tags: [...monitor.tags],
     createdAt: new Date(monitor.createdAtMs).toISOString(),
     cronExpression: monitor.cronExpression,
     cronTimezone: monitor.cronTimezone,

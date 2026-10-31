@@ -28,6 +28,7 @@ function monitorsWithFolder() {
       pausedAt: null,
       runningSince: null,
       status: 'healthy' as const,
+      tags: ['prod'],
       totalPings: 5,
     },
     {
@@ -48,10 +49,64 @@ function monitorsWithFolder() {
       pausedAt: null,
       runningSince: null,
       status: 'pending' as const,
+      tags: [],
       totalPings: 0,
     },
   ]
 }
+
+describe('tags', () => {
+  it('filters the dashboard by tag', async () => {
+    await renderApp('/', { monitors: monitorsWithFolder() })
+
+    const prod = await screen.findByRole('button', { name: /^prod/ })
+
+    fireEvent.click(prod)
+    expect(await screen.findByText('Sauvegarde PostgreSQL')).toBeInTheDocument()
+    expect(screen.queryByText('Nettoyage des médias')).not.toBeInTheDocument()
+    expect(prod).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(prod)
+    expect(await screen.findByText('Nettoyage des médias')).toBeInTheDocument()
+  })
+
+  it('adds a tag from the monitor details and sends the normalized list', async () => {
+    const { fetchMock } = await (async () => {
+      const result = await renderApp(`/monitors/${MONITOR_ID}`, {
+        monitors: monitorsWithFolder(),
+      })
+
+      return {
+        ...result,
+        fetchMock: globalThis.fetch as unknown as import('vitest').Mock<
+          (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+        >,
+      }
+    })()
+    const input = await screen.findByLabelText('Tags')
+
+    fireEvent.change(input, { target: { value: 'Base De Donnees' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(
+      screen.getByRole('button', { name: 'Retirer le tag base-de-donnees' }),
+    ).toBeInTheDocument()
+
+    fireEvent.change(input, { target: { value: 'pas valide!' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(screen.getByRole('alert')).toHaveTextContent(/Tag invalide/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    await waitFor(() => {
+      const bodies = fetchMock.mock.calls
+        .filter(([, init]) => init?.method === 'PATCH')
+        .map(([, init]) => JSON.parse(String(init?.body)))
+
+      expect(bodies).toContainEqual(
+        expect.objectContaining({ tags: ['prod', 'base-de-donnees'] }),
+      )
+    })
+  })
+})
 
 describe('folders', () => {
   it('filters the dashboard by folder and by unfiled monitors', async () => {
@@ -457,6 +512,7 @@ describe('monitor details', () => {
       expect(bodies).toContainEqual({
         description: 'Sauvegarde nocturne',
         notes: 'Voir le runbook',
+        tags: ['prod'],
       })
       expect(bodies).toContainEqual({ alertsEnabled: false })
     })
