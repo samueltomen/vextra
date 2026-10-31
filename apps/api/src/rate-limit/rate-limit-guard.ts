@@ -19,10 +19,14 @@ export function createCloudflareRateLimiter(
 }
 
 export function createRateLimitGuard(
-  options: Readonly<{ limiter: RateLimiter; scope: string }>,
+  options: Readonly<{
+    limiter: RateLimiter
+    methods?: readonly string[]
+    scope: string
+  }>,
 ): MiddlewareHandler {
   return async (context, next) => {
-    if (context.req.method !== 'POST') {
+    if (!(options.methods ?? ['POST']).includes(context.req.method)) {
       return next()
     }
 

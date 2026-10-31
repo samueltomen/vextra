@@ -2,7 +2,7 @@ export type MonitorIncidentRecord = Readonly<{
   id: string
   monitorId: string
   openedAtMs: number
-  reason: 'heartbeat_missed'
+  reason: 'heartbeat_missed' | 'run_failed'
   resolutionReason: 'heartbeat_received' | 'manual' | null
   resolvedAtMs: number | null
 }>

@@ -18,6 +18,7 @@ export const monitorStateSchema = z.strictObject({
   name: z.string().nullable(),
   notes: z.string().nullable(),
   pausedAt: z.iso.datetime().nullable(),
+  runningSince: z.iso.datetime().nullable(),
   status: monitorStatusSchema,
   totalPings: z.number().int().nonnegative(),
 })

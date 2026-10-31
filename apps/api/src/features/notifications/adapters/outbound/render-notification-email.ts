@@ -24,6 +24,14 @@ const VARIANTS: Readonly<Record<NotificationKind, Variant>> = {
     heading: 'Heartbeat manquant',
     subject: 'CronPing · heartbeat manquant',
   },
+  run_failed: {
+    accent: '#d6403a',
+    accentDark: '#f87171',
+    badge: 'Exécution en échec',
+    body: 'Votre job a signalé lui-même un échec. Consultez l’historique des exécutions du moniteur pour la durée et l’heure.',
+    heading: 'Exécution en échec',
+    subject: 'CronPing · exécution en échec',
+  },
   incident_resolved: {
     accent: '#16a36a',
     accentDark: '#34d399',

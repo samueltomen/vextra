@@ -25,7 +25,7 @@ export type AuthenticatedMonitorScope = Readonly<{
   createMonitor: Pick<CreateMonitor, 'execute'>
   monitorIncidents: Pick<MonitorIncidents, 'list'>
   monitorLifecycle: Pick<MonitorLifecycle, 'delete' | 'pause' | 'resume'>
-  monitorMetrics: Pick<MonitorMetricsService, 'activity' | 'get'>
+  monitorMetrics: Pick<MonitorMetricsService, 'activity' | 'get' | 'runs'>
   monitorRead: Pick<MonitorReadService, 'get' | 'list'>
   monitorSchedule: Pick<UpdateMonitorSchedule, 'execute'>
   principal: AuthenticatedPrincipal
@@ -225,6 +225,43 @@ export function createMonitorRoutes(
 
       return metrics
         ? context.json({ data: metrics })
+        : monitorNotFound(context)
+    } catch {
+      return internalError(context)
+    }
+  })
+
+  routes.get('/api/monitors/:monitorId/runs', async (context) => {
+    const scope = await dependencies.authenticate(context)
+
+    if (!scope) {
+      return unauthorized(context)
+    }
+
+    const parsedId = monitorIdSchema.safeParse(context.req.param('monitorId'))
+
+    if (!parsedId.success) {
+      return monitorNotFound(context)
+    }
+
+    try {
+      const runs = await scope.monitorMetrics.runs(
+        scope.principal.tenantId,
+        parsedId.data,
+      )
+
+      return runs
+        ? context.json({
+            data: {
+              runs: runs.map((run) => ({
+                createdAt: new Date(run.createdAtMs).toISOString(),
+                durationMs: run.durationMs,
+                id: run.id,
+                kind: run.kind,
+                overlapped: run.overlapped,
+              })),
+            },
+          })
         : monitorNotFound(context)
     } catch {
       return internalError(context)
@@ -454,6 +491,10 @@ function toMonitorResponse(monitor: MonitorStateRecord) {
       monitor.pausedAtMs === null
         ? null
         : new Date(monitor.pausedAtMs).toISOString(),
+    runningSince:
+      monitor.runningSinceMs === null
+        ? null
+        : new Date(monitor.runningSinceMs).toISOString(),
     status: monitor.status,
     totalPings: monitor.totalPings,
   }

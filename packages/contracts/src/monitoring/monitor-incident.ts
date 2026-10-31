@@ -4,7 +4,7 @@ export const monitorIncidentSchema = z.strictObject({
   id: z.uuid(),
   monitorId: z.uuid(),
   openedAt: z.iso.datetime(),
-  reason: z.literal('heartbeat_missed'),
+  reason: z.enum(['heartbeat_missed', 'run_failed']),
   resolutionReason: z
     .union([z.literal('heartbeat_received'), z.literal('manual')])
     .nullable(),

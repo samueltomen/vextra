@@ -81,6 +81,10 @@ export const preferencesResponseSchema = z.strictObject({
 })
 
 export const metricsDaySchema = z.strictObject({
+  durationCount: z.number().int().nonnegative(),
+  durationMaxMs: z.number().int().nonnegative(),
+  durationSumMs: z.number().int().nonnegative(),
+  fails: z.number().int().nonnegative(),
   day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u),
   gapCount: z.number().int().nonnegative(),
   gapMaxSeconds: z.number().int().nonnegative(),
@@ -93,6 +97,18 @@ export const monitorMetricsResponseSchema = z.strictObject({
     days: z.array(metricsDaySchema),
     totalPings: z.number().int().nonnegative(),
   }),
+})
+
+export const monitorRunSchema = z.strictObject({
+  createdAt: z.iso.datetime(),
+  durationMs: z.number().int().nonnegative().nullable(),
+  id: z.uuid(),
+  kind: z.enum(['success', 'start', 'fail', 'warn']),
+  overlapped: z.boolean(),
+})
+
+export const monitorRunsResponseSchema = z.strictObject({
+  data: z.strictObject({ runs: z.array(monitorRunSchema) }),
 })
 
 export const monitorActivityResponseSchema = z.strictObject({
