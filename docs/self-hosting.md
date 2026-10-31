@@ -79,8 +79,43 @@ secrets : elles ne sont jamais renvoyées par l'API après enregistrement.
 
 ## 3. Démarrer
 
+### Option A : image prête (la plus rapide)
+
+Chaque version publiée est disponible sur GitHub Container Registry, pour
+`amd64` et `arm64`. Remplacez `<propriétaire>/<dépôt>` par celui du projet :
+
+```yaml
+# docker-compose.yml
+services:
+  cronping:
+    image: ghcr.io/<propriétaire>/<dépôt>:latest # ou une version : :1.2.0
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - '8787:8787'
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+```
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+Préférez une **version précise** à `latest` en production, pour décider du moment
+de la mise à jour.
+
+### Option B : construire depuis les sources
+
 ```bash
 docker compose up -d --build
+```
+
+Suivez le démarrage :
+
+```bash
 docker compose logs -f cronping
 ```
 
@@ -121,9 +156,10 @@ puis `docker compose up -d` pour appliquer.
 ## Mettre à jour
 
 ```bash
-git pull
+git pull                       # ou changez la version de l'image
 pnpm exec supabase db push     # nouvelles migrations, le cas échéant
-docker compose up -d --build
+docker compose pull && docker compose up -d      # image prête
+# ou : docker compose up -d --build              # depuis les sources
 ```
 
 Lisez les notes de version avant de mettre à jour : les migrations ne

@@ -1,0 +1,100 @@
+name: Docker
+
+# Construit l'image, la teste, puis la publie sur GitHub Container Registry
+# (ghcr.io/<propriétaire>/<dépôt>) : à chaque push sur main et à chaque tag vX.Y.Z.
+# Les pull requests construisent et testent l'image sans la publier.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - apps/**
+      - packages/**
+      - pnpm-lock.yaml
+      - .github/workflows/docker.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha
+
+      - name: Construire l'image de test
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: cronping:smoke
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test de fumée
+        # Le serveur démarre sans joindre Supabase : seule la configuration est
+        # validée et /api/health répond. Valeurs factices, aucun secret réel.
+        run: |
+          docker run -d --name smoke -p 8787:8787 \
+            -e APP_ORIGIN=https://cronping.example.org \
+            -e SUPABASE_URL=https://example.supabase.co \
+            -e SUPABASE_PUBLISHABLE_KEY=placeholder \
+            -e SUPABASE_SERVICE_ROLE_KEY=placeholder \
+            -e SESSION_ENCRYPTION_KEY="$(openssl rand -base64 48)" \
+            -e PING_TOKEN_PEPPER="$(openssl rand -base64 48)" \
+            cronping:smoke
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8787/api/health; then
+              echo
+              docker rm -f smoke
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs smoke
+          exit 1
+
+      - name: Se connecter à GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publier l'image (amd64 et arm64)
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
