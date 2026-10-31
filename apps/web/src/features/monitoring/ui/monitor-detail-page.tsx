@@ -41,10 +41,18 @@ import {
   formatDuration,
   formatUptime,
 } from '../model/availability.ts'
+import {
+  describeSchedule,
+  validateCronSchedule,
+} from '../model/cron-schedule.ts'
 import { buildIntegrationSnippets } from '../model/integration-snippets.ts'
+import { getDisplayTimeZone } from '../../../lib/display-time.ts'
+import {
+  CronScheduleFields,
+  ScheduleKindToggle,
+} from './cron-schedule-fields.tsx'
 import {
   formatDateTime,
-  formatFrequency,
   formatRelativeTime,
   statusLabel,
 } from '../model/monitor-format.ts'
@@ -222,6 +230,7 @@ export function MonitorDetailPage({
   })
   const pingUrl = new URL('/api/ping', window.location.origin).toString()
   const snippets = buildIntegrationSnippets({
+    cronExpression: monitor.cronExpression,
     intervalMinutes: monitor.intervalMinutes,
     pingUrl,
     token: rotatedToken,
@@ -237,13 +246,20 @@ export function MonitorDetailPage({
   }
 
   const scheduleError = scheduleDraft
-    ? (validateInterval(scheduleDraft.intervalMinutes) ??
+    ? ((scheduleDraft.cron
+        ? validateCronSchedule(
+            scheduleDraft.cron.expression,
+            scheduleDraft.cron.timezone,
+          )
+        : validateInterval(scheduleDraft.intervalMinutes)) ??
       validateGrace(scheduleDraft.graceMinutes))
     : undefined
   const scheduleChanged =
     scheduleDraft !== null &&
     (scheduleDraft.intervalMinutes !== monitor.intervalMinutes ||
-      scheduleDraft.graceMinutes !== monitor.graceMinutes)
+      scheduleDraft.graceMinutes !== monitor.graceMinutes ||
+      (scheduleDraft.cron?.expression ?? null) !== monitor.cronExpression ||
+      (scheduleDraft.cron?.timezone ?? null) !== monitor.cronTimezone)
 
   function startRenaming() {
     setLabelDraft(monitor?.localLabel ?? '')
@@ -600,6 +616,12 @@ export function MonitorDetailPage({
                   className="min-h-9 border-line"
                   onPress={() =>
                     setScheduleDraft({
+                      cron: monitor.cronExpression
+                        ? {
+                            expression: monitor.cronExpression,
+                            timezone: monitor.cronTimezone ?? 'UTC',
+                          }
+                        : undefined,
                       graceMinutes: monitor.graceMinutes,
                       intervalMinutes: monitor.intervalMinutes,
                     })
@@ -623,16 +645,40 @@ export function MonitorDetailPage({
                   }
                 }}
               >
-                <DurationPicker
-                  description="Le rythme auquel votre tâche doit envoyer un signal."
-                  error={validateInterval(scheduleDraft.intervalMinutes)}
-                  label="Fréquence attendue"
-                  onChange={(intervalMinutes) =>
-                    setScheduleDraft({ ...scheduleDraft, intervalMinutes })
+                <ScheduleKindToggle
+                  onChange={(kind) =>
+                    setScheduleDraft({
+                      ...scheduleDraft,
+                      cron:
+                        kind === 'cron'
+                          ? (scheduleDraft.cron ?? {
+                              expression: '0 3 * * *',
+                              timezone: getDisplayTimeZone() ?? 'UTC',
+                            })
+                          : undefined,
+                    })
                   }
-                  presets={INTERVAL_PRESETS}
-                  value={scheduleDraft.intervalMinutes}
+                  value={scheduleDraft.cron ? 'cron' : 'interval'}
                 />
+                {scheduleDraft.cron ? (
+                  <CronScheduleFields
+                    onChange={(cron) =>
+                      setScheduleDraft({ ...scheduleDraft, cron })
+                    }
+                    value={scheduleDraft.cron}
+                  />
+                ) : (
+                  <DurationPicker
+                    description="Le rythme auquel votre tâche doit envoyer un signal."
+                    error={validateInterval(scheduleDraft.intervalMinutes)}
+                    label="Fréquence attendue"
+                    onChange={(intervalMinutes) =>
+                      setScheduleDraft({ ...scheduleDraft, intervalMinutes })
+                    }
+                    presets={INTERVAL_PRESETS}
+                    value={scheduleDraft.intervalMinutes}
+                  />
+                )}
                 <DurationPicker
                   description="Temps accordé avant l’alerte."
                   error={validateGrace(scheduleDraft.graceMinutes)}
@@ -686,9 +732,13 @@ export function MonitorDetailPage({
               {scheduleDraft === null ? (
                 <>
                   <div className="flex justify-between gap-4">
-                    <dt className="text-muted">Fréquence</dt>
-                    <dd className="font-medium">
-                      {formatFrequency(monitor.intervalMinutes)}
+                    <dt className="text-muted">
+                      {monitor.cronExpression ? 'Planification' : 'Fréquence'}
+                    </dt>
+                    <dd
+                      className={`font-medium ${monitor.cronExpression ? 'font-mono text-xs' : ''}`}
+                    >
+                      {describeSchedule(monitor)}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-4">

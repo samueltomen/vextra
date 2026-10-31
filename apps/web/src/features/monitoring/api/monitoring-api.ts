@@ -28,7 +28,13 @@ import {
 } from '../model/local-labels.ts'
 import type { MonitorView } from '../model/monitor.ts'
 
+export type CronScheduleDraft = Readonly<{
+  expression: string
+  timezone: string
+}>
+
 export type CreateMonitorDraft = Readonly<{
+  cron?: CronScheduleDraft | undefined
   graceMinutes: number
   intervalMinutes: number
   localLabel: string
@@ -55,6 +61,8 @@ function toMonitorView(
     alertAtMs: Date.parse(monitor.alertAt),
     alertsEnabled: monitor.alertsEnabled,
     createdAtMs: Date.parse(monitor.createdAt),
+    cronExpression: monitor.cronExpression,
+    cronTimezone: monitor.cronTimezone,
     description: monitor.description,
     folderId: monitor.folderId,
     graceMinutes: Math.round(monitor.graceSeconds / 60),
@@ -76,6 +84,24 @@ function toMonitorView(
     status: monitor.status,
     totalPings: monitor.totalPings,
   }
+}
+
+function scheduleBody(
+  draft: Readonly<{
+    cron?: CronScheduleDraft | undefined
+    graceMinutes: number
+    intervalMinutes: number
+  }>,
+) {
+  const graceSeconds = Math.round(draft.graceMinutes * 60)
+
+  return draft.cron
+    ? {
+        cron: draft.cron.expression.trim(),
+        graceSeconds,
+        timezone: draft.cron.timezone,
+      }
+    : { graceSeconds, intervalSeconds: Math.round(draft.intervalMinutes * 60) }
 }
 
 function fallbackLabel(monitorId: string): string {
@@ -128,10 +154,7 @@ export async function createMonitor(
   }
 
   const response = await apiRequest<CreateMonitorResponse>('/api/monitors', {
-    body: JSON.stringify({
-      graceSeconds: Math.round(draft.graceMinutes * 60),
-      intervalSeconds: Math.round(draft.intervalMinutes * 60),
-    }),
+    body: JSON.stringify(scheduleBody(draft)),
     method: 'POST',
   })
   const nowMs = Date.now()
@@ -151,6 +174,8 @@ export async function createMonitor(
       alertAtMs: Date.parse(response.data.alertAt),
       alertsEnabled: true,
       createdAtMs: nowMs,
+      cronExpression: draft.cron?.expression ?? null,
+      cronTimezone: draft.cron?.timezone ?? null,
       description: null,
       folderId: null,
       graceMinutes: draft.graceMinutes,
@@ -202,6 +227,7 @@ export async function updateMonitorDetails(
 }
 
 export type MonitorScheduleDraft = Readonly<{
+  cron?: CronScheduleDraft | undefined
   graceMinutes: number
   intervalMinutes: number
 }>
@@ -217,10 +243,7 @@ export async function updateMonitorSchedule(
   await apiRequest<MonitorResponse>(
     `/api/monitors/${encodeURIComponent(monitorId)}`,
     {
-      body: JSON.stringify({
-        graceSeconds: Math.round(draft.graceMinutes * 60),
-        intervalSeconds: Math.round(draft.intervalMinutes * 60),
-      }),
+      body: JSON.stringify(scheduleBody(draft)),
       method: 'PATCH',
     },
   )

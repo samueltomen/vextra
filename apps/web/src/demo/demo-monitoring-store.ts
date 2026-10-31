@@ -3,6 +3,7 @@ import type { MonitorView } from '../features/monitoring/model/monitor.ts'
 import type { NotificationDeliveryView } from '../features/notifications/api/notifications-api.ts'
 
 type DemoCreateInput = Readonly<{
+  cron?: { expression: string; timezone: string } | undefined
   graceMinutes: number
   intervalMinutes: number
   localLabel: string
@@ -17,6 +18,8 @@ let monitors: MonitorView[] = [
     alertAtMs: nowMs + 3_600_000,
     alertsEnabled: true,
     createdAtMs: nowMs - 86_400_000,
+    cronExpression: null,
+    cronTimezone: null,
     description: null,
     folderId: '30000000-0000-4000-8000-000000000001',
     graceMinutes: 30,
@@ -35,6 +38,8 @@ let monitors: MonitorView[] = [
     alertAtMs: nowMs - 360_000,
     alertsEnabled: true,
     createdAtMs: nowMs - 86_400_000,
+    cronExpression: null,
+    cronTimezone: null,
     description: null,
     folderId: '30000000-0000-4000-8000-000000000001',
     graceMinutes: 3,
@@ -53,6 +58,8 @@ let monitors: MonitorView[] = [
     alertAtMs: nowMs + 345_600_000,
     alertsEnabled: true,
     createdAtMs: nowMs - 604_800_000,
+    cronExpression: null,
+    cronTimezone: null,
     description: null,
     folderId: null,
     graceMinutes: 120,
@@ -71,6 +78,8 @@ let monitors: MonitorView[] = [
     alertAtMs: nowMs + 21_600_000,
     alertsEnabled: true,
     createdAtMs: nowMs - 60_000,
+    cronExpression: null,
+    cronTimezone: null,
     description: null,
     folderId: null,
     graceMinutes: 20,
@@ -123,6 +132,8 @@ export async function createDemoMonitor(input: DemoCreateInput) {
       createdAtMs + (input.intervalMinutes + input.graceMinutes) * 60_000,
     alertsEnabled: true,
     createdAtMs,
+    cronExpression: input.cron?.expression ?? null,
+    cronTimezone: input.cron?.timezone ?? null,
     description: null,
     folderId: null,
     graceMinutes: input.graceMinutes,
@@ -172,7 +183,11 @@ export async function renameDemoMonitor(
 
 export async function updateDemoMonitorSchedule(
   monitorId: string,
-  schedule: Readonly<{ graceMinutes: number; intervalMinutes: number }>,
+  schedule: Readonly<{
+    cron?: { expression: string; timezone: string } | undefined
+    graceMinutes: number
+    intervalMinutes: number
+  }>,
 ): Promise<void> {
   monitors = monitors.map((monitor) =>
     monitor.id === monitorId
@@ -183,6 +198,8 @@ export async function updateDemoMonitorSchedule(
               ? monitor.alertAtMs
               : Date.now() +
                 (schedule.intervalMinutes + schedule.graceMinutes) * 60_000,
+          cronExpression: schedule.cron?.expression ?? null,
+          cronTimezone: schedule.cron?.timezone ?? null,
           graceMinutes: schedule.graceMinutes,
           intervalMinutes: schedule.intervalMinutes,
         }

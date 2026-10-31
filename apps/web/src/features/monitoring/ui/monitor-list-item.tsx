@@ -1,11 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import { ArrowRight, Clock3 } from 'lucide-react'
 
-import {
-  formatFrequency,
-  formatRelativeTime,
-  statusLabel,
-} from '../model/monitor-format.ts'
+import { formatRelativeTime, statusLabel } from '../model/monitor-format.ts'
+import { describeSchedule } from '../model/cron-schedule.ts'
 import type { MonitorStatus, MonitorView } from '../model/monitor.ts'
 import { getDueProgress } from '../model/monitor-timing.ts'
 import { StatusBadge } from './status-badge.tsx'
@@ -101,7 +98,7 @@ export function MonitorListItem({
       <div className="min-w-0">
         <p className="truncate text-sm font-medium">{monitor.localLabel}</p>
         <p className="mt-0.5 text-xs text-muted">
-          {formatFrequency(monitor.intervalMinutes)}
+          {describeSchedule(monitor)}
           <span className="mx-1.5">·</span>
           <span className="font-mono">{monitor.id.slice(0, 8)}</span>
         </p>

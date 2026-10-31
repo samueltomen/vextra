@@ -12,6 +12,8 @@ type MonitorRow = {
   alertAt: string
   alertsEnabled: boolean
   createdAt: string
+  cronExpression: string | null
+  cronTimezone: string | null
   description: string | null
   folderId: string | null
   graceSeconds: number
@@ -43,6 +45,8 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       alertsEnabled: true,
       description: null,
       createdAt: new Date(nowMs - 86_400_000).toISOString(),
+      cronExpression: null,
+      cronTimezone: null,
       folderId: null,
       graceSeconds: 1_800,
       id: '20000000-0000-4000-8000-000000000001',
@@ -61,6 +65,8 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       alertsEnabled: true,
       description: null,
       createdAt: new Date(nowMs - 86_400_000).toISOString(),
+      cronExpression: null,
+      cronTimezone: null,
       folderId: null,
       graceSeconds: 180,
       id: '20000000-0000-4000-8000-000000000002',
@@ -79,6 +85,8 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       alertsEnabled: true,
       description: null,
       createdAt: new Date(nowMs - 7 * 86_400_000).toISOString(),
+      cronExpression: null,
+      cronTimezone: null,
       folderId: null,
       graceSeconds: 7_200,
       id: '20000000-0000-4000-8000-000000000003',
@@ -97,6 +105,8 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       alertsEnabled: true,
       description: null,
       createdAt: new Date(nowMs - 60_000).toISOString(),
+      cronExpression: null,
+      cronTimezone: null,
       folderId: null,
       graceSeconds: 1_200,
       id: '20000000-0000-4000-8000-000000000004',
@@ -462,22 +472,27 @@ export function installApiMock(options: ApiMockOptions = {}) {
 
       if (url.pathname === '/api/monitors' && method === 'POST') {
         const body = JSON.parse(String(init?.body)) as {
+          cron?: string
           graceSeconds: number
-          intervalSeconds: number
+          intervalSeconds?: number
+          timezone?: string
         }
+        const intervalSeconds = body.intervalSeconds ?? 86_400
         const nowMs = Date.now()
         const monitor: MonitorRow = {
           alertAt: new Date(
-            nowMs + (body.intervalSeconds + body.graceSeconds) * 1_000,
+            nowMs + (intervalSeconds + body.graceSeconds) * 1_000,
           ).toISOString(),
           alertsEnabled: true,
           createdAt: new Date(nowMs).toISOString(),
+          cronExpression: body.cron ?? null,
+          cronTimezone: body.cron ? (body.timezone ?? 'UTC') : null,
           description: null,
           folderId: null,
           graceSeconds: body.graceSeconds,
           id: '20000000-0000-4000-8000-000000000099',
           incidentOpenedAt: null,
-          intervalSeconds: body.intervalSeconds,
+          intervalSeconds,
           lastHeartbeatAt: null,
           name: null,
           notes: null,
@@ -515,16 +530,21 @@ export function installApiMock(options: ApiMockOptions = {}) {
         }
 
         const body = JSON.parse(String(init?.body)) as {
+          cron?: string
           graceSeconds: number
-          intervalSeconds: number
+          intervalSeconds?: number
+          timezone?: string
         }
+        const intervalSeconds = body.intervalSeconds ?? 86_400
 
         monitor.graceSeconds = body.graceSeconds
-        monitor.intervalSeconds = body.intervalSeconds
+        monitor.intervalSeconds = intervalSeconds
+        monitor.cronExpression = body.cron ?? null
+        monitor.cronTimezone = body.cron ? (body.timezone ?? 'UTC') : null
 
         if (monitor.status !== 'paused' && monitor.status !== 'late') {
           monitor.alertAt = new Date(
-            Date.now() + (body.intervalSeconds + body.graceSeconds) * 1_000,
+            Date.now() + (intervalSeconds + body.graceSeconds) * 1_000,
           ).toISOString()
         }
 

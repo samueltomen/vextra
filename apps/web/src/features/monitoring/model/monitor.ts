@@ -6,6 +6,8 @@ export type MonitorView = Readonly<{
   alertAtMs: number
   alertsEnabled: boolean
   createdAtMs: number
+  cronExpression: string | null
+  cronTimezone: string | null
   description: string | null
   folderId: string | null
   graceMinutes: number
