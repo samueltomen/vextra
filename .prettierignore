@@ -4,3 +4,4 @@ node_modules/
 pnpm-lock.yaml
 routeTree.gen.ts
 .wrangler/
+supabase/.temp
