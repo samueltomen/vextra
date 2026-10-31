@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ArrowRight, Clock3 } from 'lucide-react'
+import { ArrowRight, BellOff, Clock3 } from 'lucide-react'
 
 import { formatRelativeTime, statusLabel } from '../model/monitor-format.ts'
 import { describeSchedule } from '../model/cron-schedule.ts'
@@ -96,7 +96,18 @@ export function MonitorListItem({
     <div className="flex min-w-0 gap-3">
       {dot}
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium">{monitor.localLabel}</p>
+        <p className="flex items-center gap-1.5 text-sm font-medium">
+          <span className="truncate">{monitor.localLabel}</span>
+          {monitor.alertsEnabled ? null : (
+            <span
+              className="shrink-0 text-muted"
+              title="Alertes désactivées pour ce moniteur"
+            >
+              <BellOff aria-hidden="true" size={13} />
+              <span className="sr-only">Alertes désactivées</span>
+            </span>
+          )}
+        </p>
         <p className="mt-0.5 text-xs text-muted">
           {describeSchedule(monitor)}
           <span className="mx-1.5">·</span>

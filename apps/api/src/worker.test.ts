@@ -112,6 +112,32 @@ describe('Cloudflare Worker entrypoint', () => {
     ).toBe(true)
   })
 
+  it('keeps detecting and delivering when the cron refinement step fails', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    const base = mockSupabase({ open_due_monitor_incidents: 1 })
+    const failing = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).includes('claim_stale_cron_monitors')
+        ? Response.json({ message: 'boom' }, { status: 500 })
+        : base(input),
+    )
+
+    vi.stubGlobal('fetch', failing)
+    await runScheduled(ENVIRONMENT)
+
+    const urls = failing.mock.calls.map(([input]) => String(input))
+
+    expect(urls.some((url) => url.includes('open_due_monitor_incidents'))).toBe(
+      true,
+    )
+    expect(urls.some((url) => url.includes('claim_channel_deliveries'))).toBe(
+      true,
+    )
+    expect(info).toHaveBeenCalledWith(
+      expect.stringContaining('"failed":["cron"]'),
+    )
+    info.mockRestore()
+  })
+
   it('logs one structured tick per scheduled run', async () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
 

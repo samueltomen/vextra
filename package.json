@@ -1,6 +1,25 @@
 {
   "name": "vextra",
   "version": "0.1.0",
+  "description": "Surveillance de heartbeats pour tâches planifiées : détecte les jobs cron qui ne s’exécutent plus et alerte.",
+  "homepage": "https://github.com/samueltomen/vextra#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/samueltomen/vextra.git"
+  },
+  "bugs": {
+    "url": "https://github.com/samueltomen/vextra/issues"
+  },
+  "author": "Samuel Tomen",
+  "keywords": [
+    "cron",
+    "heartbeat",
+    "monitoring",
+    "uptime",
+    "self-hosted",
+    "supabase",
+    "cloudflare-workers"
+  ],
   "license": "MIT",
   "private": true,
   "type": "module",
