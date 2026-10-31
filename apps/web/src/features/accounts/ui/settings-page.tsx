@@ -27,9 +27,7 @@ export function SettingsPage() {
     <div className="mx-auto max-w-4xl space-y-8">
       <header>
         <p className="mb-2 text-sm font-medium text-action">Compte</p>
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Réglages
-        </h1>
+        <h1 className="text-xl font-semibold tracking-tight">Réglages</h1>
         <p className="mt-3 text-muted">
           Gérez votre compte, votre adresse de notification et les données de
           votre espace personnel.
@@ -37,7 +35,7 @@ export function SettingsPage() {
       </header>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-line bg-surface p-5 sm:p-6">
+        <div className="rounded-xl border border-line bg-surface p-4 sm:p-5">
           <div className="flex items-center gap-2 text-action">
             <Mail aria-hidden="true" size={18} />
             <h2 className="text-sm font-semibold">Compte</h2>
@@ -52,7 +50,7 @@ export function SettingsPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-line bg-surface p-5 sm:p-6">
+        <div className="rounded-xl border border-line bg-surface p-4 sm:p-5">
           <div className="flex items-center gap-2 text-healthy">
             <Bell aria-hidden="true" size={18} />
             <h2 className="text-sm font-semibold">Notifications</h2>

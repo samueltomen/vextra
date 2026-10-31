@@ -93,9 +93,9 @@ function OnboardingCard({ onCreate }: Readonly<{ onCreate: () => void }>) {
   ] as const
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+    <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
       <div className="p-6 text-center sm:p-10">
-        <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-action-soft text-action">
+        <span className="mx-auto grid size-14 place-items-center rounded-xl bg-action-soft text-action">
           <Rocket aria-hidden="true" size={26} />
         </span>
         <h3 className="mt-5 text-xl font-semibold">Aucun moniteur</h3>
@@ -184,38 +184,34 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="mb-2 text-sm font-semibold text-action">
-            Centre de surveillance
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            Moniteurs
-          </h1>
-          <p className="mt-3 max-w-2xl text-muted">
-            Un coup d&apos;œil sur les heartbeats manquants, sans exposer le
-            contenu de vos scripts.
+    <div className="space-y-5">
+      <header className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight">Moniteurs</h1>
+          <p className="mt-0.5 truncate text-sm text-muted">
+            Centre de surveillance · heartbeats de vos tâches planifiées
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button
             aria-label="Actualiser la liste"
-            className="min-h-11 min-w-11 border-line"
+            className="min-h-9 min-w-9 border-line"
             isIconOnly
             isLoading={monitorsQuery.isFetching && !monitorsQuery.isPending}
             onPress={() => void monitorsQuery.refetch()}
             radius="md"
+            size="sm"
             variant="bordered"
           >
-            <RefreshCw aria-hidden="true" size={17} />
+            <RefreshCw aria-hidden="true" size={15} />
           </Button>
           <Button
-            className="min-h-11 bg-action px-5 font-semibold text-action-fg"
+            className="min-h-9 bg-action px-4 text-sm font-semibold text-action-fg"
             onPress={goToCreate}
             radius="md"
+            size="sm"
           >
-            <Plus aria-hidden="true" size={18} />
+            <Plus aria-hidden="true" size={16} />
             Créer un moniteur
           </Button>
         </div>
@@ -230,9 +226,9 @@ export function DashboardPage() {
       />
 
       <section aria-labelledby="monitor-list-title">
-        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold" id="monitor-list-title">
+            <h2 className="text-sm font-semibold" id="monitor-list-title">
               Moniteurs
             </h2>
             <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-xs text-muted tabular-nums">
@@ -248,7 +244,7 @@ export function DashboardPage() {
               />
               <input
                 aria-label="Rechercher un moniteur"
-                className="min-h-10 w-full rounded-lg border border-line bg-surface pl-9 pr-3 text-sm text-ink outline-none placeholder:text-muted focus:border-action"
+                className="min-h-9 w-full rounded-md border border-line bg-surface pl-9 pr-3 text-sm text-ink outline-none placeholder:text-muted focus:border-action"
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Rechercher un moniteur…"
                 type="search"
@@ -372,7 +368,17 @@ export function DashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+          <div className="overflow-hidden rounded-lg border border-line bg-surface">
+            <div
+              aria-hidden="true"
+              className="hidden border-b border-line bg-canvas/60 px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-muted lg:grid lg:grid-cols-[minmax(0,1.5fr)_minmax(10rem,1fr)_8.5rem_9.5rem_1rem] lg:gap-4"
+            >
+              <span>Moniteur</span>
+              <span>Échéance</span>
+              <span>Statut</span>
+              <span className="text-right">Dernier signal</span>
+              <span />
+            </div>
             {visibleMonitors.map((monitor, index) => (
               <MonitorListItem
                 index={index}

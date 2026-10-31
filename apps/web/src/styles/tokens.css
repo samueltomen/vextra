@@ -2,18 +2,18 @@
   color-scheme: light;
 
   --cp-font-sans:
-    'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
     sans-serif;
   --cp-font-mono:
-    'Geist Mono', ui-monospace, 'SFMono-Regular', 'JetBrains Mono', monospace;
+    'JetBrains Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
-  --cp-color-canvas: #f4f7f6;
+  --cp-color-canvas: #f6f7f9;
   --cp-color-surface: #ffffff;
   --cp-color-surface-raised: #ffffff;
-  --cp-color-text: #10201e;
-  --cp-color-text-muted: #55655f;
-  --cp-color-border-subtle: #d8e1de;
-  --cp-color-border-strong: #7b8d88;
+  --cp-color-text: #14171f;
+  --cp-color-text-muted: #5b6270;
+  --cp-color-border-subtle: #e3e6eb;
+  --cp-color-border-strong: #9aa3b2;
   --cp-color-action: #0f766e;
   --cp-color-action-hover: #115e59;
   --cp-color-action-soft: #e1f3f1;
@@ -30,57 +30,62 @@
   --cp-color-danger-bg: #fdecea;
   --cp-color-danger-border: #f2b8b5;
   --cp-color-danger-solid: #d6403a;
-  --cp-color-neutral-fg: #36414b;
-  --cp-color-neutral-bg: #eef1f3;
-  --cp-color-neutral-border: #cbd2d7;
-  --cp-color-neutral-solid: #9aa6ad;
-  --cp-color-sidebar: #0a1816;
-  --cp-color-sidebar-hover: #142825;
-  --cp-color-sidebar-border: #1b3330;
-  --cp-color-sidebar-text: #e8f1ef;
-  --cp-color-sidebar-muted: #8ea8a3;
-  --cp-color-sidebar-active: #123a35;
-  --cp-color-sidebar-accent: #2dd4bf;
+  --cp-color-neutral-fg: #3a4252;
+  --cp-color-neutral-bg: #eef0f4;
+  --cp-color-neutral-border: #d3d8e0;
+  --cp-color-neutral-solid: #9aa3b2;
+  --cp-color-sidebar: #eef0f4;
+  --cp-color-sidebar-hover: #e3e6ec;
+  --cp-color-sidebar-border: #dde1e8;
+  --cp-color-sidebar-text: #1d2330;
+  --cp-color-sidebar-muted: #667085;
+  --cp-color-sidebar-active: #d9ece9;
+  --cp-color-sidebar-accent: #0f766e;
   --cp-focus-ring-color: #0f766e;
   --cp-focus-ring-width: 2px;
   --cp-focus-ring-offset: 2px;
-  --cp-shadow-card: 0 1px 2px rgb(16 32 30 / 6%), 0 1px 1px rgb(16 32 30 / 4%);
+  --cp-shadow-card: 0 1px 0 rgb(16 24 40 / 4%);
   --cp-shadow-raised: 0 12px 32px -12px rgb(16 32 30 / 22%);
 }
 
 :root.dark {
   color-scheme: dark;
 
-  --cp-color-canvas: #0b1211;
-  --cp-color-surface: #121b1a;
-  --cp-color-surface-raised: #17221f;
-  --cp-color-text: #e8f0ee;
-  --cp-color-text-muted: #94a6a2;
-  --cp-color-border-subtle: #243431;
-  --cp-color-border-strong: #5f7571;
+  --cp-color-canvas: #0b0c0f;
+  --cp-color-surface: #111318;
+  --cp-color-surface-raised: #16181f;
+  --cp-color-text: #e6e8ec;
+  --cp-color-text-muted: #8a909c;
+  --cp-color-border-subtle: #23262e;
+  --cp-color-border-strong: #454b59;
   --cp-color-action: #2dd4bf;
   --cp-color-action-hover: #5eead4;
-  --cp-color-action-soft: #0f2d2a;
+  --cp-color-action-soft: #0d2a28;
   --cp-color-action-fg: #04211e;
   --cp-color-healthy-fg: #4ade80;
-  --cp-color-healthy-bg: #0f2a1c;
+  --cp-color-healthy-bg: #0c2218;
   --cp-color-healthy-border: #1d5a37;
   --cp-color-healthy-solid: #34d399;
   --cp-color-warning-fg: #fbbf24;
-  --cp-color-warning-bg: #2d2208;
+  --cp-color-warning-bg: #261c08;
   --cp-color-warning-border: #6b4e0f;
   --cp-color-warning-solid: #fbbf24;
   --cp-color-danger-fg: #f87171;
-  --cp-color-danger-bg: #2d1010;
+  --cp-color-danger-bg: #2a1012;
   --cp-color-danger-border: #6b2222;
   --cp-color-danger-solid: #f87171;
-  --cp-color-neutral-fg: #c0cbd0;
-  --cp-color-neutral-bg: #1a2325;
-  --cp-color-neutral-border: #324045;
-  --cp-color-neutral-solid: #6b7d82;
-  --cp-color-sidebar: #070e0d;
-  --cp-color-sidebar-border: #162624;
+  --cp-color-neutral-fg: #c3c8d2;
+  --cp-color-neutral-bg: #1a1d24;
+  --cp-color-neutral-border: #323744;
+  --cp-color-neutral-solid: #6b7280;
+  --cp-color-sidebar: #0e1014;
+  --cp-color-sidebar-border: #1c1f26;
+  --cp-color-sidebar-hover: #171a21;
+  --cp-color-sidebar-text: #e6e8ec;
+  --cp-color-sidebar-muted: #8a909c;
+  --cp-color-sidebar-active: #12302d;
+  --cp-color-sidebar-accent: #2dd4bf;
   --cp-focus-ring-color: #5eead4;
-  --cp-shadow-card: 0 1px 2px rgb(0 0 0 / 40%);
+  --cp-shadow-card: none;
   --cp-shadow-raised: 0 16px 40px -12px rgb(0 0 0 / 65%);
 }

@@ -1,3 +1,5 @@
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
 @import 'tailwindcss';
 @import './tokens.css';
 @plugin '../../hero.ts';
@@ -5,6 +7,9 @@
 @source '../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
 
 @theme inline {
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-2xl: 10px;
   --color-action: var(--cp-color-action);
   --color-action-soft: var(--cp-color-action-soft);
   --color-action-fg: var(--cp-color-action-fg);
@@ -51,6 +56,8 @@
   }
 
   html {
+    font-size: 15px;
+    font-feature-settings: 'cv11', 'ss01';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background: var(--cp-color-canvas);

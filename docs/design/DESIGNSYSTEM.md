@@ -4,9 +4,26 @@ Ce document est la référence visuelle de la V1.
 
 - **Statut** : proposition pour la V1
 - **Date** : 2026-10-24
-- **Plateforme** : application web responsive, thème clair en priorité
+- **Plateforme** : application web responsive, thème sombre par défaut (clair et système disponibles)
 - **Bibliothèque de composants** : HeroUI
 - **Source de vérité visuelle** : tokens CSS de ce document
+
+## 0. Évolution V2 (2026-10-31)
+
+Direction « console de monitoring » inspirée de Linear (sobriété, densité,
+clavier d'abord) et de Grafana (panneaux, valeurs chiffrées, tableaux) :
+
+- thème sombre par défaut, palette bleu-gris neutre (`#0b0c0f` / `#111318`),
+  accent teal conservé comme identité de marque ;
+- polices auto-hébergées : Inter (texte) et JetBrains Mono (valeurs, durées,
+  identifiants), racine à 15 px ;
+- rayons réduits (6 / 8 / 10 px), bordures fines, ombres supprimées ;
+- liste de moniteurs en tableau dense avec en-têtes en monospace ;
+- résumé d'état en bande unique de compteurs, bandeau d'état sur une ligne ;
+- les couleurs d'état utilisent uniquement les tokens sémantiques, jamais de
+  valeur codée en dur.
+
+Les règles ci-dessous restent valables sauf mention contraire de cette section.
 
 ## 1. Intention
 

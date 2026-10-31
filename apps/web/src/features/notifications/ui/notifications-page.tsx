@@ -96,9 +96,7 @@ export function NotificationsPage() {
         <p className="mb-2 text-sm font-medium text-action">
           Canal e-mail uniquement
         </p>
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Notifications
-        </h1>
+        <h1 className="text-xl font-semibold tracking-tight">Notifications</h1>
         <p className="mt-3 max-w-2xl text-muted">
           CronPing alerte l’adresse de votre compte lorsqu’un incident s’ouvre
           ou se résout.
@@ -124,11 +122,15 @@ export function NotificationsPage() {
         </div>
         <div className="rounded-xl border border-line bg-surface p-5">
           <p className="text-sm text-muted">Livrés</p>
-          <p className="mt-3 text-3xl font-semibold tabular-nums">{sent}</p>
+          <p className="mt-2 font-mono text-2xl font-semibold tabular-nums">
+            {sent}
+          </p>
         </div>
         <div className="rounded-xl border border-line bg-surface p-5">
           <p className="text-sm text-muted">À surveiller</p>
-          <p className="mt-3 text-3xl font-semibold tabular-nums">{failed}</p>
+          <p className="mt-2 font-mono text-2xl font-semibold tabular-nums">
+            {failed}
+          </p>
         </div>
       </section>
 

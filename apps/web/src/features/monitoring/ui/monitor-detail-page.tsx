@@ -70,12 +70,12 @@ function StatCard({
   value: string
 }>) {
   return (
-    <div className="rounded-2xl border border-line bg-surface p-4 shadow-card sm:p-5">
+    <div className="rounded-xl border border-line bg-surface p-4 shadow-card sm:p-5">
       <div className="flex items-center gap-2 text-muted">
         {icon}
         <p className="text-xs font-medium uppercase tracking-wider">{label}</p>
       </div>
-      <p className="mt-3 text-2xl font-semibold tracking-tight tabular-nums">
+      <p className="mt-2 font-mono text-xl font-semibold tracking-tight tabular-nums">
         {value}
       </p>
       <p className="mt-1 text-xs text-muted">{detail}</p>
@@ -178,7 +178,7 @@ export function MonitorDetailPage({
 
   if (!monitor) {
     return (
-      <div className="mx-auto max-w-xl rounded-2xl border border-line bg-surface p-8 text-center shadow-card">
+      <div className="mx-auto max-w-xl rounded-xl border border-line bg-surface p-8 text-center shadow-card">
         <ShieldCheck
           aria-hidden="true"
           className="mx-auto text-muted"
@@ -245,7 +245,7 @@ export function MonitorDetailPage({
         Tous les moniteurs
       </Link>
 
-      <header className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
+      <header className="rounded-xl border border-line bg-surface p-5 shadow-card sm:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             {renaming ? (
@@ -286,7 +286,7 @@ export function MonitorDetailPage({
               </form>
             ) : (
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-3xl font-semibold tracking-tight">
+                <h1 className="text-xl font-semibold tracking-tight">
                   {monitor.localLabel}
                 </h1>
                 <StatusBadge status={monitor.status} />
@@ -343,7 +343,7 @@ export function MonitorDetailPage({
 
       {monitor.status === 'late' ? (
         <div
-          className="flex gap-3 rounded-2xl border border-warning-border bg-warning-bg p-4 text-warning"
+          className="flex gap-3 rounded-xl border border-warning-border bg-warning-bg p-4 text-warning"
           role="alert"
         >
           <CalendarClock
@@ -396,7 +396,7 @@ export function MonitorDetailPage({
         />
       </section>
 
-      <section className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
+      <section className="rounded-xl border border-line bg-surface p-5 shadow-card sm:p-6">
         <h2 className="mb-4 text-lg font-semibold">
           Historique de disponibilité
         </h2>
@@ -405,7 +405,7 @@ export function MonitorDetailPage({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
         <div className="space-y-6">
-          <section className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
+          <section className="rounded-xl border border-line bg-surface p-5 shadow-card sm:p-6">
             <div className="flex items-center gap-2">
               <KeyRound aria-hidden="true" className="text-action" size={18} />
               <h2 className="text-lg font-semibold">Heartbeat</h2>
@@ -456,7 +456,7 @@ export function MonitorDetailPage({
             ) : null}
           </section>
 
-          <section className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
+          <section className="rounded-xl border border-line bg-surface p-5 shadow-card sm:p-6">
             <h2 className="text-lg font-semibold">Derniers incidents</h2>
             {incidentsQuery.isPending ? (
               <Skeleton className="mt-4 h-20 rounded-lg" />
@@ -511,7 +511,7 @@ export function MonitorDetailPage({
         </div>
 
         <aside className="space-y-4">
-          <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+          <section className="rounded-xl border border-line bg-surface p-5 shadow-card">
             <div className="flex items-center gap-2 text-action">
               <Bell aria-hidden="true" size={17} />
               <h2 className="text-sm font-semibold">Alertes e-mail</h2>
@@ -529,7 +529,7 @@ export function MonitorDetailPage({
             </p>
           </section>
 
-          <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+          <section className="rounded-xl border border-line bg-surface p-5 shadow-card">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold">Configuration</h2>
               {scheduleDraft === null ? (
@@ -656,7 +656,7 @@ export function MonitorDetailPage({
             </dl>
           </section>
 
-          <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+          <section className="rounded-xl border border-line bg-surface p-5 shadow-card">
             <div className="flex items-center gap-2 text-healthy">
               <ShieldCheck aria-hidden="true" size={17} />
               <h2 className="text-sm font-semibold">Confidentialité</h2>
@@ -667,7 +667,7 @@ export function MonitorDetailPage({
             </p>
           </section>
 
-          <section className="rounded-2xl border border-danger-border bg-surface p-5 shadow-card">
+          <section className="rounded-xl border border-danger-border bg-surface p-5 shadow-card">
             <h2 className="text-sm font-semibold text-danger">
               Zone de danger
             </h2>

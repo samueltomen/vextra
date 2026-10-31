@@ -89,12 +89,12 @@ function SuccessState({
 
   return (
     <section className="mx-auto max-w-3xl">
-      <div className="rounded-2xl border border-healthy-border bg-surface p-6 shadow-card sm:p-8">
+      <div className="rounded-xl border border-healthy-border bg-surface p-5 sm:p-6">
         <span className="grid size-12 place-items-center rounded-full bg-healthy-bg text-healthy">
           <Check aria-hidden="true" size={24} />
         </span>
         <p className="mt-5 text-sm font-semibold text-healthy">Moniteur créé</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+        <h1 className="mt-1 text-xl font-semibold tracking-tight">
           {created.monitor.localLabel}
         </h1>
         <p className="mt-3 max-w-xl text-muted">
@@ -193,7 +193,7 @@ export function CreateMonitorPage() {
       <div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <section>
           <p className="text-sm font-semibold text-action">Nouveau moniteur</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h1 className="mt-2 text-xl font-semibold tracking-tight">
             Ajouter un heartbeat
           </h1>
           <p className="mt-3 max-w-2xl text-muted">
@@ -202,7 +202,7 @@ export function CreateMonitorPage() {
           </p>
 
           <form
-            className="mt-8 space-y-7 rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6"
+            className="mt-8 space-y-7 rounded-xl border border-line bg-surface p-5 shadow-card sm:p-6"
             onSubmit={(event) => {
               event.preventDefault()
               event.stopPropagation()
@@ -335,7 +335,7 @@ export function CreateMonitorPage() {
         >
           <form.Subscribe selector={(state) => state.values}>
             {(values) => (
-              <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+              <div className="rounded-xl border border-line bg-surface p-5 shadow-card">
                 <div className="flex items-center gap-2 text-action">
                   <Timer aria-hidden="true" size={18} />
                   <h2 className="text-sm font-semibold">Aperçu</h2>
@@ -364,7 +364,7 @@ export function CreateMonitorPage() {
             )}
           </form.Subscribe>
 
-          <div className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+          <div className="rounded-xl border border-line bg-surface p-5 shadow-card">
             <div className="flex items-center gap-2 text-action">
               <RadioTower aria-hidden="true" size={18} />
               <h2 className="text-sm font-semibold">Fonctionnement</h2>
