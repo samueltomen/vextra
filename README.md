@@ -149,6 +149,28 @@ bindings Cloudflare `AUTH_RATE_LIMITER` (10/min) et `PING_RATE_LIMITER`
 se fait sur une seule origine (voir
 [ADR 0001](docs/adr/0001-deploiement-meme-origine.md)).
 
+## Déploiement
+
+Un seul Worker Cloudflare (`cronping`, environnement `production` de
+`apps/api/wrangler.toml`) sert le SPA en assets statiques et l'API sous
+`/api/*`, donc sous une seule origine (ADR 0001).
+
+1. Se connecter : `pnpm --filter @cronping/api exec wrangler login`.
+2. Appliquer les migrations sur le projet Supabase de production :
+   `pnpm exec supabase link --project-ref <ref>` puis `pnpm exec supabase db push`.
+3. Définir les secrets (une commande par secret) :
+   `pnpm --filter @cronping/api exec wrangler secret put <NOM> -e production`
+   pour `APP_ORIGIN` (l'URL publique du Worker), `SUPABASE_URL`,
+   `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
+   `SESSION_ENCRYPTION_KEY`, `PING_TOKEN_PEPPER`, `RESEND_API_KEY` et
+   `RESEND_FROM_EMAIL`. Ne jamais les committer.
+4. Déployer : `pnpm deploy:production` (build du web, puis `wrangler deploy`).
+5. Vérifier : `curl https://<worker>/api/health` doit répondre `status: ok`.
+
+La CI (`.github/workflows/ci.yml`) exécute `pnpm check` et les tests de base. Le
+workflow `deploy.yml` est manuel et exige les secrets GitHub
+`CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ACCOUNT_ID`.
+
 ## Commandes
 
 ```bash
@@ -162,6 +184,7 @@ pnpm test:db
 pnpm db:lint
 pnpm build
 pnpm check
+pnpm deploy:production
 ```
 
 Le contrôle anti-Bootstrap peut être exécuté seul :
