@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 
 export const TEST_ACCOUNT = {
+  role: 'owner',
   tenantId: '10000000-0000-4000-8000-000000000001',
   user: {
     email: 'alice@example.test',
@@ -162,10 +163,37 @@ export type ApiMockOptions = Readonly<{
   folders?: { id: string; name: string }[]
   metrics?: unknown
   monitors?: MonitorRow[]
+  role?: 'member' | 'owner' | 'viewer'
 }>
 
 export function installApiMock(options: ApiMockOptions = {}) {
   let authenticated = options.authenticated ?? true
+  let teamMembers: {
+    email: string
+    joinedAt: string
+    role: 'member' | 'owner' | 'viewer'
+    userId: string
+  }[] = [
+    {
+      email: TEST_ACCOUNT.user.email,
+      joinedAt: '2026-10-01T10:00:00.000Z',
+      role: 'owner',
+      userId: TEST_ACCOUNT.user.id,
+    },
+    {
+      email: 'bob@example.test',
+      joinedAt: '2026-10-10T10:00:00.000Z',
+      role: 'member',
+      userId: '00000000-0000-4000-8000-000000000002',
+    },
+  ]
+  let teamInvitations: {
+    createdAt: string
+    email: string
+    expiresAt: string
+    id: string
+    role: 'member' | 'viewer'
+  }[] = []
   const apiKeys: {
     createdAt: string
     id: string
@@ -542,8 +570,129 @@ export function installApiMock(options: ApiMockOptions = {}) {
 
       if (url.pathname === '/api/auth/me' && method === 'GET') {
         return authenticated
-          ? jsonResponse({ data: TEST_ACCOUNT })
+          ? jsonResponse({
+              data: { ...TEST_ACCOUNT, role: options.role ?? 'owner' },
+            })
           : errorResponse(401, 'unauthorized')
+      }
+
+      if (url.pathname === '/api/auth/tenant' && method === 'POST') {
+        const body = JSON.parse(String(init?.body)) as { tenantId: string }
+
+        return jsonResponse({
+          data: { ...TEST_ACCOUNT, role: 'member', tenantId: body.tenantId },
+        })
+      }
+
+      if (url.pathname === '/api/team/members' && method === 'GET') {
+        return jsonResponse({
+          data: {
+            members: teamMembers,
+            role: options.role ?? 'owner',
+            userId: TEST_ACCOUNT.user.id,
+          },
+        })
+      }
+
+      if (url.pathname === '/api/team/spaces' && method === 'GET') {
+        return jsonResponse({
+          data: {
+            spaces: [
+              {
+                ownerEmail: TEST_ACCOUNT.user.email,
+                role: 'owner',
+                tenantId: TEST_ACCOUNT.tenantId,
+              },
+              ...(options.role === 'viewer'
+                ? [
+                    {
+                      ownerEmail: 'boss@example.test',
+                      role: 'viewer',
+                      tenantId: '10000000-0000-4000-8000-000000000002',
+                    },
+                  ]
+                : []),
+            ],
+          },
+        })
+      }
+
+      if (url.pathname === '/api/team/invitations' && method === 'GET') {
+        return jsonResponse({ data: { invitations: teamInvitations } })
+      }
+
+      if (url.pathname === '/api/team/invitations' && method === 'POST') {
+        const body = JSON.parse(String(init?.body)) as {
+          email: string
+          role: 'member' | 'viewer'
+        }
+
+        if (body.email === 'deja@example.test') {
+          return errorResponse(409, 'invitation_exists')
+        }
+
+        const invitation = {
+          createdAt: new Date().toISOString(),
+          email: body.email,
+          expiresAt: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+          id: crypto.randomUUID(),
+          role: body.role,
+        }
+
+        teamInvitations.push(invitation)
+
+        return jsonResponse(
+          { data: { invitation, token: `vxi_${'T'.repeat(43)}` } },
+          201,
+        )
+      }
+
+      if (
+        url.pathname === '/api/team/invitations/accept' &&
+        method === 'POST'
+      ) {
+        const body = JSON.parse(String(init?.body)) as { token: string }
+
+        return body.token.includes('X')
+          ? errorResponse(404, 'invitation_invalid')
+          : jsonResponse({
+              data: { tenantId: '10000000-0000-4000-8000-000000000002' },
+            })
+      }
+
+      if (
+        url.pathname.startsWith('/api/team/invitations/') &&
+        method === 'DELETE'
+      ) {
+        const id = url.pathname.split('/').at(-1)
+
+        teamInvitations = teamInvitations.filter((item) => item.id !== id)
+
+        return new Response(null, { status: 204 })
+      }
+
+      if (url.pathname.startsWith('/api/team/members/') && method === 'PATCH') {
+        const id = url.pathname.split('/').at(-1)
+        const body = JSON.parse(String(init?.body)) as {
+          role: 'member' | 'viewer'
+        }
+
+        teamMembers = teamMembers.map((member) =>
+          member.userId === id ? { ...member, role: body.role } : member,
+        )
+
+        return new Response(null, { status: 204 })
+      }
+
+      if (
+        url.pathname.startsWith('/api/team/members/') &&
+        method === 'DELETE'
+      ) {
+        const id = url.pathname.split('/').at(-1)
+
+        teamMembers = teamMembers.filter((member) => member.userId !== id)
+
+        return new Response(null, { status: 204 })
       }
 
       if (url.pathname === '/api/auth/login' && method === 'POST') {

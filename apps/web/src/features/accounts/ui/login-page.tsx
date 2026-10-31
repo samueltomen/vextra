@@ -1,4 +1,5 @@
 import { Button, Input } from '@heroui/react'
+import { readPendingInvite } from '../../team/model/pending-invite.ts'
 import { useForm } from '@tanstack/react-form'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
@@ -22,6 +23,15 @@ import { CURRENT_ACCOUNT_QUERY_KEY } from '../query/use-current-account.ts'
 
 type AuthMode = 'signin' | 'signup'
 
+/** Resume an invitation opened before logging in. */
+function afterLogin() {
+  const token = readPendingInvite()
+
+  return token
+    ? ({ params: { token }, to: '/invite/$token' } as const)
+    : ({ to: '/' } as const)
+}
+
 function AuthForm({ mode }: Readonly<{ mode: AuthMode }>) {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(
@@ -40,7 +50,7 @@ function AuthForm({ mode }: Readonly<{ mode: AuthMode }>) {
           const account = await signIn(value)
 
           queryClient.setQueryData(CURRENT_ACCOUNT_QUERY_KEY, account)
-          await navigate({ to: '/' })
+          await navigate(afterLogin())
           return
         }
 
@@ -61,7 +71,7 @@ function AuthForm({ mode }: Readonly<{ mode: AuthMode }>) {
         }
 
         queryClient.setQueryData(CURRENT_ACCOUNT_QUERY_KEY, account)
-        await navigate({ to: '/' })
+        await navigate(afterLogin())
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
           setSubmitError('Adresse e-mail ou mot de passe incorrect.')

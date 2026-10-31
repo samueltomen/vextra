@@ -36,6 +36,10 @@ Des clés d'API en lecture seule permettent d'interroger les moniteurs depuis un
 script : `curl -H "Authorization: Bearer vx_…" <origine>/api/v1/monitors`
 ([ADR 0016](docs/adr/0016-cles-d-api-en-lecture-seule.md)).
 
+Une équipe peut partager un espace avec des rôles propriétaire, membre et
+lecture seule, via des liens d'invitation à usage unique
+([ADR 0017](docs/adr/0017-equipes-roles-et-invitations.md)).
+
 ## État actuel
 
 Le dépôt contient le socle de la V1 :

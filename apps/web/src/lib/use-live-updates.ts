@@ -18,7 +18,7 @@ function liveUrl(): string {
  * Keeps a WebSocket open to the API. The server only says "something changed";
  * every active query is then reloaded through the normal authenticated API.
  */
-export function useLiveUpdates(enabled: boolean): LiveStatus {
+export function useLiveUpdates(enabled: boolean, scope?: string): LiveStatus {
   const queryClient = useQueryClient()
   const [status, setStatus] = useState<LiveStatus>('connecting')
 
@@ -77,7 +77,7 @@ export function useLiveUpdates(enabled: boolean): LiveStatus {
       window.clearInterval(pingTimer)
       socket?.close()
     }
-  }, [enabled, queryClient])
+  }, [enabled, queryClient, scope])
 
   return enabled ? status : 'offline'
 }

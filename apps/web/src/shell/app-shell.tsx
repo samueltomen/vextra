@@ -245,7 +245,7 @@ function AppFrame({
   const [paletteOpen, setPaletteOpen] = useState(false)
 
   usePreferences()
-  const liveStatus = useLiveUpdates(!demoMode)
+  const liveStatus = useLiveUpdates(!demoMode, account.tenantId)
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -297,12 +297,14 @@ function AppFrame({
           >
             Moniteurs
           </NavLink>
-          <NavLink
-            icon={<Plus aria-hidden="true" size={18} />}
-            to="/monitors/new"
-          >
-            Nouveau moniteur
-          </NavLink>
+          {account.role === 'viewer' ? null : (
+            <NavLink
+              icon={<Plus aria-hidden="true" size={18} />}
+              to="/monitors/new"
+            >
+              Nouveau moniteur
+            </NavLink>
+          )}
           <NavLink
             icon={<Bell aria-hidden="true" size={18} />}
             to="/notifications"
@@ -397,6 +399,15 @@ function AppFrame({
           className="mx-auto w-full max-w-[1200px] px-4 pb-28 pt-8 sm:px-6 lg:px-8 lg:pb-12 lg:pt-10"
           id="main-content"
         >
+          {account.role === 'viewer' ? (
+            <p
+              className="mb-6 rounded-lg border border-line bg-surface px-4 py-3 text-sm text-muted"
+              role="status"
+            >
+              Vous consultez cet espace en <strong>lecture seule</strong> : les
+              modifications sont désactivées.
+            </p>
+          ) : null}
           {children}
         </main>
 
@@ -454,7 +465,7 @@ export function AppShell() {
   })
 
   // Public status pages are served without a session or the application shell.
-  if (pathname.startsWith('/status/')) {
+  if (pathname.startsWith('/status/') || pathname.startsWith('/invite/')) {
     return <Outlet />
   }
 
