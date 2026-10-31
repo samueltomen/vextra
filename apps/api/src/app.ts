@@ -26,7 +26,7 @@ export function createHealthRoutes(): Hono {
 
   routes.get('/api/health', (context) =>
     context.json({
-      service: 'cronping-api',
+      service: 'vextra-api',
       status: 'ok',
     }),
   )

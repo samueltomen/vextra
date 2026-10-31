@@ -1,6 +1,6 @@
 # Domaine monitoring - preuve TDD
 
-Source : `docs/plans/cronping-mvp.md`, étape 3.
+Source : `docs/plans/vextra-mvp.md`, étape 3.
 
 ## Comportements garantis
 

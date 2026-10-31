@@ -25,7 +25,7 @@ describe('MonitorDetailPage', () => {
     expect(screen.getByText('Alertes e-mail')).toBeInTheDocument()
     expect(screen.getAllByText('alice@example.test')).toHaveLength(2)
     expect(
-      screen.getByText(/Authorization: Bearer \$CRONPING_TOKEN/),
+      screen.getByText(/Authorization: Bearer \$VEXTRA_TOKEN/),
     ).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Copier la commande' }))

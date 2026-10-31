@@ -1,4 +1,4 @@
-# CronPing auto-hébergé. Voir docs/self-hosting.md.
+# Vextra auto-hébergé. Voir docs/self-hosting.md.
 #
 #   cp .env.example .env     # puis renseigner les valeurs
 #   docker compose up -d --build
@@ -6,7 +6,7 @@
 # Gardez UNE seule instance : le planificateur, le limiteur de débit et le temps
 # réel vivent dans le processus.
 services:
-  cronping:
+  vextra:
     build: .
     restart: unless-stopped
     env_file: .env

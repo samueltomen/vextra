@@ -80,7 +80,7 @@ describe('buildChannelRequest', () => {
       event: 'incident_opened',
       monitor: { id: ALERT.monitorId, name: null },
       openedAt: '2026-10-31T12:00:00.000Z',
-      source: 'cronping',
+      source: 'vextra',
       text: 'Heartbeat manquant — Moniteur 20000000',
     })
   })
@@ -93,7 +93,7 @@ describe('buildChannelRequest', () => {
     })
 
     expect(test.body).toMatchObject({
-      dedup_key: 'cronping-test',
+      dedup_key: 'vextra-test',
       payload: { severity: 'info' },
     })
     expect(

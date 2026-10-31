@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 
 export type ThemePreference = 'dark' | 'light' | 'system'
 
-const THEME_STORAGE_KEY = 'cronping.theme'
+const THEME_STORAGE_KEY = 'vextra.theme'
 const listeners = new Set<() => void>()
 
 function isThemePreference(value: unknown): value is ThemePreference {

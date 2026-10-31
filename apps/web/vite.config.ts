@@ -3,7 +3,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { defineConfig } from 'vite'
 
-const apiTarget = process.env.CRONPING_API_TARGET ?? 'http://localhost:8787'
+const apiTarget = process.env.VEXTRA_API_TARGET ?? 'http://localhost:8787'
 
 export default defineConfig({
   plugins: [

@@ -5,7 +5,7 @@
 
 ## Contexte
 
-CronPing est un logiciel libre (licence MIT) proposé en service hébergé sur
+Vextra est un logiciel libre (licence MIT) proposé en service hébergé sur
 Cloudflare et Supabase. Tout utilisateur doit aussi pouvoir l'installer sur son
 propre serveur, avec ses propres identifiants d'e-mail et de base de données,
 sans compte Cloudflare.

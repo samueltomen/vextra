@@ -58,7 +58,7 @@ export function buildIntegrationSnippets({
   pingUrl,
   token,
 }: SnippetParams): readonly IntegrationSnippet[] {
-  const shellToken = token ?? '$CRONPING_TOKEN'
+  const shellToken = token ?? '$VEXTRA_TOKEN'
   const literalToken = token ?? TOKEN_PLACEHOLDER
 
   return [
@@ -95,8 +95,8 @@ curl -fsS -m 10 --retry 3 "${pingUrl}/${shellToken}"
     },
     {
       code: `# crontab -e
-CRONPING_TOKEN=${literalToken}
-${cronExpression ?? toCronExpression(intervalMinutes)} /chemin/vers/job.sh && curl -fsS -m 10 --retry 3 -X POST -H "Authorization: Bearer $CRONPING_TOKEN" "${pingUrl}" > /dev/null`,
+VEXTRA_TOKEN=${literalToken}
+${cronExpression ?? toCronExpression(intervalMinutes)} /chemin/vers/job.sh && curl -fsS -m 10 --retry 3 -X POST -H "Authorization: Bearer $VEXTRA_TOKEN" "${pingUrl}" > /dev/null`,
       hint: 'Le ping ne part que si le job se termine avec succès (&&).',
       id: 'crontab',
       label: 'crontab',
@@ -123,7 +123,7 @@ request = urllib.request.Request(
     "${pingUrl}",
     method="POST",
     headers={"Authorization": "Bearer " + ${
-      token === null ? 'os.environ["CRONPING_TOKEN"]' : `"${token}"`
+      token === null ? 'os.environ["VEXTRA_TOKEN"]' : `"${token}"`
     }},
 )
 urllib.request.urlopen(request, timeout=10)`,
@@ -136,14 +136,14 @@ urllib.request.urlopen(request, timeout=10)`,
   method: "POST",
   headers: { Authorization: ${
     token === null
-      ? '`Bearer ${process.env.CRONPING_TOKEN}`'
+      ? '`Bearer ${process.env.VEXTRA_TOKEN}`'
       : `"Bearer ${token}"`
   } },
   signal: AbortSignal.timeout(10_000),
 })
 
 if (!response.ok) {
-  throw new Error(\`CronPing a répondu \${response.status}\`)
+  throw new Error(\`Vextra a répondu \${response.status}\`)
 }`,
       hint: 'Node.js 18 ou plus récent, fetch natif.',
       id: 'node',
@@ -151,18 +151,18 @@ if (!response.ok) {
     },
     {
       code: `Invoke-RestMethod -Method Post -Uri "${pingUrl}" \`
-  -Headers @{ Authorization = "Bearer ${token ?? '$env:CRONPING_TOKEN'}" } \`
+  -Headers @{ Authorization = "Bearer ${token ?? '$env:VEXTRA_TOKEN'}" } \`
   -TimeoutSec 10`,
       hint: 'Pour les tâches planifiées Windows.',
       id: 'powershell',
       label: 'PowerShell',
     },
     {
-      code: `- name: Ping CronPing
+      code: `- name: Ping Vextra
   if: success()
   run: >-
     curl --fail --silent --show-error --retry 3 --request POST
-    --header "Authorization: Bearer \${{ secrets.CRONPING_TOKEN }}"
+    --header "Authorization: Bearer \${{ secrets.VEXTRA_TOKEN }}"
     "${pingUrl}"`,
       hint: 'Ajoutez le token dans les secrets du dépôt, jamais en clair.',
       id: 'github',

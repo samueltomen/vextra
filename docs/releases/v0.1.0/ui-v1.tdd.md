@@ -1,6 +1,6 @@
 # Prototype UI V1 - preuve TDD
 
-Source : `docs/plans/cronping-mvp.md`, étapes 4 et 9.
+Source : `docs/plans/vextra-mvp.md`, étapes 4 et 9.
 
 ## Parcours
 
@@ -29,9 +29,9 @@ Source : `docs/plans/cronping-mvp.md`, étapes 4 et 9.
 ## Validation
 
 ```bash
-pnpm --filter @cronping/web test:coverage
-pnpm --filter @cronping/web typecheck
-pnpm --filter @cronping/web build
+pnpm --filter @vextra/web test:coverage
+pnpm --filter @vextra/web typecheck
+pnpm --filter @vextra/web build
 ```
 
 Résultats observés : 17 tests réussis, 90,9 % des lignes, 84,94 % des branches

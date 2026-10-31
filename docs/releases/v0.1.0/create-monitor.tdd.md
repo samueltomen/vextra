@@ -1,6 +1,6 @@
 # Création d'un moniteur - preuve TDD
 
-Source : `docs/plans/cronping-mvp.md`, étapes 2 et 4.
+Source : `docs/plans/vextra-mvp.md`, étapes 2 et 4.
 
 ## Parcours
 

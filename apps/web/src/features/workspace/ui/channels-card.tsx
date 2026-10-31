@@ -49,7 +49,7 @@ const KINDS: Readonly<
   webhook: {
     field: 'URL HTTPS de votre endpoint',
     label: 'Webhook générique',
-    placeholder: 'https://exemple.com/hooks/cronping',
+    placeholder: 'https://exemple.com/hooks/vextra',
   },
 }
 

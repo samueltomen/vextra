@@ -1,4 +1,4 @@
-# CronPing UI V1 - Evidence
+# Vextra UI V1 - Evidence
 
 Prototype UI local, sans backend réel. Les captures ont été réalisées avec
 Chrome headless sur Vite :

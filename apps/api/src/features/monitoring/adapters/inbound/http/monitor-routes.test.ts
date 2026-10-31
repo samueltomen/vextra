@@ -1,4 +1,4 @@
-import { InvalidCronError } from '@cronping/domain'
+import { InvalidCronError } from '@vextra/domain'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { CreateMonitorResult } from '../../../application/create-monitor.ts'

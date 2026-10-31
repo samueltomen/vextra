@@ -1,4 +1,4 @@
-import type { ListNotificationsResponse } from '@cronping/contracts'
+import type { ListNotificationsResponse } from '@vextra/contracts'
 
 import { apiRequest } from '../../../api/client.ts'
 import { isDemoModeEnabled } from '../../../demo/demo-mode.ts'

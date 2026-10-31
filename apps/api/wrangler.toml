@@ -1,4 +1,4 @@
-name = "cronping-api"
+name = "vextra-api"
 main = "src/worker.ts"
 compatibility_date = "2026-10-24"
 workers_dev = true
@@ -29,7 +29,7 @@ simple = { limit = 120, period = 60 }
 # Production : un seul Worker sert le SPA (assets) et l'API sous la même
 # origine (ADR 0001). Les bindings ne sont pas hérités entre environnements.
 [env.production]
-name = "cronping"
+name = "cronping"  # nom historique du Worker de production : le renommer crée un nouveau Worker (URL, secrets, Durable Object)
 workers_dev = true
 
 [env.production.assets]

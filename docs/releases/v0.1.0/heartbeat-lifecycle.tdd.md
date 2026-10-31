@@ -5,7 +5,7 @@ Date : 2026-10-24
 ## Parcours utilisateur
 
 En tant qu'utilisateur, je veux appeler une URL fixe à la fin de mon script afin
-que CronPing sache qu'il s'est exécuté, puis qu'il ouvre un incident uniquement
+que Vextra sache qu'il s'est exécuté, puis qu'il ouvre un incident uniquement
 si la prochaine échéance passe sans nouveau heartbeat.
 
 ## Garanties

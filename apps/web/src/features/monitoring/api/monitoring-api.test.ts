@@ -7,7 +7,7 @@ describe('monitoring API adapter', () => {
   it('merges server state with local labels', async () => {
     installApiMock()
     window.localStorage.setItem(
-      'cronping.monitor-labels.v1',
+      'vextra.monitor-labels.v1',
       JSON.stringify(TEST_MONITOR_LABELS),
     )
 
@@ -57,7 +57,7 @@ describe('monitoring API adapter', () => {
       graceSeconds: 120,
       intervalSeconds: 300,
     })
-    expect(window.localStorage.getItem('cronping.monitor-labels.v1')).toContain(
+    expect(window.localStorage.getItem('vextra.monitor-labels.v1')).toContain(
       'Backup DB',
     )
   })

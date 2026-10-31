@@ -5,7 +5,7 @@ import { runNotificationDelivery, runWeeklyReports } from './composition.ts'
 import worker from './worker.ts'
 
 const ENVIRONMENT: WorkerEnvironment = {
-  APP_ORIGIN: 'https://app.cronping.test',
+  APP_ORIGIN: 'https://app.vextra.test',
   PING_TOKEN_PEPPER: 'pepper-with-at-least-thirty-two-characters',
   SESSION_ENCRYPTION_KEY: 'session-secret-with-at-least-32-bytes-of-entropy',
   SUPABASE_PUBLISHABLE_KEY: 'publishable-key',
@@ -53,7 +53,7 @@ async function runScheduled(environment: typeof ENVIRONMENT) {
 describe('Cloudflare Worker entrypoint', () => {
   it('serves requests when configuration is present', async () => {
     const response = await worker.fetch(
-      new Request('https://api.cronping.test/api/health'),
+      new Request('https://api.vextra.test/api/health'),
       ENVIRONMENT,
     )
 
@@ -62,7 +62,7 @@ describe('Cloudflare Worker entrypoint', () => {
 
   it('returns a safe error when configuration is missing', async () => {
     const response = await worker.fetch(
-      new Request('https://api.cronping.test/api/health'),
+      new Request('https://api.vextra.test/api/health'),
       {} as WorkerEnvironment,
     )
 
@@ -102,7 +102,7 @@ describe('Cloudflare Worker entrypoint', () => {
     await runScheduled({
       ...ENVIRONMENT,
       RESEND_API_KEY: 're_test',
-      RESEND_FROM_EMAIL: 'CronPing <alerts@example.test>',
+      RESEND_FROM_EMAIL: 'Vextra <alerts@example.test>',
     })
 
     expect(
@@ -145,14 +145,14 @@ describe('e-mail transport selection', () => {
     await expect(
       runNotificationDelivery({
         ...ENVIRONMENT,
-        EMAIL_FROM: 'CronPing <alerts@example.test>',
+        EMAIL_FROM: 'Vextra <alerts@example.test>',
         EMAIL_TRANSPORT: transport,
       }),
     ).resolves.toEqual({ failed: 0, sent: 0 })
     await expect(
       runWeeklyReports({
         ...ENVIRONMENT,
-        EMAIL_FROM: 'CronPing <alerts@example.test>',
+        EMAIL_FROM: 'Vextra <alerts@example.test>',
         EMAIL_TRANSPORT: transport,
       }),
     ).resolves.toEqual({ failed: 0, sent: 0 })

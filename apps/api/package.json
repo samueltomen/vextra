@@ -1,5 +1,5 @@
 {
-  "name": "@cronping/api",
+  "name": "@vextra/api",
   "version": "0.0.0",
   "license": "MIT",
   "private": true,
@@ -13,8 +13,8 @@
     "build:node": "esbuild src/node.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist-node/server.mjs --banner:js=\"import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);\""
   },
   "dependencies": {
-    "@cronping/contracts": "workspace:*",
-    "@cronping/domain": "workspace:*",
+    "@vextra/contracts": "workspace:*",
+    "@vextra/domain": "workspace:*",
     "@hono/node-server": "2.1.5",
     "@supabase/supabase-js": "^2.118.0",
     "hono": "4.13.13",

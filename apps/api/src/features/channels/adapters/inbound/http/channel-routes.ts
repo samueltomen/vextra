@@ -2,7 +2,7 @@ import {
   createChannelRequestSchema,
   monitorIdSchema,
   updateChannelRequestSchema,
-} from '@cronping/contracts'
+} from '@vextra/contracts'
 import { Hono, type Context } from 'hono'
 
 import {

@@ -1,4 +1,4 @@
-# CronPing - Plan de construction du MVP
+# Vextra - Plan de construction du MVP
 
 Statut : proposition à valider  
 Date : 2026-10-24  
@@ -8,8 +8,8 @@ d'exécution d'un script cron et d'alerter son propriétaire.
 
 ## 1. Périmètre et promesse produit
 
-CronPing est un service de heartbeat pour tâches planifiées. L'utilisateur crée
-un moniteur, ajoute un appel HTTP à la fin de son script, puis CronPing ouvre un
+Vextra est un service de heartbeat pour tâches planifiées. L'utilisateur crée
+un moniteur, ajoute un appel HTTP à la fin de son script, puis Vextra ouvre un
 incident et alerte si aucun heartbeat n'est reçu dans la fenêtre attendue.
 
 Le MVP doit permettre de :
@@ -45,7 +45,7 @@ Le MVP ne doit pas inclure :
 
 ### Minimisation des données
 
-CronPing est un dead man's switch, pas un ordonnanceur de tâches. Il ne reçoit
+Vextra est un dead man's switch, pas un ordonnanceur de tâches. Il ne reçoit
 jamais le cron, le code du script, la commande exécutée ou son résultat. Le
 heartbeat ne transporte aucun contenu métier : il signale uniquement qu'une
 exécution est arrivée.
@@ -253,8 +253,8 @@ infra
 scripts
 ```
 
-Les packages du workspace sont nommés `@cronping/web`, `@cronping/api`,
-`@cronping/domain` et `@cronping/contracts`.
+Les packages du workspace sont nommés `@vextra/web`, `@vextra/api`,
+`@vextra/domain` et `@vextra/contracts`.
 
 Le domaine `monitoring` contient les règles de calcul de deadline et les
 transitions `pending -> healthy -> late -> healthy`. Il ne connaît ni Supabase,
@@ -270,7 +270,7 @@ requête et RLS protège les données.
 
 La SPA ne manipule pas directement les tokens Supabase. L'API expose les routes
 d'authentification et établit une session chiffrée et signée, exposée au
-navigateur uniquement via un cookie `__Host-cronping_session` `HttpOnly`,
+navigateur uniquement via un cookie `__Host-vextra_session` `HttpOnly`,
 `Secure` et `SameSite=Strict`. Elle utilise ensuite le JWT Supabase
 correspondant côté serveur pour les requêtes dashboard. Les mutations
 authentifiées par cookie nécessitent en plus une protection CSRF et une
@@ -416,8 +416,8 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm --filter @cronping/web exec tsc --noEmit
-pnpm --filter @cronping/api exec tsc --noEmit
+pnpm --filter @vextra/web exec tsc --noEmit
+pnpm --filter @vextra/api exec tsc --noEmit
 pnpm exec supabase --version
 if rg -n '"(bootstrap|react-bootstrap|bootstrap-icons)"' \
   package.json pnpm-lock.yaml; then
@@ -499,7 +499,7 @@ Tâches :
 Vérification :
 
 ```bash
-pnpm --filter @cronping/domain test:coverage
+pnpm --filter @vextra/domain test:coverage
 ```
 
 Critères de sortie : au moins 80 % de couverture sur le domaine, aucun import
@@ -526,7 +526,7 @@ Tâches :
 - générer un secret aléatoire cryptographiquement sûr, afficher sa valeur une
   seule fois et stocker uniquement son HMAC ;
 - ajouter une action de rotation invalidant immédiatement l'ancien token ;
-- produire un snippet `curl` échappé qui lit `CRONPING_TOKEN` depuis le
+- produire un snippet `curl` échappé qui lit `VEXTRA_TOKEN` depuis le
   gestionnaire de secrets du serveur et l'envoie dans `Authorization` ;
 - associer explicitement un ou plusieurs canaux de notification au moniteur, en
   vérifiant leur appartenance au même tenant ;
@@ -539,18 +539,18 @@ Snippet cible à afficher et à tester :
 ```bash
 curl --fail --silent --show-error --retry 3 \
   --request POST \
-  --header "Authorization: Bearer ${CRONPING_TOKEN}" \
-  "https://api.cronping.app/api/ping"
+  --header "Authorization: Bearer ${VEXTRA_TOKEN}" \
+  "https://api.vextra.app/api/ping"
 ```
 
-`CRONPING_TOKEN` doit être chargé depuis un coffre ou un fichier de secrets
+`VEXTRA_TOKEN` doit être chargé depuis un coffre ou un fichier de secrets
 protégé, jamais collé dans le script ou dans l'historique du shell.
 
 Vérification :
 
 ```bash
 pnpm test:integration -- monitors
-pnpm --filter @cronping/web test -- monitor-form
+pnpm --filter @vextra/web test -- monitor-form
 pnpm test:e2e -- create-monitor
 ```
 
@@ -809,7 +809,7 @@ pnpm test:integration -- csrf
 pnpm test:e2e
 pnpm test:load
 pnpm audit --prod
-pnpm --filter @cronping/web build
+pnpm --filter @vextra/web build
 if rg -n 'service_role|RESEND|HMAC|CRON_SECRET' apps/web/dist; then
   echo "Secret potentiel détecté dans le bundle" >&2
   exit 1
@@ -860,7 +860,7 @@ Vérification :
 
 ```bash
 pnpm build
-pnpm --filter @cronping/api exec wrangler deploy --dry-run
+pnpm --filter @vextra/api exec wrangler deploy --dry-run
 pnpm test:e2e -- staging
 pnpm exec supabase db lint --linked
 ```

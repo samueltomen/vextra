@@ -1,4 +1,4 @@
-import type { MonitorStatus } from '@cronping/domain'
+import type { MonitorStatus } from '@vextra/domain'
 
 export type MonitorStateRecord = Readonly<{
   alertAtMs: number

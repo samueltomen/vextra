@@ -8,7 +8,7 @@ Date : 2026-10-24
 - création automatique d'un tenant personnel et d'un rôle `owner` à
   l'inscription ;
 - session Supabase chiffrée avec AES-GCM dans un cookie
-  `__Host-cronping_session` ;
+  `__Host-vextra_session` ;
 - cookie `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/`, sans domaine ;
 - aucun JWT Supabase renvoyé au navigateur ou stocké dans `localStorage` ;
 - renouvellement de session avant expiration et rotation du cookie ;

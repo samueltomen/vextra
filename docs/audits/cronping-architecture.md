@@ -1,4 +1,4 @@
-# Audit d'architecture CronPing
+# Audit d'architecture Vextra
 
 - **Date** : 2026-10-24
 - **Méthode** : pré-scan `repo-scan` niveau standard + revue des frontières

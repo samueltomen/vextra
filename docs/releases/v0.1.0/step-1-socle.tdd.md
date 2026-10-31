@@ -1,6 +1,6 @@
 # Étape 1 - Socle : preuve TDD
 
-Source : `docs/plans/cronping-mvp.md`, étape 1.
+Source : `docs/plans/vextra-mvp.md`, étape 1.
 
 ## Cas vérifiés
 

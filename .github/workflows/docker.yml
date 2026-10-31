@@ -52,7 +52,7 @@ jobs:
         with:
           context: .
           load: true
-          tags: cronping:smoke
+          tags: vextra:smoke
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -61,13 +61,13 @@ jobs:
         # validée et /api/health répond. Valeurs factices, aucun secret réel.
         run: |
           docker run -d --name smoke -p 8787:8787 \
-            -e APP_ORIGIN=https://cronping.example.org \
+            -e APP_ORIGIN=https://vextra.example.org \
             -e SUPABASE_URL=https://example.supabase.co \
             -e SUPABASE_PUBLISHABLE_KEY=placeholder \
             -e SUPABASE_SERVICE_ROLE_KEY=placeholder \
             -e SESSION_ENCRYPTION_KEY="$(openssl rand -base64 48)" \
             -e PING_TOKEN_PEPPER="$(openssl rand -base64 48)" \
-            cronping:smoke
+            vextra:smoke
           for attempt in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:8787/api/health; then
               echo

@@ -2,8 +2,8 @@ import {
   createMonitorRequestSchema,
   monitorIdSchema,
   updateMonitorScheduleRequestSchema,
-} from '@cronping/contracts'
-import { InvalidCronError } from '@cronping/domain'
+} from '@vextra/contracts'
+import { InvalidCronError } from '@vextra/domain'
 import { Hono, type Context } from 'hono'
 
 import type { CreateMonitor } from '../../../application/create-monitor.ts'

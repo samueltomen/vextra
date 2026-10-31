@@ -1,4 +1,4 @@
-import type { Preferences } from '@cronping/contracts'
+import type { Preferences } from '@vextra/contracts'
 
 import type {
   ChannelKind,

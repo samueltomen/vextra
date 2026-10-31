@@ -11,7 +11,7 @@ Date : 2026-10-24
 - détail alimenté par `GET /api/monitors/:monitorId` ;
 - création réelle par `POST /api/monitors`, puis affichage unique du token ;
 - libellés conservés exclusivement dans `localStorage` sous
-  `cronping.monitor-labels.v1` ;
+  `vextra.monitor-labels.v1` ;
 - déconnexion avec suppression du cache de session et des moniteurs ;
 - états chargement, vide, erreur, session indisponible et monitor introuvable ;
 - adaptation mobile sans composant Bootstrap et sans second kit UI.

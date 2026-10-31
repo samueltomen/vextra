@@ -4,7 +4,7 @@ import type {
   ListMonitorsResponse,
   MonitorResponse,
   RotateMonitorTokenResponse,
-} from '@cronping/contracts'
+} from '@vextra/contracts'
 
 import { ApiError, apiRequest } from '../../../api/client.ts'
 import {

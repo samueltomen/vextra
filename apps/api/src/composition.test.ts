@@ -6,7 +6,7 @@ import {
 } from './composition.ts'
 
 const ENVIRONMENT: WorkerEnvironment = {
-  APP_ORIGIN: 'https://app.cronping.test',
+  APP_ORIGIN: 'https://app.vextra.test',
   PING_TOKEN_PEPPER: 'pepper-with-at-least-thirty-two-characters',
   SESSION_ENCRYPTION_KEY: 'session-secret-with-at-least-32-bytes-of-entropy',
   SUPABASE_PUBLISHABLE_KEY: 'publishable-key',

@@ -1,6 +1,6 @@
-# Auto-héberger CronPing
+# Auto-héberger Vextra
 
-CronPing est un logiciel libre (MIT). Vous pouvez l'installer sur votre propre
+Vextra est un logiciel libre (MIT). Vous pouvez l'installer sur votre propre
 serveur avec Docker : l'application, son planificateur et les mises à jour en
 direct tournent dans **un seul conteneur**, qui se branche sur **un projet
 Supabase** pour la base de données et l'authentification.
@@ -87,7 +87,7 @@ Chaque version publiée est disponible sur GitHub Container Registry, pour
 ```yaml
 # docker-compose.yml
 services:
-  cronping:
+  vextra:
     image: ghcr.io/<propriétaire>/<dépôt>:latest # ou une version : :1.2.0
     restart: unless-stopped
     env_file: .env
@@ -116,7 +116,7 @@ docker compose up -d --build
 Suivez le démarrage :
 
 ```bash
-docker compose logs -f cronping
+docker compose logs -f vextra
 ```
 
 Le journal doit afficher `server.started`. Une configuration incomplète est
@@ -128,7 +128,7 @@ sur `/api/health`.
 Exemple Caddy (certificat automatique) :
 
 ```caddyfile
-cronping.exemple.org {
+vextra.exemple.org {
   reverse_proxy 127.0.0.1:8787
 }
 ```
@@ -169,7 +169,7 @@ reviennent pas en arrière.
 
 Les données sont dans votre base Supabase : activez les sauvegardes du projet
 (cloud) ou planifiez un `pg_dump` (auto-hébergé), et **testez une restauration**.
-Le conteneur CronPing, lui, ne stocke rien : il se recrée à volonté.
+Le conteneur Vextra, lui, ne stocke rien : il se recrée à volonté.
 
 ## Limites à connaître
 

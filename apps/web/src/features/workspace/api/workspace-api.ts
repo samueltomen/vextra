@@ -1,4 +1,4 @@
-import type { Preferences, UpdatePreferencesRequest } from '@cronping/contracts'
+import type { Preferences, UpdatePreferencesRequest } from '@vextra/contracts'
 
 import { apiRequest } from '../../../api/client.ts'
 import { isDemoModeEnabled } from '../../../demo/demo-mode.ts'

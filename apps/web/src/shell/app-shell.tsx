@@ -272,7 +272,7 @@ function AppFrame({
       <aside className="sticky top-0 hidden h-dvh flex-col overflow-y-auto border-r border-sidebar-line bg-sidebar px-4 py-5 text-sidebar-ink lg:flex">
         <Link className="mb-6 flex items-center gap-3 px-2" to="/">
           <BrandMark />
-          <span className="text-lg font-semibold tracking-tight">CronPing</span>
+          <span className="text-lg font-semibold tracking-tight">Vextra</span>
           <LiveIndicator status={liveStatus} />
         </Link>
 
@@ -369,7 +369,7 @@ function AppFrame({
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-line bg-canvas/90 px-4 backdrop-blur-md lg:hidden">
           <Link className="flex items-center gap-2.5 font-semibold" to="/">
             <BrandMark size="sm" />
-            CronPing
+            Vextra
           </Link>
           <div className="flex items-center">
             <button
@@ -458,7 +458,7 @@ export function AppShell() {
       return (
         <FullPageStatus
           description="Vérification de votre cookie de session."
-          title="Chargement de CronPing"
+          title="Chargement de Vextra"
         />
       )
     }

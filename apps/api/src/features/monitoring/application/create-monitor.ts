@@ -3,7 +3,7 @@ import {
   maxCronGapSeconds,
   parseCronExpression,
   type Monitor,
-} from '@cronping/domain'
+} from '@vextra/domain'
 
 export type CronSchedule = Readonly<{ expression: string; timezone: string }>
 

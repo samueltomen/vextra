@@ -1,4 +1,4 @@
-const DEMO_STORAGE_KEY = 'cronping.demo-mode'
+const DEMO_STORAGE_KEY = 'vextra.demo-mode'
 
 export function isDemoModeEnabled(): boolean {
   if (!import.meta.env.DEV && import.meta.env.MODE !== 'test') {

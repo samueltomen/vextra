@@ -61,7 +61,7 @@ function createJsonRequest(
   body: unknown,
   headers: Record<string, string> = {},
 ) {
-  return new Request(`https://api.cronping.test${path}`, {
+  return new Request(`https://api.vextra.test${path}`, {
     body: JSON.stringify(body),
     headers: { 'content-type': 'application/json', ...headers },
     method: 'POST',
@@ -213,7 +213,7 @@ describe('account HTTP routes', () => {
 
   it('requires a valid encrypted session for the current account', async () => {
     const { app } = createRoutes()
-    const response = await app.request('https://api.cronping.test/api/auth/me')
+    const response = await app.request('https://api.vextra.test/api/auth/me')
 
     expect(response.status).toBe(401)
     await expect(response.json()).resolves.toEqual({
@@ -230,12 +230,9 @@ describe('account HTTP routes', () => {
       authenticate: async () => refreshedAccount,
     })
     const cookie = await encodeSessionCookie(codec, TOKENS)
-    const response = await app.request(
-      'https://api.cronping.test/api/auth/me',
-      {
-        headers: { cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
-      },
-    )
+    const response = await app.request('https://api.vextra.test/api/auth/me', {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
+    })
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual({
@@ -249,12 +246,9 @@ describe('account HTTP routes', () => {
   it('does not rewrite a cookie when the session did not refresh', async () => {
     const { app, codec } = createRoutes()
     const cookie = await encodeSessionCookie(codec, TOKENS)
-    const response = await app.request(
-      'https://api.cronping.test/api/auth/me',
-      {
-        headers: { cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
-      },
-    )
+    const response = await app.request('https://api.vextra.test/api/auth/me', {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
+    })
 
     expect(response.status).toBe(200)
     expect(response.headers.get('set-cookie')).toBeNull()
@@ -265,12 +259,9 @@ describe('account HTTP routes', () => {
       authenticate: async () => null,
     })
     const cookie = await encodeSessionCookie(codec, TOKENS)
-    const response = await app.request(
-      'https://api.cronping.test/api/auth/me',
-      {
-        headers: { cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
-      },
-    )
+    const response = await app.request('https://api.vextra.test/api/auth/me', {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
+    })
 
     expect(response.status).toBe(401)
     expect(response.headers.get('set-cookie')).toContain('Max-Age=0')
@@ -278,12 +269,9 @@ describe('account HTTP routes', () => {
 
   it('clears malformed session cookies', async () => {
     const { app } = createRoutes()
-    const response = await app.request(
-      'https://api.cronping.test/api/auth/me',
-      {
-        headers: { cookie: `${SESSION_COOKIE_NAME}=not-encrypted` },
-      },
-    )
+    const response = await app.request('https://api.vextra.test/api/auth/me', {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=not-encrypted` },
+    })
 
     expect(response.status).toBe(401)
     expect(response.headers.get('set-cookie')).toContain('Max-Age=0')
@@ -294,7 +282,7 @@ describe('account HTTP routes', () => {
     const { app, codec } = createRoutes({ revoke })
     const cookie = await encodeSessionCookie(codec, TOKENS)
     const response = await app.request(
-      'https://api.cronping.test/api/auth/logout',
+      'https://api.vextra.test/api/auth/logout',
       {
         headers: { cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
         method: 'POST',
@@ -309,7 +297,7 @@ describe('account HTTP routes', () => {
   it('clears logout cookies even when no session is present', async () => {
     const { accounts, app } = createRoutes()
     const response = await app.request(
-      'https://api.cronping.test/api/auth/logout',
+      'https://api.vextra.test/api/auth/logout',
       { method: 'POST' },
     )
 
