@@ -3,12 +3,50 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { SlidersHorizontal } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 
-import { listTimeZones, setDisplayTimeZone } from '../../../lib/display-time.ts'
-import { updatePreferences } from '../api/workspace-api.ts'
+import { listTimeZones } from '../../../lib/display-time.ts'
+import { DurationPicker } from '../../monitoring/ui/duration-picker.tsx'
 import {
+  GRACE_PRESETS,
+  INTERVAL_PRESETS,
+  validateGrace,
+  validateInterval,
+} from '../../monitoring/ui/schedule-presets.ts'
+import { updatePreferences } from '../api/workspace-api.ts'
+import { useFolders } from '../query/use-folders.ts'
+import {
+  applyDisplayPreferences,
   PREFERENCES_QUERY_KEY,
   usePreferences,
 } from '../query/use-preferences.ts'
+
+function SelectField({
+  label,
+  onChange,
+  options,
+  value,
+}: Readonly<{
+  label: string
+  onChange: (value: string) => void
+  options: readonly (readonly [string, string])[]
+  value: string
+}>) {
+  return (
+    <label className="block text-sm">
+      <span className="mb-1.5 block font-medium">{label}</span>
+      <select
+        className="min-h-10 w-full rounded-md border border-line bg-canvas px-3 text-sm outline-none focus:border-action"
+        onChange={(event) => onChange(event.target.value)}
+        value={value}
+      >
+        {options.map(([optionValue, optionLabel]) => (
+          <option key={optionValue} value={optionValue}>
+            {optionLabel}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
 
 function Toggle({
   checked,
@@ -44,18 +82,28 @@ function PreferencesForm({ initial }: Readonly<{ initial: Preferences }>) {
   const save = useMutation({
     mutationFn: () =>
       updatePreferences({
+        dashboardSort: draft.dashboardSort,
+        dashboardView: draft.dashboardView,
+        defaultFolderId: draft.defaultFolderId,
+        defaultGraceMinutes: draft.defaultGraceMinutes,
+        defaultIntervalMinutes: draft.defaultIntervalMinutes,
+        density: draft.density,
         displayName: draft.displayName,
         notifyOnOpen: draft.notifyOnOpen,
         notifyOnResolve: draft.notifyOnResolve,
+        timeFormat: draft.timeFormat,
         timezone: draft.timezone,
       }),
     onSuccess: (next) => {
-      setDisplayTimeZone(next.timezone)
+      applyDisplayPreferences(next)
       queryClient.setQueryData(PREFERENCES_QUERY_KEY, next)
       setSaved(true)
     },
   })
   const zones = listTimeZones()
+  const folders = useFolders().data ?? []
+  const intervalError = validateInterval(draft.defaultIntervalMinutes)
+  const graceError = validateGrace(draft.defaultGraceMinutes)
 
   function change(changes: Partial<Preferences>) {
     setSaved(false)
@@ -101,6 +149,97 @@ function PreferencesForm({ initial }: Readonly<{ initial: Preferences }>) {
         </label>
       </div>
 
+      <fieldset className="space-y-3">
+        <legend className="mb-1 text-sm font-medium">Affichage</legend>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SelectField
+            label="Format de l’heure"
+            onChange={(timeFormat) =>
+              change({ timeFormat: timeFormat as Preferences['timeFormat'] })
+            }
+            options={[
+              ['24h', '24 heures'],
+              ['12h', '12 heures (AM/PM)'],
+            ]}
+            value={draft.timeFormat}
+          />
+          <SelectField
+            label="Densité de l’interface"
+            onChange={(density) =>
+              change({ density: density as Preferences['density'] })
+            }
+            options={[
+              ['compact', 'Compacte'],
+              ['comfortable', 'Confortable'],
+            ]}
+            value={draft.density}
+          />
+          <SelectField
+            label="Vue par défaut du dashboard"
+            onChange={(dashboardView) =>
+              change({
+                dashboardView: dashboardView as Preferences['dashboardView'],
+              })
+            }
+            options={[
+              ['list', 'Liste'],
+              ['grid', 'Grille'],
+            ]}
+            value={draft.dashboardView}
+          />
+          <SelectField
+            label="Tri par défaut"
+            onChange={(dashboardSort) =>
+              change({
+                dashboardSort: dashboardSort as Preferences['dashboardSort'],
+              })
+            }
+            options={[
+              ['priority', 'Priorité'],
+              ['name', 'Nom'],
+              ['signal', 'Dernier signal'],
+              ['recent', 'Plus récents'],
+            ]}
+            value={draft.dashboardSort}
+          />
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-4">
+        <legend className="mb-1 text-sm font-medium">
+          Valeurs par défaut des nouveaux moniteurs
+        </legend>
+        <DurationPicker
+          description="Intervalle proposé à la création d’un moniteur."
+          error={intervalError}
+          label="Fréquence par défaut"
+          onChange={(defaultIntervalMinutes) =>
+            change({ defaultIntervalMinutes })
+          }
+          presets={INTERVAL_PRESETS}
+          value={draft.defaultIntervalMinutes}
+        />
+        <DurationPicker
+          description="Délai de tolérance proposé avant d’ouvrir un incident."
+          error={graceError}
+          label="Marge par défaut"
+          onChange={(defaultGraceMinutes) => change({ defaultGraceMinutes })}
+          presets={GRACE_PRESETS}
+          value={draft.defaultGraceMinutes}
+        />
+        <SelectField
+          label="Dossier par défaut"
+          onChange={(folderId) =>
+            change({ defaultFolderId: folderId === '' ? null : folderId })
+          }
+          options={[
+            ['', 'Aucun dossier'],
+            ...folders.map((folder) => [folder.id, folder.name] as const),
+          ]}
+          value={draft.defaultFolderId ?? ''}
+        />
+      </fieldset>
+
       <fieldset className="space-y-2">
         <legend className="mb-1 text-sm font-medium">Alertes par e-mail</legend>
         <Toggle
@@ -120,7 +259,7 @@ function PreferencesForm({ initial }: Readonly<{ initial: Preferences }>) {
       <div className="flex items-center gap-3">
         <button
           className="min-h-10 rounded-md bg-action px-4 text-sm font-semibold text-action-fg disabled:opacity-60"
-          disabled={save.isPending}
+          disabled={save.isPending || Boolean(intervalError || graceError)}
           type="submit"
         >
           Enregistrer les préférences

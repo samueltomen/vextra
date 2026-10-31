@@ -4,7 +4,9 @@ export type StatusFilter = 'all' | MonitorStatus
 
 export type MonitorView = Readonly<{
   alertAtMs: number
+  alertsEnabled: boolean
   createdAtMs: number
+  description: string | null
   folderId: string | null
   graceMinutes: number
   id: string
@@ -12,6 +14,9 @@ export type MonitorView = Readonly<{
   intervalMinutes: number
   localLabel: string
   lastHeartbeatAtMs: number | null
+  notes: string | null
+  /** Server-side name; `localLabel` is the name actually displayed. */
+  serverName: string | null
   status: MonitorStatus
   totalPings: number
 }>

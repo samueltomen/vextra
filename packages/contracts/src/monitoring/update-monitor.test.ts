@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { MAX_GRACE_SECONDS, MAX_INTERVAL_SECONDS } from './create-monitor.ts'
-import { updateMonitorScheduleRequestSchema } from './update-monitor.ts'
+import {
+  updateMonitorDetailsRequestSchema,
+  updateMonitorScheduleRequestSchema,
+} from './update-monitor.ts'
 
 describe('updateMonitorScheduleRequestSchema', () => {
   it('accepts the boundaries of a valid schedule', () => {
@@ -39,6 +42,28 @@ describe('updateMonitorScheduleRequestSchema', () => {
         intervalSeconds: 60,
         tenantId: 'tenant-b',
       }).success,
+    ).toBe(false)
+  })
+
+  it('validates partial monitor detail updates', () => {
+    expect(
+      updateMonitorDetailsRequestSchema.parse({
+        alertsEnabled: false,
+        description: '  ',
+        name: ' Sync ',
+      }),
+    ).toEqual({ alertsEnabled: false, description: null, name: 'Sync' })
+    expect(updateMonitorDetailsRequestSchema.safeParse({}).success).toBe(false)
+    expect(
+      updateMonitorDetailsRequestSchema.safeParse({ name: 'x'.repeat(81) })
+        .success,
+    ).toBe(false)
+    expect(
+      updateMonitorDetailsRequestSchema.safeParse({ notes: 'x'.repeat(2001) })
+        .success,
+    ).toBe(false)
+    expect(
+      updateMonitorDetailsRequestSchema.safeParse({ tenantId: 'x' }).success,
     ).toBe(false)
   })
 })

@@ -16,6 +16,7 @@ const MONITOR_ID = '20000000-0000-4000-8000-000000000001'
 
 function scope(overrides: Partial<WorkspaceScope['folders']> = {}) {
   return {
+    details: { update: vi.fn(async () => true) },
     folders: {
       assign: vi.fn(async () => true),
       create: vi.fn(async (_tenant: string, name: string) => ({
@@ -60,6 +61,7 @@ describe('workspace routes authentication', () => {
     ['PATCH', `/api/folders/${FOLDER_ID}`],
     ['DELETE', `/api/folders/${FOLDER_ID}`],
     ['PUT', `/api/monitors/${MONITOR_ID}/folder`],
+    ['PATCH', `/api/monitors/${MONITOR_ID}/details`],
     ['GET', '/api/preferences'],
     ['PATCH', '/api/preferences'],
   ])('requires a session for %s %s', async (method, path) => {
@@ -257,5 +259,67 @@ describe('preference routes', () => {
 
       expect(response.status).toBe(422)
     }
+  })
+})
+
+describe('monitor details route', () => {
+  it('updates the name, description, notes and alert switch within the tenant', async () => {
+    const current = scope()
+    const response = await app(current).request(
+      `/api/monitors/${MONITOR_ID}/details`,
+      json('PATCH', {
+        alertsEnabled: false,
+        description: '  Toutes les heures ',
+        name: ' Sync Stripe ',
+        notes: '',
+      }),
+    )
+
+    expect(response.status).toBe(204)
+    expect(current.details.update).toHaveBeenCalledWith(
+      'tenant-a',
+      MONITOR_ID,
+      {
+        alertsEnabled: false,
+        description: 'Toutes les heures',
+        name: 'Sync Stripe',
+        notes: null,
+      },
+    )
+  })
+
+  it('rejects empty, unknown and oversized changes', async () => {
+    for (const body of [{}, { tenantId: 'x' }, { name: 'x'.repeat(81) }]) {
+      const response = await app().request(
+        `/api/monitors/${MONITOR_ID}/details`,
+        json('PATCH', body),
+      )
+
+      expect(response.status).toBe(422)
+    }
+  })
+
+  it('answers 404 for a malformed id or a monitor of another tenant', async () => {
+    expect(
+      (
+        await app().request(
+          '/api/monitors/nope/details',
+          json('PATCH', { name: 'x' }),
+        )
+      ).status,
+    ).toBe(404)
+
+    const other = scope()
+
+    other.details.update = vi.fn(async () => false)
+
+    expect(
+      (
+        await app(other).request(
+          `/api/monitors/${MONITOR_ID}/details`,
+          json('PATCH', { name: 'x' }),
+        )
+      ).status,
+    ).toBe(404)
   })
 })

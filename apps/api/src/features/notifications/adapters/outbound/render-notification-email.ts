@@ -48,6 +48,7 @@ export function renderNotificationEmail(
     appOrigin: string
     kind: NotificationKind
     monitorId: string
+    monitorName?: string | null
   }>,
 ): RenderedEmail {
   const variant = VARIANTS[input.kind]
@@ -57,6 +58,8 @@ export function renderNotificationEmail(
   const safeMonitorUrl = escapeHtml(monitorUrl)
   const safeSettingsUrl = escapeHtml(settingsUrl)
   const safeMonitorId = escapeHtml(input.monitorId)
+  const monitorName = input.monitorName?.trim() || null
+  const safeMonitorName = monitorName ? escapeHtml(monitorName) : null
 
   const html = `<!doctype html>
 <html lang="fr">
@@ -93,6 +96,7 @@ export function renderNotificationEmail(
       <tr><td class="cp-card cp-pad" style="background:#ffffff;border:1px solid #d8e1de;border-top:4px solid ${variant.accent};border-radius:0 0 16px 16px;padding:32px 28px;">
         <p class="cp-accent" style="margin:0 0 8px;font:700 12px -apple-system,'Segoe UI',Roboto,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:${variant.accent};">${escapeHtml(variant.badge)}</p>
         <h1 class="cp-text" style="margin:0 0 12px;font:700 26px/1.25 -apple-system,'Segoe UI',Roboto,sans-serif;color:#10201e;">${escapeHtml(variant.heading)}</h1>
+        ${safeMonitorName ? `<p class="cp-text" style="margin:0 0 16px;font:600 18px -apple-system,'Segoe UI',Roboto,sans-serif;color:#10201e;">${safeMonitorName}</p>` : ''}
         <p class="cp-muted" style="margin:0 0 24px;font:400 16px/1.6 -apple-system,'Segoe UI',Roboto,sans-serif;color:#55655f;">${escapeHtml(variant.body)}</p>
         <p class="cp-muted" style="margin:0 0 6px;font:600 12px -apple-system,'Segoe UI',Roboto,sans-serif;color:#55655f;">Identifiant du moniteur</p>
         <p class="cp-code" style="margin:0 0 28px;padding:10px 12px;border-radius:8px;background:#e1f3f1;color:#0f766e;font:500 13px ui-monospace,'SFMono-Regular',Menlo,monospace;word-break:break-all;">${safeMonitorId}</p>
@@ -112,6 +116,7 @@ export function renderNotificationEmail(
     '',
     variant.body,
     '',
+    ...(monitorName ? [`Nom : ${monitorName}`] : []),
     `Moniteur : ${input.monitorId}`,
     `Ouvrir : ${monitorUrl}`,
     '',

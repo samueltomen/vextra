@@ -8,6 +8,7 @@ import {
 } from '../../application/workspace.ts'
 import {
   SupabaseFolderRepository,
+  SupabaseMonitorDetailsRepository,
   SupabasePreferencesRepository,
 } from './supabase-workspace.ts'
 
@@ -122,9 +123,16 @@ describe('SupabaseFolderRepository', () => {
 
 describe('SupabasePreferencesRepository', () => {
   const ROW = {
+    default_folder_id: null,
+    default_grace_minutes: 5,
+    default_interval_minutes: 60,
+    default_sort: 'priority',
+    default_view: 'list',
+    density: 'compact',
     display_name: 'Ada',
     notify_on_open: true,
     notify_on_resolve: false,
+    time_format: '24h',
     timezone: 'Asia/Tokyo',
   }
 
@@ -134,9 +142,16 @@ describe('SupabasePreferencesRepository', () => {
         't',
       ),
     ).resolves.toEqual({
+      dashboardSort: 'priority',
+      dashboardView: 'list',
+      defaultFolderId: null,
+      defaultGraceMinutes: 5,
+      defaultIntervalMinutes: 60,
+      density: 'compact',
       displayName: 'Ada',
       notifyOnOpen: true,
       notifyOnResolve: false,
+      timeFormat: '24h',
       timezone: 'Asia/Tokyo',
     })
     await expect(
@@ -161,19 +176,33 @@ describe('SupabasePreferencesRepository', () => {
     const inserted = client({})
 
     await new SupabasePreferencesRepository(inserted.supabase).insert('t', {
+      dashboardSort: 'name',
+      dashboardView: 'grid',
+      defaultFolderId: 'f1',
+      defaultGraceMinutes: 2,
+      defaultIntervalMinutes: 15,
+      density: 'comfortable',
       displayName: null,
       notifyOnOpen: true,
       notifyOnResolve: true,
+      timeFormat: '12h',
       timezone: 'Europe/Paris',
     })
     expect(inserted.calls).toContainEqual([
       'insert',
       [
         {
+          default_folder_id: 'f1',
+          default_grace_minutes: 2,
+          default_interval_minutes: 15,
+          default_sort: 'name',
+          default_view: 'grid',
+          density: 'comfortable',
           display_name: null,
           notify_on_open: true,
           notify_on_resolve: true,
           tenant_id: 't',
+          time_format: '12h',
           timezone: 'Europe/Paris',
         },
       ],
@@ -194,11 +223,58 @@ describe('SupabasePreferencesRepository', () => {
     )
     await expect(
       failing().insert('t', {
+        dashboardSort: 'priority',
+        dashboardView: 'list',
+        defaultFolderId: null,
+        defaultGraceMinutes: 5,
+        defaultIntervalMinutes: 60,
+        density: 'compact',
         displayName: null,
         notifyOnOpen: true,
         notifyOnResolve: true,
+        timeFormat: '24h',
         timezone: 'UTC',
       }),
     ).rejects.toThrow('preferences insert failed')
+  })
+})
+
+describe('SupabaseMonitorDetailsRepository', () => {
+  it('updates only the provided columns, scoped to the tenant', async () => {
+    const updated = client({ data: [{ id: 'm1' }] })
+
+    await expect(
+      new SupabaseMonitorDetailsRepository(updated.supabase).update('t', 'm1', {
+        alertsEnabled: false,
+        description: null,
+        name: 'Sync',
+        notes: 'Runbook',
+      }),
+    ).resolves.toBe(true)
+    expect(updated.calls).toContainEqual([
+      'update',
+      [
+        {
+          alerts_enabled: false,
+          description: null,
+          name: 'Sync',
+          notes: 'Runbook',
+        },
+      ],
+    ])
+    expect(updated.calls).toContainEqual(['eq', ['tenant_id', 't']])
+  })
+
+  it('reports an unknown monitor and fails closed on errors', async () => {
+    await expect(
+      new SupabaseMonitorDetailsRepository(
+        client({ data: [] }).supabase,
+      ).update('t', 'm', { name: 'x' }),
+    ).resolves.toBe(false)
+    await expect(
+      new SupabaseMonitorDetailsRepository(
+        client({ error: { code: 'x' } }).supabase,
+      ).update('t', 'm', { name: 'x' }),
+    ).rejects.toThrow('monitor details update failed')
   })
 })

@@ -63,11 +63,13 @@ import { createLiveRoutes } from './features/live/adapters/inbound/http/live-rou
 import { createWorkspaceRoutes } from './features/workspace/adapters/inbound/http/workspace-routes.ts'
 import {
   SupabaseFolderRepository,
+  SupabaseMonitorDetailsRepository,
   SupabasePreferencesRepository,
 } from './features/workspace/adapters/outbound/supabase-workspace.ts'
 import {
   AccountPreferencesService,
   ManageFolders,
+  ManageMonitorDetails,
 } from './features/workspace/application/workspace.ts'
 import { ResendNotificationSender } from './features/notifications/adapters/outbound/resend-notification-sender.ts'
 import {
@@ -283,6 +285,9 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     }
 
     return {
+      details: new ManageMonitorDetails(
+        new SupabaseMonitorDetailsRepository(session.client),
+      ),
       folders: new ManageFolders(new SupabaseFolderRepository(session.client)),
       preferences: new AccountPreferencesService(
         new SupabasePreferencesRepository(session.client),

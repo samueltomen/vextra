@@ -50,9 +50,18 @@ export type {
   MonitorIncident,
 } from './monitoring/monitor-incident.ts'
 
-export { updateMonitorScheduleRequestSchema } from './monitoring/update-monitor.ts'
+export {
+  MAX_MONITOR_DESCRIPTION_LENGTH,
+  MAX_MONITOR_NAME_LENGTH,
+  MAX_MONITOR_NOTES_LENGTH,
+  updateMonitorDetailsRequestSchema,
+  updateMonitorScheduleRequestSchema,
+} from './monitoring/update-monitor.ts'
 
-export type { UpdateMonitorScheduleRequest } from './monitoring/update-monitor.ts'
+export type {
+  UpdateMonitorDetailsRequest,
+  UpdateMonitorScheduleRequest,
+} from './monitoring/update-monitor.ts'
 
 export { rotateMonitorTokenResponseSchema } from './monitoring/rotate-token.ts'
 

@@ -2,13 +2,17 @@ import type { MonitorStatus } from '@cronping/domain'
 
 export type MonitorStateRecord = Readonly<{
   alertAtMs: number
+  alertsEnabled: boolean
   createdAtMs: number
+  description: string | null
   folderId: string | null
   graceSeconds: number
   id: string
   incidentOpenedAtMs: number | null
   intervalSeconds: number
   lastHeartbeatAtMs: number | null
+  name: string | null
+  notes: string | null
   pausedAtMs: number | null
   status: MonitorStatus
   tenantId: string

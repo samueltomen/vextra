@@ -33,6 +33,7 @@ import {
   useFolders,
   type FolderFilter,
 } from '../../workspace/query/use-folders.ts'
+import { usePreferences } from '../../workspace/query/use-preferences.ts'
 import { getMonitorsActivity } from '../../workspace/api/workspace-api.ts'
 import { FolderBar } from '../../workspace/ui/folder-bar.tsx'
 import { MonitorListItem } from './monitor-list-item.tsx'
@@ -66,13 +67,13 @@ function getPreviewState(search: string): PreviewState | null {
     : null
 }
 
-function readStoredView(): DashboardView {
+function readStoredView(): DashboardView | null {
   try {
-    return window.localStorage.getItem(VIEW_STORAGE_KEY) === 'grid'
-      ? 'grid'
-      : 'list'
+    const stored = window.localStorage.getItem(VIEW_STORAGE_KEY)
+
+    return stored === 'grid' || stored === 'list' ? stored : null
   } catch {
-    return 'list'
+    return null
   }
 }
 
@@ -157,8 +158,11 @@ export function DashboardPage() {
     refetchInterval: 60_000,
   })
   const [query, setQuery] = useState('')
-  const [sort, setSort] = useState<MonitorSort>('priority')
-  const [view, setView] = useState<DashboardView>(readStoredView)
+  const preferences = usePreferences()
+  const [sortOverride, setSort] = useState<MonitorSort | null>(null)
+  const [viewOverride, setView] = useState<DashboardView | null>(readStoredView)
+  const sort = sortOverride ?? preferences.data?.dashboardSort ?? 'priority'
+  const view = viewOverride ?? preferences.data?.dashboardView ?? 'list'
   const navigate = useNavigate()
   const nowMs = useNow()
   const search = useLocation({ select: (location) => location.searchStr })

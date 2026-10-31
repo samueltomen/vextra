@@ -12,6 +12,8 @@ function monitorsWithFolder() {
   return [
     {
       alertAt: new Date(base + 3_600_000).toISOString(),
+      alertsEnabled: true,
+      description: null,
       createdAt: new Date(base - 86_400_000).toISOString(),
       folderId: TEST_FOLDER_ID,
       graceSeconds: 1_800,
@@ -19,12 +21,16 @@ function monitorsWithFolder() {
       incidentOpenedAt: null,
       intervalSeconds: 86_400,
       lastHeartbeatAt: new Date(base - 600_000).toISOString(),
+      name: null,
+      notes: null,
       pausedAt: null,
       status: 'healthy' as const,
       totalPings: 5,
     },
     {
       alertAt: new Date(base + 3_600_000).toISOString(),
+      alertsEnabled: true,
+      description: null,
       createdAt: new Date(base - 86_400_000).toISOString(),
       folderId: null,
       graceSeconds: 1_800,
@@ -32,6 +38,8 @@ function monitorsWithFolder() {
       incidentOpenedAt: null,
       intervalSeconds: 86_400,
       lastHeartbeatAt: null,
+      name: null,
+      notes: null,
       pausedAt: null,
       status: 'pending' as const,
       totalPings: 0,
@@ -157,12 +165,115 @@ describe('preferences', () => {
       ([, init]) => init?.method === 'PATCH',
     )
 
-    expect(JSON.parse(String(patch?.[1]?.body))).toEqual({
+    expect(JSON.parse(String(patch?.[1]?.body))).toMatchObject({
       displayName: 'Ada',
       notifyOnOpen: true,
       notifyOnResolve: false,
       timezone: 'Asia/Tokyo',
     })
+  })
+})
+
+describe('display preferences and new-monitor defaults', () => {
+  it('saves display options, defaults and the default folder', async () => {
+    const { fetchMock } = await renderAppWithMock()
+
+    fireEvent.change(await screen.findByLabelText('Format de l’heure'), {
+      target: { value: '12h' },
+    })
+    fireEvent.change(screen.getByLabelText('Densité de l’interface'), {
+      target: { value: 'comfortable' },
+    })
+    fireEvent.change(screen.getByLabelText('Vue par défaut du dashboard'), {
+      target: { value: 'grid' },
+    })
+    fireEvent.change(screen.getByLabelText('Tri par défaut'), {
+      target: { value: 'name' },
+    })
+    fireEvent.change(screen.getByLabelText('Dossier par défaut'), {
+      target: { value: TEST_FOLDER_ID },
+    })
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Enregistrer les préférences' }),
+    )
+
+    expect(await screen.findByText('Préférences enregistrées.')).toBeVisible()
+
+    const patch = fetchMock.mock.calls.find(
+      ([, init]) => init?.method === 'PATCH',
+    )
+
+    expect(JSON.parse(String(patch?.[1]?.body))).toMatchObject({
+      dashboardSort: 'name',
+      dashboardView: 'grid',
+      defaultFolderId: TEST_FOLDER_ID,
+      density: 'comfortable',
+      timeFormat: '12h',
+    })
+    expect(document.documentElement.dataset['density']).toBe('comfortable')
+  })
+
+  it('pre-fills the new monitor form from a clone link', async () => {
+    await renderApp('/monitors/new?interval=30&grace=3&name=Sync%20(copie)')
+
+    expect(await screen.findByLabelText('Libellé local')).toHaveValue(
+      'Sync (copie)',
+    )
+  })
+})
+
+describe('monitor details', () => {
+  it('saves the description and notes and mutes alerts for one monitor', async () => {
+    await renderApp(`/monitors/${MONITOR_ID}`, {
+      monitors: monitorsWithFolder(),
+    })
+    const fetchMock = globalThis.fetch as unknown as import('vitest').Mock<
+      (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+    >
+    const card = await screen.findByRole('region', {
+      name: 'Description et notes',
+    })
+
+    fireEvent.change(within(card).getByLabelText('Description'), {
+      target: { value: 'Sauvegarde nocturne' },
+    })
+    fireEvent.change(within(card).getByLabelText(/Notes/), {
+      target: { value: 'Voir le runbook' },
+    })
+    fireEvent.click(within(card).getByRole('button', { name: 'Enregistrer' }))
+    expect(await within(card).findByText('Enregistré.')).toBeVisible()
+
+    fireEvent.click(
+      within(card).getByLabelText(/Alertes e-mail de ce moniteur/),
+    )
+
+    await waitFor(() => {
+      const bodies = fetchMock.mock.calls
+        .filter(([input, init]) => {
+          return (
+            String(input).endsWith(`/${MONITOR_ID}/details`) &&
+            init?.method === 'PATCH'
+          )
+        })
+        .map(([, init]) => JSON.parse(String(init?.body)))
+
+      expect(bodies).toContainEqual({
+        description: 'Sauvegarde nocturne',
+        notes: 'Voir le runbook',
+      })
+      expect(bodies).toContainEqual({ alertsEnabled: false })
+    })
+  })
+
+  it('offers to clone a monitor with its schedule', async () => {
+    await renderApp(`/monitors/${MONITOR_ID}`, {
+      monitors: monitorsWithFolder(),
+    })
+
+    const clone = await screen.findByRole('link', { name: /Cloner/ })
+
+    expect(clone.getAttribute('href')).toMatch(/grace=30/u)
+    expect(clone.getAttribute('href')).toMatch(/interval=1440/u)
   })
 })
 

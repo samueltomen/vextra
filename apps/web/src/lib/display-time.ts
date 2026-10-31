@@ -10,6 +10,7 @@ const FALLBACK_TIME_ZONES = [
 ] as const
 
 let displayTimeZone: string | undefined
+let displayHour12: boolean | undefined
 
 export function setDisplayTimeZone(timeZone: string | undefined): void {
   displayTimeZone = timeZone
@@ -19,8 +20,15 @@ export function getDisplayTimeZone(): string | undefined {
   return displayTimeZone
 }
 
-export function timeZoneOption(): { timeZone?: string } {
-  return displayTimeZone ? { timeZone: displayTimeZone } : {}
+export function setDisplayTimeFormat(format: '12h' | '24h'): void {
+  displayHour12 = format === '12h'
+}
+
+export function timeZoneOption(): { hour12?: boolean; timeZone?: string } {
+  return {
+    ...(displayTimeZone ? { timeZone: displayTimeZone } : {}),
+    ...(displayHour12 !== undefined ? { hour12: displayHour12 } : {}),
+  }
 }
 
 export function listTimeZones(): readonly string[] {

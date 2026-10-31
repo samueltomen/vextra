@@ -433,7 +433,9 @@ async function lifecycleAction(
 function toMonitorResponse(monitor: MonitorStateRecord) {
   return {
     alertAt: new Date(monitor.alertAtMs).toISOString(),
+    alertsEnabled: monitor.alertsEnabled,
     createdAt: new Date(monitor.createdAtMs).toISOString(),
+    description: monitor.description,
     folderId: monitor.folderId,
     graceSeconds: monitor.graceSeconds,
     id: monitor.id,
@@ -446,6 +448,8 @@ function toMonitorResponse(monitor: MonitorStateRecord) {
       monitor.lastHeartbeatAtMs === null
         ? null
         : new Date(monitor.lastHeartbeatAtMs).toISOString(),
+    name: monitor.name,
+    notes: monitor.notes,
     pausedAt:
       monitor.pausedAtMs === null
         ? null
