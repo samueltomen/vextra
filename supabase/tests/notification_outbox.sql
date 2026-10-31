@@ -39,8 +39,11 @@ values (
   now() - interval '1 second'
 );
 
+select public.open_due_monitor_incidents(1000);
+
 select is(
-  public.open_due_monitor_incidents(10),
+  (select count(*)::integer from public.incidents
+   where monitor_id = 'a2000000-0000-4000-8000-000000000001'),
   1,
   'the checker opens an incident and enqueues its alert'
 );
@@ -74,7 +77,8 @@ select is(
 );
 
 select is(
-  (select count(*) from public.claim_notification_deliveries(10)),
+  (select count(*) from public.claim_notification_deliveries(100)
+   where monitor_id = 'a2000000-0000-4000-8000-000000000001'),
   1::bigint,
   'the service can claim one pending delivery'
 );

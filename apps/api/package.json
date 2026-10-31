@@ -1,6 +1,7 @@
 {
-  "name": "@cronping/api",
+  "name": "@vextra/api",
   "version": "0.0.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,16 +9,24 @@
     "dev": "wrangler dev",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build:node": "esbuild src/node.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist-node/server.mjs --banner:js=\"import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);\""
   },
   "dependencies": {
-    "@cronping/contracts": "workspace:*",
-    "@cronping/domain": "workspace:*",
+    "@vextra/contracts": "workspace:*",
+    "@vextra/domain": "workspace:*",
+    "@hono/node-server": "2.1.5",
     "@supabase/supabase-js": "^2.118.0",
-    "hono": "4.12.18"
+    "hono": "4.13.13",
+    "nodemailer": "10.3.1",
+    "ws": "8.22.0"
   },
   "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/nodemailer": "8.0.2",
+    "@types/ws": "8.18.2",
     "@vitest/coverage-v8": "4.1.12",
+    "esbuild": "0.28.2",
     "typescript": "5.9.3",
     "vitest": "4.1.12",
     "wrangler": "^4.0.0"

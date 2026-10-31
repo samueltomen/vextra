@@ -1,9 +1,10 @@
 import {
   createApiFromEnvironment,
-  runNotificationDelivery,
-  runScheduledCheck,
+  runScheduledTick,
   type WorkerEnvironment,
 } from './composition.ts'
+
+export { TenantLiveHub } from './features/live/adapters/outbound/tenant-live-hub.ts'
 
 type ScheduledContext = Readonly<{
   waitUntil(promise: Promise<unknown>): void
@@ -30,11 +31,6 @@ export default {
     environment: WorkerEnvironment,
     context: ScheduledContext,
   ) {
-    context.waitUntil(
-      (async () => {
-        await runScheduledCheck(environment)
-        await runNotificationDelivery(environment)
-      })(),
-    )
+    context.waitUntil(runScheduledTick(environment))
   },
 }

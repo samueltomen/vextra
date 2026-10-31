@@ -1,11 +1,20 @@
 import { Button, Input } from '@heroui/react'
+import { readPendingInvite } from '../../team/model/pending-invite.ts'
 import { useForm } from '@tanstack/react-form'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { Activity, ArrowRight, LockKeyhole, Mail, Sparkles } from 'lucide-react'
+import {
+  ArrowRight,
+  BellRing,
+  CircleCheck,
+  LockKeyhole,
+  Mail,
+  Sparkles,
+} from 'lucide-react'
 import { useState } from 'react'
 
 import { ApiError } from '../../../api/client.ts'
+import { BrandMark } from '../../../components/brand-mark.tsx'
 import { DEMO_ACCOUNT } from '../../../demo/demo-account.ts'
 import { enableDemoMode } from '../../../demo/demo-mode.ts'
 import { readFieldError } from '../../../lib/read-field-error.ts'
@@ -13,6 +22,15 @@ import { getCurrentAccount, signIn, signUp } from '../api/account-api.ts'
 import { CURRENT_ACCOUNT_QUERY_KEY } from '../query/use-current-account.ts'
 
 type AuthMode = 'signin' | 'signup'
+
+/** Resume an invitation opened before logging in. */
+function afterLogin() {
+  const token = readPendingInvite()
+
+  return token
+    ? ({ params: { token }, to: '/invite/$token' } as const)
+    : ({ to: '/' } as const)
+}
 
 function AuthForm({ mode }: Readonly<{ mode: AuthMode }>) {
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -32,7 +50,7 @@ function AuthForm({ mode }: Readonly<{ mode: AuthMode }>) {
           const account = await signIn(value)
 
           queryClient.setQueryData(CURRENT_ACCOUNT_QUERY_KEY, account)
-          await navigate({ to: '/' })
+          await navigate(afterLogin())
           return
         }
 
@@ -53,7 +71,7 @@ function AuthForm({ mode }: Readonly<{ mode: AuthMode }>) {
         }
 
         queryClient.setQueryData(CURRENT_ACCOUNT_QUERY_KEY, account)
-        await navigate({ to: '/' })
+        await navigate(afterLogin())
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
           setSubmitError('Adresse e-mail ou mot de passe incorrect.')
@@ -212,7 +230,7 @@ function AuthForm({ mode }: Readonly<{ mode: AuthMode }>) {
       ) : null}
 
       <Button
-        className="min-h-12 w-full bg-action font-semibold text-white"
+        className="min-h-12 w-full bg-action font-semibold text-action-fg"
         isLoading={form.state.isSubmitting}
         radius="md"
         type="submit"
@@ -231,33 +249,76 @@ export function LoginPage() {
 
   return (
     <main className="grid min-h-dvh bg-canvas lg:grid-cols-[minmax(0,1fr)_minmax(28rem,0.8fr)]">
-      <section className="hidden flex-col justify-between border-r border-line bg-surface p-10 lg:flex xl:p-16">
-        <div className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-lg bg-ink text-white">
-            <Activity aria-hidden="true" size={21} />
-          </span>
-          <span className="text-lg font-semibold tracking-tight">CronPing</span>
+      <section className="relative hidden flex-col justify-between overflow-hidden border-r border-sidebar-line bg-sidebar p-10 text-sidebar-ink lg:flex xl:p-16">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-32 -top-32 size-[28rem] rounded-full bg-[#2dd4bf]/15 blur-3xl"
+        />
+        <div className="relative flex items-center gap-3">
+          <BrandMark />
+          <span className="text-lg font-semibold tracking-tight">Vextra</span>
         </div>
 
-        <div className="max-w-xl">
-          <p className="text-sm font-semibold text-action">
+        <div className="relative max-w-xl">
+          <p className="text-sm font-semibold text-sidebar-accent">
             Surveillance sans intrusion
           </p>
           <p className="mt-4 text-4xl font-semibold leading-tight tracking-tight xl:text-5xl">
             Sachez quand vos tâches cessent de parler.
           </p>
-          <p className="mt-5 max-w-lg text-lg leading-8 text-muted">
-            CronPing reçoit uniquement les heartbeats. Le contenu de vos
-            scripts, commandes et journaux reste sur vos serveurs.
+          <p className="mt-5 max-w-lg text-lg leading-8 text-sidebar-muted">
+            Vextra reçoit uniquement les heartbeats. Le contenu de vos scripts,
+            commandes et journaux reste sur vos serveurs.
           </p>
-          <ul className="mt-8 space-y-3 text-sm text-muted">
-            <li>Un état clair, sans historique d’exécution.</li>
-            <li>Une session chiffrée, jamais de token dans le navigateur.</li>
-            <li>Une alerte lorsque le silence devient anormal.</li>
+          <ul className="mt-8 space-y-3 text-sm text-sidebar-muted">
+            <li className="flex items-center gap-3">
+              <CircleCheck
+                aria-hidden="true"
+                className="text-sidebar-accent"
+                size={17}
+              />
+              Un état clair, sans historique d’exécution.
+            </li>
+            <li className="flex items-center gap-3">
+              <LockKeyhole
+                aria-hidden="true"
+                className="text-sidebar-accent"
+                size={17}
+              />
+              Une session chiffrée, jamais de token dans le navigateur.
+            </li>
+            <li className="flex items-center gap-3">
+              <BellRing
+                aria-hidden="true"
+                className="text-sidebar-accent"
+                size={17}
+              />
+              Une alerte lorsque le silence devient anormal.
+            </li>
           </ul>
+
+          <div
+            aria-hidden="true"
+            className="mt-10 grid max-w-md gap-2 rounded-2xl border border-sidebar-line bg-sidebar-hover/60 p-4"
+          >
+            {[
+              ['Sauvegarde nocturne', 'Opérationnel', 'bg-[#34d399]'],
+              ['Synchronisation facturation', 'En retard', 'bg-[#fbbf24]'],
+              ['Rapport hebdomadaire', 'Opérationnel', 'bg-[#34d399]'],
+            ].map(([name, state, dot]) => (
+              <div
+                className="flex items-center gap-3 rounded-lg bg-sidebar px-3 py-2.5 text-sm"
+                key={name}
+              >
+                <span className={`size-2 rounded-full ${dot}`} />
+                <span className="flex-1">{name}</span>
+                <span className="text-xs text-sidebar-muted">{state}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <p className="text-xs leading-5 text-muted">
+        <p className="relative text-xs leading-5 text-sidebar-muted">
           Aucun script, cron, log ou secret d’exécution n’est enregistré.
         </p>
       </section>
@@ -265,12 +326,8 @@ export function LoginPage() {
       <section className="flex items-center justify-center px-4 py-10 sm:px-8">
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <span className="grid size-10 place-items-center rounded-lg bg-ink text-white">
-              <Activity aria-hidden="true" size={21} />
-            </span>
-            <span className="text-lg font-semibold tracking-tight">
-              CronPing
-            </span>
+            <BrandMark />
+            <span className="text-lg font-semibold tracking-tight">Vextra</span>
           </div>
 
           <div
@@ -288,7 +345,7 @@ export function LoginPage() {
                 aria-pressed={mode === value}
                 className={`min-h-10 rounded-md px-3 text-sm font-medium ${
                   mode === value
-                    ? 'bg-ink text-white'
+                    ? 'bg-action text-action-fg'
                     : 'text-muted hover:text-ink'
                 }`}
                 key={value}

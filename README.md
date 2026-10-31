@@ -1,8 +1,47 @@
-# CronPing
+# Vextra
 
-CronPing est un SaaS multi-tenant de heartbeat pour tâches planifiées. Il
+Vextra est un SaaS multi-tenant de heartbeat pour tâches planifiées. Il
 détecte l'absence d'exécution d'un script et alerte son propriétaire sans
 recevoir ni stocker le contenu du script ou du cron.
+
+## Deux façons de l'utiliser
+
+- **Service hébergé** : rien à installer, aucune maintenance.
+- **Auto-hébergé** : une image Docker unique à brancher sur votre projet Supabase,
+  avec vos propres e-mails (SMTP ou Resend) et vos propres clés. Tout le code est
+  libre (MIT) et identique dans les deux cas.
+
+```bash
+git clone <ce dépôt> && cd <dossier>
+cp .env.example .env        # renseignez APP_ORIGIN, Supabase et deux secrets
+docker compose up -d --build
+```
+
+Guide complet, avec Supabase, HTTPS, e-mails et sauvegardes :
+[docs/self-hosting.md](docs/self-hosting.md)
+([ADR 0011](docs/adr/0011-auto-hebergement.md)).
+
+Les moniteurs peuvent suivre un intervalle ou une expression cron avec fuseau
+horaire ([ADR 0012](docs/adr/0012-planification-par-expression-cron.md)).
+
+Une page de statut publique, sans compte, peut exposer les moniteurs de votre
+choix à l'adresse `/status/<adresse>`
+([ADR 0013](docs/adr/0013-page-de-statut-publique.md)), avec des badges SVG
+pour vos README.
+
+Des fenêtres de maintenance suspendent incidents et alertes pendant une
+opération planifiée ([ADR 0015](docs/adr/0015-fenetres-de-maintenance.md)).
+
+Des clés d'API en lecture seule permettent d'interroger les moniteurs depuis un
+script : `curl -H "Authorization: Bearer vx_…" <origine>/api/v1/monitors`
+([ADR 0016](docs/adr/0016-cles-d-api-en-lecture-seule.md)).
+
+Une équipe peut partager un espace avec des rôles propriétaire, membre et
+lecture seule, via des liens d'invitation à usage unique
+([ADR 0017](docs/adr/0017-equipes-roles-et-invitations.md)).
+
+Audit de sécurité avant production :
+[docs/audits/securite-avant-production.md](docs/audits/securite-avant-production.md).
 
 ## État actuel
 
@@ -69,10 +108,10 @@ La livraison e-mail nécessite aussi `RESEND_API_KEY` et
 l'outbox et aucun envoi externe n'est tenté.
 
 Pour les tests sans domaine vérifié, utiliser
-`RESEND_FROM_EMAIL=CronPing <onboarding@resend.dev>` et une adresse de compte
+`RESEND_FROM_EMAIL=Vextra <onboarding@resend.dev>` et une adresse de compte
 liée au compte Resend. Pour envoyer à des utilisateurs quelconques, vérifier un
 domaine dans Resend puis utiliser une adresse de ce domaine, par exemple
-`CronPing <alerts@mail.votre-domaine.com>`.
+`Vextra <alerts@mail.votre-domaine.com>`.
 
 ## Développement
 
@@ -98,6 +137,10 @@ Les moniteurs utilisent :
 - `GET /api/monitors` pour la liste ;
 - `GET /api/monitors/:monitorId` pour le détail ;
 - `POST /api/monitors` pour la création.
+- `PATCH /api/monitors/:monitorId` pour modifier la fréquence et la marge
+  (`intervalSeconds`, `graceSeconds`) ; un moniteur en attente ou opérationnel
+  reçoit une nouvelle échéance, un moniteur en pause ou en retard conserve la
+  sienne ;
 - `POST /api/monitors/:monitorId/pause` pour la mise en pause ;
 - `POST /api/monitors/:monitorId/resume` pour la reprise ;
 - `POST /api/monitors/:monitorId/rotate-token` pour remplacer le token ;
@@ -119,8 +162,8 @@ Le heartbeat public utilise :
 ```bash
 curl --fail --silent --show-error --retry 3 \
   --request POST \
-  --header "Authorization: Bearer $CRONPING_TOKEN" \
-  "https://api.cronping.app/api/ping"
+  --header "Authorization: Bearer $VEXTRA_TOKEN" \
+  "https://api.vextra.app/api/ping"
 ```
 
 La requête ne doit contenir ni corps, ni paramètres de requête. Le token brut
@@ -133,10 +176,86 @@ envoyé par le navigateur est rejeté. Un libellé local n'est jamais inclus dan
 une requête API.
 
 La session est chiffrée avec AES-GCM et transmise uniquement via
-`__Host-cronping_session`, avec `HttpOnly`, `Secure`, `SameSite=Strict` et
+`__Host-vextra_session`, avec `HttpOnly`, `Secure`, `SameSite=Strict` et
 `Path=/`. Les JWT Supabase ne sont jamais renvoyés au navigateur. Les mutations
 du dashboard exigent l'origine exacte configurée dans `APP_ORIGIN` ; le futur
 heartbeat serveur restera hors de cette garde navigateur.
+
+Les routes publiques `login`, `signup` et `ping` sont limitées par IP via les
+bindings Cloudflare `AUTH_RATE_LIMITER` (10/min) et `PING_RATE_LIMITER`
+(120/min), avec échec ouvert si le binding est indisponible (voir
+[ADR 0002](docs/adr/0002-limitation-de-debit.md)). Le déploiement en production
+se fait sur une seule origine (voir
+[ADR 0001](docs/adr/0001-deploiement-meme-origine.md)).
+
+## Déploiement
+
+Un seul Worker Cloudflare (`vextra`, environnement `production` de
+`apps/api/wrangler.toml`) sert le SPA en assets statiques et l'API sous
+`/api/*`, donc sous une seule origine (ADR 0001).
+
+1. Se connecter : `pnpm --filter @vextra/api exec wrangler login`.
+2. Appliquer les migrations sur le projet Supabase de production :
+   `pnpm exec supabase link --project-ref <ref>` puis `pnpm exec supabase db push`.
+3. Définir les secrets (une commande par secret) :
+   `pnpm --filter @vextra/api exec wrangler secret put <NOM> -e production`
+   pour `APP_ORIGIN` (l'URL publique du Worker), `SUPABASE_URL`,
+   `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
+   `SESSION_ENCRYPTION_KEY`, `PING_TOKEN_PEPPER`, `RESEND_API_KEY` et
+   `RESEND_FROM_EMAIL`. Ne jamais les committer.
+4. Déployer : `pnpm deploy:production` (build du web, puis `wrangler deploy`).
+5. Vérifier : `curl https://<worker>/api/health` doit répondre `status: ok`.
+
+La CI (`.github/workflows/ci.yml`) exécute `pnpm check` et les tests de base. Le
+workflow `deploy.yml` est manuel et exige les secrets GitHub
+`CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ACCOUNT_ID`.
+
+## Organisation, métriques et préférences
+
+- **Dossiers** : dossiers plats par espace, création, renommage et suppression
+  depuis le dashboard, rangement d'un moniteur depuis sa page
+  ([ADR 0003](docs/adr/0003-dossiers-de-moniteurs.md)).
+- **Métriques** : compteurs de heartbeats par jour (90 jours conservés),
+  intervalle moyen et plus long intervalle, sans contenu ni IP
+  ([ADR 0004](docs/adr/0004-metriques-heartbeat-agregees.md)).
+- **Préférences** : nom affiché, fuseau horaire et alertes e-mail à l'ouverture
+  ou à la résolution d'un incident
+  ([ADR 0005](docs/adr/0005-preferences-de-compte.md)).
+
+L'interface se met à jour **en direct** (WebSocket par espace, indicateur « En
+direct » dans la barre latérale) : un heartbeat reçu ou un incident ouvert
+apparaît en quelques secondes sans recharger
+([ADR 0006](docs/adr/0006-mises-a-jour-en-direct.md)). Le premier déploiement
+après cette version crée le Durable Object `TenantLiveHub` (migration `v1`).
+
+Chaque moniteur a un **nom, une description et des notes** stockés côté serveur
+(le nom apparaît dans les e-mails), des **alertes activables par moniteur** et
+un bouton **Cloner**. Les réglages ajoutent le format de l'heure, la densité,
+la vue et le tri par défaut, ainsi que la fréquence, la marge et le dossier
+proposés à la création
+([ADR 0007](docs/adr/0007-personnalisation-de-la-configuration.md)).
+
+Les jobs peuvent aussi signaler leur cycle de vie : `start` (mesure la durée),
+`success`, `fail` (ouvre un incident immédiatement) et `warn`, par en-tête
+`Authorization` (recommandé) ou par URL (`/api/ping/<token>[/start|fail|warn|<code>]`
+en `GET`, `HEAD` ou `POST`). La page d'un moniteur affiche l'historique des
+exécutions (90 jours), les durées et les échecs, sans jamais conserver de
+contenu ([ADR 0008](docs/adr/0008-evenements-d-execution.md)).
+
+Les alertes peuvent aussi partir vers **Slack, Discord, Telegram, Microsoft
+Teams, PagerDuty ou un webhook** (Réglages, « Canaux d'alerte », avec un bouton
+de test). La destination est un secret : l'API ne la renvoie jamais. Un
+**rappel** périodique peut être activé tant qu'un incident reste ouvert
+([ADR 0009](docs/adr/0009-canaux-d-alerte-et-rappels.md)).
+
+Chaque **lundi à 9 h UTC**, le propriétaire reçoit un **rapport hebdomadaire**
+(heartbeats, échecs, incidents, moniteurs à surveiller), désactivable dans les
+réglages ([ADR 0010](docs/adr/0010-rapport-hebdomadaire.md)).
+
+Ces fonctions s'appuient sur sept migrations (`20261031100000`,
+`20261031110000`, `20261031120000`, `20261031130000`, `20261031140000`,
+`20261031150000`, `20261031160000`) à appliquer avec `supabase db push` avant de
+déployer l'API.
 
 ## Commandes
 
@@ -151,6 +270,7 @@ pnpm test:db
 pnpm db:lint
 pnpm build
 pnpm check
+pnpm deploy:production
 ```
 
 Le contrôle anti-Bootstrap peut être exécuté seul :
@@ -184,7 +304,7 @@ pnpm exec supabase stop
 ```
 
 Le service Analytics local est désactivé pour éviter des ports et services
-inutiles au développement de CronPing.
+inutiles au développement de Vextra.
 
 Le Cron Trigger Cloudflare s'exécute toutes les minutes. Il ouvre les incidents
 échus, puis traite un lot borné de livraisons e-mail. L'adresse du propriétaire
@@ -233,3 +353,9 @@ l'outillage et ne doivent jamais être commités.
 - L'isolation multi-tenant et RLS seront obligatoires pour toute donnée
   persistée.
 - Bootstrap et ses dérivés sont interdits.
+
+## Licence et contribution
+
+Vextra est un logiciel libre, distribué sous [licence MIT](LICENSE). Les
+contributions sont les bienvenues : voir [CONTRIBUTING.md](CONTRIBUTING.md), le
+[code de conduite](CODE_OF_CONDUCT.md) et la [politique de sécurité](SECURITY.md).

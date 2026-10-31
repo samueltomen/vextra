@@ -117,6 +117,62 @@ describe('SupabaseAccountsGateway', () => {
     ).resolves.toEqual({ session: null, user: USER })
   })
 
+  it('logs the provider error code on signup failure without leaking credentials', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const client = createClient({
+      signUp: vi.fn(async () => ({
+        data: { session: null, user: null },
+        error: { code: 'signup_disabled', message: 'x', status: 422 },
+      })),
+    })
+
+    await expect(
+      new SupabaseAccountsGateway(client, () => client).signUp({
+        email: 'secret@example.test',
+        password: 'correct horse battery staple',
+      }),
+    ).rejects.toBeInstanceOf(AccountCreationError)
+
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({
+        code: 'signup_disabled',
+        event: 'auth.signup_failed',
+        status: 422,
+      }),
+    )
+    warn.mockRestore()
+  })
+
+  it('logs when the personal tenant cannot be resolved', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const client = {
+      ...createClient(),
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            order: async () => ({
+              data: null,
+              error: { code: '42501' },
+            }),
+          }),
+        }),
+      }),
+    } as unknown as SupabaseClient
+
+    await new SupabaseAccountsGateway(
+      client,
+      () => client,
+    ).resolvePrimaryTenantId({
+      accessToken: 't',
+      userId: 'u',
+    })
+
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({ code: '42501', event: 'auth.tenant_lookup_failed' }),
+    )
+    warn.mockRestore()
+  })
+
   it('rejects invalid or incomplete refreshed sessions', async () => {
     const errorClient = createClient({
       refreshSession: vi.fn(async () => ({
@@ -152,14 +208,17 @@ describe('SupabaseAccountsGateway', () => {
     ).rejects.toBeInstanceOf(InvalidCredentialsError)
   })
 
-  it('resolves the primary tenant through a user-scoped client', async () => {
+  it('resolves the preferred space, falling back to the oldest, through a user-scoped client', async () => {
     const client = createClient()
-    const maybeSingle = vi.fn(async () => ({
-      data: { tenant_id: '10000000-0000-4000-8000-000000000001' },
+    const FIRST = '10000000-0000-4000-8000-000000000001'
+    const SECOND = '10000000-0000-4000-8000-000000000002'
+    const order = vi.fn(async () => ({
+      data: [
+        { role: 'owner', tenant_id: FIRST },
+        { role: 'viewer', tenant_id: SECOND },
+      ],
       error: null,
     }))
-    const limit = vi.fn(() => ({ maybeSingle }))
-    const order = vi.fn(() => ({ limit }))
     const eq = vi.fn(() => ({ order }))
     const select = vi.fn(() => ({ eq }))
     const from = vi.fn(() => ({ select }))
@@ -172,11 +231,25 @@ describe('SupabaseAccountsGateway', () => {
         accessToken: 'access-token',
         userId: USER.id,
       }),
-    ).resolves.toBe('10000000-0000-4000-8000-000000000001')
+    ).resolves.toEqual({ role: 'owner', tenantId: FIRST })
+    await expect(
+      gateway.resolvePrimaryTenantId({
+        accessToken: 'access-token',
+        preferredTenantId: SECOND,
+        userId: USER.id,
+      }),
+    ).resolves.toEqual({ role: 'viewer', tenantId: SECOND })
+    await expect(
+      gateway.resolvePrimaryTenantId({
+        accessToken: 'access-token',
+        preferredTenantId: '10000000-0000-4000-8000-0000000000ff',
+        userId: USER.id,
+      }),
+    ).resolves.toEqual({ role: 'owner', tenantId: FIRST })
 
     expect(createUserClient).toHaveBeenCalledWith('access-token')
     expect(from).toHaveBeenCalledWith('tenant_memberships')
-    expect(select).toHaveBeenCalledWith('tenant_id')
+    expect(select).toHaveBeenCalledWith('tenant_id, role')
     expect(eq).toHaveBeenCalledWith('user_id', USER.id)
   })
 
@@ -217,12 +290,10 @@ describe('SupabaseAccountsGateway', () => {
     ).resolves.toBeNull()
 
     const malformed = new SupabaseAccountsGateway(client, () => {
-      const maybeSingle = vi.fn(async () => ({
-        data: { tenant_id: 42 },
+      const order = vi.fn(async () => ({
+        data: [{ role: 'owner', tenant_id: 42 }],
         error: null,
       }))
-      const limit = vi.fn(() => ({ maybeSingle }))
-      const order = vi.fn(() => ({ limit }))
       const eq = vi.fn(() => ({ order }))
       const select = vi.fn(() => ({ eq }))
 

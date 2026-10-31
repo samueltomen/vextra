@@ -38,11 +38,34 @@ describe('SupabaseMonitorRepository', () => {
       status: 'pending',
       last_heartbeat_at: null,
       alert_at: '2026-01-01T00:05:30.000Z',
+      cron_deadline_stale: false,
+      cron_expression: null,
+      cron_timezone: null,
       incident_opened_at: null,
       paused_at: null,
       enabled: true,
     })
     expect(JSON.stringify(insert.mock.calls)).not.toContain('raw-secret-token')
+  })
+
+  it('stores the cron schedule and flags its deadline for refinement', async () => {
+    const insert = vi.fn(async () => ({ error: null }))
+    const repository = new SupabaseMonitorRepository({
+      from: vi.fn(() => ({ insert })),
+    })
+
+    await repository.save({
+      ...RECORD,
+      cron: { expression: '0 3 * * *', timezone: 'Europe/Paris' },
+    })
+
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cron_deadline_stale: true,
+        cron_expression: '0 3 * * *',
+        cron_timezone: 'Europe/Paris',
+      }),
+    )
   })
 
   it('translates persistence failures without leaking provider details', async () => {

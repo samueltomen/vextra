@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 
 export const TEST_ACCOUNT = {
+  role: 'owner',
   tenantId: '10000000-0000-4000-8000-000000000001',
   user: {
     email: 'alice@example.test',
@@ -10,15 +11,27 @@ export const TEST_ACCOUNT = {
 
 type MonitorRow = {
   alertAt: string
+  alertsEnabled: boolean
   createdAt: string
+  cronExpression: string | null
+  cronTimezone: string | null
+  description: string | null
+  folderId: string | null
   graceSeconds: number
   id: string
   incidentOpenedAt: string | null
   intervalSeconds: number
   lastHeartbeatAt: string | null
+  name: string | null
+  notes: string | null
   pausedAt: string | null
+  runningSince: string | null
   status: 'healthy' | 'late' | 'paused' | 'pending'
+  tags: string[]
+  totalPings: number
 }
+
+export const TEST_FOLDER_ID = '30000000-0000-4000-8000-000000000001'
 
 export const TEST_MONITOR_LABELS = {
   '20000000-0000-4000-8000-000000000001': 'Sauvegarde PostgreSQL',
@@ -31,49 +44,106 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
   return [
     {
       alertAt: new Date(nowMs + 60 * 60_000).toISOString(),
+      alertsEnabled: true,
+      description: null,
       createdAt: new Date(nowMs - 86_400_000).toISOString(),
+      cronExpression: null,
+      cronTimezone: null,
+      folderId: null,
       graceSeconds: 1_800,
       id: '20000000-0000-4000-8000-000000000001',
       incidentOpenedAt: null,
       intervalSeconds: 86_400,
       lastHeartbeatAt: new Date(nowMs - 42 * 60_000).toISOString(),
+      name: null,
+      notes: null,
       pausedAt: null,
+      runningSince: null,
       status: 'healthy',
+      tags: [],
+      totalPings: 0,
     },
     {
       alertAt: new Date(nowMs - 6 * 60_000).toISOString(),
+      alertsEnabled: true,
+      description: null,
       createdAt: new Date(nowMs - 86_400_000).toISOString(),
+      cronExpression: null,
+      cronTimezone: null,
+      folderId: null,
       graceSeconds: 180,
       id: '20000000-0000-4000-8000-000000000002',
       incidentOpenedAt: new Date(nowMs - 6 * 60_000).toISOString(),
       intervalSeconds: 900,
       lastHeartbeatAt: new Date(nowMs - 24 * 60_000).toISOString(),
+      name: null,
+      notes: null,
       pausedAt: null,
+      runningSince: null,
       status: 'late',
+      tags: [],
+      totalPings: 0,
     },
     {
       alertAt: new Date(nowMs + 4 * 86_400_000).toISOString(),
+      alertsEnabled: true,
+      description: null,
       createdAt: new Date(nowMs - 7 * 86_400_000).toISOString(),
+      cronExpression: null,
+      cronTimezone: null,
+      folderId: null,
       graceSeconds: 7_200,
       id: '20000000-0000-4000-8000-000000000003',
       incidentOpenedAt: null,
       intervalSeconds: 604_800,
       lastHeartbeatAt: new Date(nowMs - 4 * 86_400_000).toISOString(),
+      name: null,
+      notes: null,
       pausedAt: new Date(nowMs - 86_400_000).toISOString(),
+      runningSince: null,
       status: 'paused',
+      tags: [],
+      totalPings: 0,
     },
     {
       alertAt: new Date(nowMs + 6 * 60 * 60_000).toISOString(),
+      alertsEnabled: true,
+      description: null,
       createdAt: new Date(nowMs - 60_000).toISOString(),
+      cronExpression: null,
+      cronTimezone: null,
+      folderId: null,
       graceSeconds: 1_200,
       id: '20000000-0000-4000-8000-000000000004',
       incidentOpenedAt: null,
       intervalSeconds: 21_600,
       lastHeartbeatAt: null,
+      name: null,
+      notes: null,
       pausedAt: null,
+      runningSince: null,
       status: 'pending',
+      tags: [],
+      totalPings: 0,
     },
   ]
+}
+
+const DEFAULT_METRICS = {
+  days: [
+    {
+      day: new Date().toISOString().slice(0, 10),
+      durationCount: 2,
+      durationMaxMs: 3_000,
+      durationSumMs: 4_000,
+      fails: 1,
+      gapCount: 2,
+      gapMaxSeconds: 3_700,
+      gapSumSeconds: 7_200,
+      pings: 3,
+    },
+  ],
+  totalPings: 42,
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -90,11 +160,85 @@ function errorResponse(status: number, code: string): Response {
 export type ApiMockOptions = Readonly<{
   authenticated?: boolean
   loginStatus?: number
+  folders?: { id: string; name: string }[]
+  metrics?: unknown
   monitors?: MonitorRow[]
+  role?: 'member' | 'owner' | 'viewer'
 }>
 
 export function installApiMock(options: ApiMockOptions = {}) {
   let authenticated = options.authenticated ?? true
+  let teamMembers: {
+    email: string
+    joinedAt: string
+    role: 'member' | 'owner' | 'viewer'
+    userId: string
+  }[] = [
+    {
+      email: TEST_ACCOUNT.user.email,
+      joinedAt: '2026-10-01T10:00:00.000Z',
+      role: 'owner',
+      userId: TEST_ACCOUNT.user.id,
+    },
+    {
+      email: 'bob@example.test',
+      joinedAt: '2026-10-10T10:00:00.000Z',
+      role: 'member',
+      userId: '00000000-0000-4000-8000-000000000002',
+    },
+  ]
+  let teamInvitations: {
+    createdAt: string
+    email: string
+    expiresAt: string
+    id: string
+    role: 'member' | 'viewer'
+  }[] = []
+  const apiKeys: {
+    createdAt: string
+    id: string
+    lastUsedAt: string | null
+    name: string
+    prefix: string
+    revokedAt: string | null
+  }[] = []
+  let maintenanceWindows: {
+    endsAt: string
+    id: string
+    monitorId: string | null
+    name: string
+    startsAt: string
+  }[] = []
+  let statusPage: {
+    monitorIds: string[]
+    page: Record<string, unknown> | null
+  } = { monitorIds: [], page: null }
+  const channels: {
+    createdAt: string
+    enabled: boolean
+    id: string
+    kind: string
+    name: string
+    targetHint: string
+  }[] = []
+  const folders = [
+    ...(options.folders ?? [{ id: TEST_FOLDER_ID, name: 'Production' }]),
+  ]
+  let preferences = {
+    dashboardSort: 'priority',
+    dashboardView: 'list',
+    defaultFolderId: null as string | null,
+    defaultGraceMinutes: 2,
+    defaultIntervalMinutes: 5,
+    density: 'compact',
+    displayName: null as string | null,
+    notifyOnOpen: true,
+    notifyOnResolve: true,
+    reminderIntervalMinutes: null as number | null,
+    timeFormat: '24h',
+    timezone: 'Europe/Paris',
+    weeklyReportEnabled: true,
+  }
   const monitors = [...(options.monitors ?? createMonitorRows())]
   const incidents = monitors
     .filter((monitor) => monitor.status === 'late')
@@ -111,10 +255,444 @@ export function installApiMock(options: ApiMockOptions = {}) {
       const url = new URL(String(input), window.location.origin)
       const method = init?.method ?? 'GET'
 
+      if (url.pathname.endsWith('/details') && method === 'PATCH') {
+        const monitorId = url.pathname.split('/').at(-2)
+        const changes = JSON.parse(
+          String(init?.body),
+        ) as Partial<MonitorRow> & {
+          alertsEnabled?: boolean
+        }
+        const monitor = monitors.find((candidate) => candidate.id === monitorId)
+
+        if (monitor) {
+          Object.assign(monitor, changes)
+        }
+
+        return new Response(null, { status: monitor ? 204 : 404 })
+      }
+
+      if (url.pathname === '/api/monitors/activity' && method === 'GET') {
+        return jsonResponse({
+          data: {
+            monitors: [
+              {
+                days: [
+                  { day: new Date().toISOString().slice(0, 10), pings: 3 },
+                ],
+                monitorId: '20000000-0000-4000-8000-000000000001',
+              },
+            ],
+          },
+        })
+      }
+
+      if (url.pathname === '/api/channels' && method === 'GET') {
+        return jsonResponse({ data: { channels } })
+      }
+
+      if (url.pathname === '/api/channels' && method === 'POST') {
+        const body = JSON.parse(String(init?.body)) as {
+          kind: string
+          name: string
+          target: string
+        }
+
+        if (!body.target.startsWith('https://')) {
+          return errorResponse(422, 'invalid_channel_target')
+        }
+
+        if (channels.some((channel) => channel.name === body.name)) {
+          return errorResponse(409, 'channel_name_taken')
+        }
+
+        const channel = {
+          createdAt: new Date().toISOString(),
+          enabled: true,
+          id: crypto.randomUUID(),
+          kind: body.kind,
+          name: body.name,
+          targetHint: 'example.com/…hook',
+        }
+
+        channels.push(channel)
+
+        return jsonResponse({ data: { channel } }, 201)
+      }
+
+      if (url.pathname.startsWith('/api/channels/')) {
+        const parts = url.pathname.split('/')
+        const channel = channels.find((candidate) => candidate.id === parts[3])
+
+        if (!channel) {
+          return errorResponse(404, 'channel_not_found')
+        }
+
+        if (method === 'POST' && parts[4] === 'test') {
+          return channel.name === 'Cassé'
+            ? errorResponse(502, 'channel_test_failed')
+            : new Response(null, { status: 204 })
+        }
+
+        if (method === 'PATCH') {
+          channel.enabled = (
+            JSON.parse(String(init?.body)) as { enabled: boolean }
+          ).enabled
+
+          return new Response(null, { status: 204 })
+        }
+
+        if (method === 'DELETE') {
+          channels.splice(channels.indexOf(channel), 1)
+
+          return new Response(null, { status: 204 })
+        }
+      }
+
+      if (url.pathname === '/api/api-keys' && method === 'GET') {
+        return jsonResponse({ data: { keys: apiKeys } })
+      }
+
+      if (url.pathname === '/api/api-keys' && method === 'POST') {
+        const body = JSON.parse(String(init?.body)) as { name: string }
+
+        if (body.name === 'limite') {
+          return errorResponse(409, 'limit_reached')
+        }
+
+        const apiKey = {
+          createdAt: new Date().toISOString(),
+          id: crypto.randomUUID(),
+          lastUsedAt: null,
+          name: body.name,
+          prefix: 'vx_test-sec',
+          revokedAt: null as string | null,
+        }
+
+        apiKeys.unshift(apiKey)
+
+        return jsonResponse(
+          { data: { apiKey, key: `vx_test-secret-${'x'.repeat(30)}` } },
+          201,
+        )
+      }
+
+      if (url.pathname.startsWith('/api/api-keys/') && method === 'DELETE') {
+        const key = apiKeys.find(
+          (candidate) => candidate.id === url.pathname.split('/').at(-1),
+        )
+
+        if (key) {
+          key.revokedAt = new Date().toISOString()
+        }
+
+        return new Response(null, { status: 204 })
+      }
+
+      if (url.pathname === '/api/maintenance' && method === 'GET') {
+        return jsonResponse({ data: { windows: maintenanceWindows } })
+      }
+
+      if (url.pathname === '/api/maintenance' && method === 'POST') {
+        const body = JSON.parse(String(init?.body)) as {
+          endsAt: string
+          monitorId: string | null
+          name: string
+          startsAt: string
+        }
+
+        if (body.name === 'limite') {
+          return errorResponse(409, 'limit_reached')
+        }
+
+        const created = { ...body, id: crypto.randomUUID() }
+
+        maintenanceWindows.push(created)
+
+        return jsonResponse({ data: created }, 201)
+      }
+
+      if (url.pathname.startsWith('/api/maintenance/') && method === 'DELETE') {
+        const id = url.pathname.split('/').at(-1)
+
+        maintenanceWindows = maintenanceWindows.filter(
+          (window) => window.id !== id,
+        )
+
+        return new Response(null, { status: 204 })
+      }
+
+      if (url.pathname === '/api/status-page' && method === 'GET') {
+        return jsonResponse({ data: statusPage })
+      }
+
+      if (url.pathname === '/api/status-page' && method === 'PUT') {
+        const body = JSON.parse(String(init?.body)) as {
+          monitorIds: string[]
+          slug: string
+          title: string
+        }
+
+        if (body.slug === 'pris') {
+          return errorResponse(409, 'slug_taken')
+        }
+
+        statusPage = {
+          monitorIds: body.monitorIds,
+          page: { description: null, enabled: true, ...body },
+        }
+
+        return jsonResponse({ data: statusPage })
+      }
+
+      if (url.pathname.startsWith('/api/status/') && method === 'GET') {
+        return url.pathname.endsWith('/acme-status')
+          ? jsonResponse({
+              data: {
+                description: null,
+                generatedAt: new Date().toISOString(),
+                incidents: [
+                  {
+                    monitor: 'API publique',
+                    openedAt: new Date(Date.now() - 86_400_000).toISOString(),
+                    resolvedAt: null,
+                  },
+                ],
+                monitors: [
+                  { name: 'API publique', status: 'late', uptime30d: 99.5 },
+                ],
+                title: 'Acme',
+              },
+            })
+          : errorResponse(404, 'not_found')
+      }
+
+      if (url.pathname === '/api/folders' && method === 'GET') {
+        return jsonResponse({ data: { folders } })
+      }
+
+      if (url.pathname === '/api/folders' && method === 'POST') {
+        const body = JSON.parse(String(init?.body)) as { name: string }
+
+        if (folders.some((folder) => folder.name === body.name)) {
+          return errorResponse(409, 'folder_name_taken')
+        }
+
+        const folder = { id: crypto.randomUUID(), name: body.name }
+
+        folders.push(folder)
+
+        return jsonResponse({ data: { folder } }, 201)
+      }
+
+      if (url.pathname.startsWith('/api/folders/') && method === 'PATCH') {
+        const id = url.pathname.split('/').at(-1)
+        const body = JSON.parse(String(init?.body)) as { name: string }
+        const folder = folders.find((candidate) => candidate.id === id)
+
+        if (folder) {
+          folder.name = body.name
+        }
+
+        return folder
+          ? jsonResponse({ data: { folder } })
+          : errorResponse(404, 'folder_not_found')
+      }
+
+      if (url.pathname.startsWith('/api/folders/') && method === 'DELETE') {
+        const id = url.pathname.split('/').at(-1)
+        const index = folders.findIndex((candidate) => candidate.id === id)
+
+        if (index >= 0) {
+          folders.splice(index, 1)
+          monitors.forEach((monitor) => {
+            if (monitor.folderId === id) {
+              monitor.folderId = null
+            }
+          })
+        }
+
+        return new Response(null, { status: index >= 0 ? 204 : 404 })
+      }
+
+      if (url.pathname.endsWith('/folder') && method === 'PUT') {
+        const monitorId = url.pathname.split('/').at(-2)
+        const body = JSON.parse(String(init?.body)) as {
+          folderId: string | null
+        }
+        const monitor = monitors.find((candidate) => candidate.id === monitorId)
+
+        if (monitor) {
+          monitor.folderId = body.folderId
+        }
+
+        return new Response(null, { status: monitor ? 204 : 404 })
+      }
+
+      if (url.pathname === '/api/preferences' && method === 'GET') {
+        return jsonResponse({ data: { preferences } })
+      }
+
+      if (url.pathname === '/api/preferences' && method === 'PATCH') {
+        preferences = {
+          ...preferences,
+          ...(JSON.parse(String(init?.body)) as object),
+        }
+
+        return jsonResponse({ data: { preferences } })
+      }
+
+      if (url.pathname.endsWith('/runs') && method === 'GET') {
+        return jsonResponse({
+          data: {
+            runs: [
+              {
+                createdAt: new Date().toISOString(),
+                durationMs: 2_000,
+                id: '40000000-0000-4000-8000-000000000001',
+                kind: 'success',
+                overlapped: false,
+              },
+              {
+                createdAt: new Date().toISOString(),
+                durationMs: null,
+                id: '40000000-0000-4000-8000-000000000002',
+                kind: 'start',
+                overlapped: true,
+              },
+            ],
+          },
+        })
+      }
+
+      if (url.pathname.endsWith('/metrics') && method === 'GET') {
+        return jsonResponse({ data: options.metrics ?? DEFAULT_METRICS })
+      }
+
       if (url.pathname === '/api/auth/me' && method === 'GET') {
         return authenticated
-          ? jsonResponse({ data: TEST_ACCOUNT })
+          ? jsonResponse({
+              data: { ...TEST_ACCOUNT, role: options.role ?? 'owner' },
+            })
           : errorResponse(401, 'unauthorized')
+      }
+
+      if (url.pathname === '/api/auth/tenant' && method === 'POST') {
+        const body = JSON.parse(String(init?.body)) as { tenantId: string }
+
+        return jsonResponse({
+          data: { ...TEST_ACCOUNT, role: 'member', tenantId: body.tenantId },
+        })
+      }
+
+      if (url.pathname === '/api/team/members' && method === 'GET') {
+        return jsonResponse({
+          data: {
+            members: teamMembers,
+            role: options.role ?? 'owner',
+            userId: TEST_ACCOUNT.user.id,
+          },
+        })
+      }
+
+      if (url.pathname === '/api/team/spaces' && method === 'GET') {
+        return jsonResponse({
+          data: {
+            spaces: [
+              {
+                ownerEmail: TEST_ACCOUNT.user.email,
+                role: 'owner',
+                tenantId: TEST_ACCOUNT.tenantId,
+              },
+              ...(options.role === 'viewer'
+                ? [
+                    {
+                      ownerEmail: 'boss@example.test',
+                      role: 'viewer',
+                      tenantId: '10000000-0000-4000-8000-000000000002',
+                    },
+                  ]
+                : []),
+            ],
+          },
+        })
+      }
+
+      if (url.pathname === '/api/team/invitations' && method === 'GET') {
+        return jsonResponse({ data: { invitations: teamInvitations } })
+      }
+
+      if (url.pathname === '/api/team/invitations' && method === 'POST') {
+        const body = JSON.parse(String(init?.body)) as {
+          email: string
+          role: 'member' | 'viewer'
+        }
+
+        if (body.email === 'deja@example.test') {
+          return errorResponse(409, 'invitation_exists')
+        }
+
+        const invitation = {
+          createdAt: new Date().toISOString(),
+          email: body.email,
+          expiresAt: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+          id: crypto.randomUUID(),
+          role: body.role,
+        }
+
+        teamInvitations.push(invitation)
+
+        return jsonResponse(
+          { data: { invitation, token: `vxi_${'T'.repeat(43)}` } },
+          201,
+        )
+      }
+
+      if (
+        url.pathname === '/api/team/invitations/accept' &&
+        method === 'POST'
+      ) {
+        const body = JSON.parse(String(init?.body)) as { token: string }
+
+        return body.token.includes('X')
+          ? errorResponse(404, 'invitation_invalid')
+          : jsonResponse({
+              data: { tenantId: '10000000-0000-4000-8000-000000000002' },
+            })
+      }
+
+      if (
+        url.pathname.startsWith('/api/team/invitations/') &&
+        method === 'DELETE'
+      ) {
+        const id = url.pathname.split('/').at(-1)
+
+        teamInvitations = teamInvitations.filter((item) => item.id !== id)
+
+        return new Response(null, { status: 204 })
+      }
+
+      if (url.pathname.startsWith('/api/team/members/') && method === 'PATCH') {
+        const id = url.pathname.split('/').at(-1)
+        const body = JSON.parse(String(init?.body)) as {
+          role: 'member' | 'viewer'
+        }
+
+        teamMembers = teamMembers.map((member) =>
+          member.userId === id ? { ...member, role: body.role } : member,
+        )
+
+        return new Response(null, { status: 204 })
+      }
+
+      if (
+        url.pathname.startsWith('/api/team/members/') &&
+        method === 'DELETE'
+      ) {
+        const id = url.pathname.split('/').at(-1)
+
+        teamMembers = teamMembers.filter((member) => member.userId !== id)
+
+        return new Response(null, { status: 204 })
       }
 
       if (url.pathname === '/api/auth/login' && method === 'POST') {
@@ -185,22 +763,35 @@ export function installApiMock(options: ApiMockOptions = {}) {
 
       if (url.pathname === '/api/monitors' && method === 'POST') {
         const body = JSON.parse(String(init?.body)) as {
+          cron?: string
           graceSeconds: number
-          intervalSeconds: number
+          intervalSeconds?: number
+          timezone?: string
         }
+        const intervalSeconds = body.intervalSeconds ?? 86_400
         const nowMs = Date.now()
         const monitor: MonitorRow = {
           alertAt: new Date(
-            nowMs + (body.intervalSeconds + body.graceSeconds) * 1_000,
+            nowMs + (intervalSeconds + body.graceSeconds) * 1_000,
           ).toISOString(),
+          alertsEnabled: true,
           createdAt: new Date(nowMs).toISOString(),
+          cronExpression: body.cron ?? null,
+          cronTimezone: body.cron ? (body.timezone ?? 'UTC') : null,
+          description: null,
+          folderId: null,
           graceSeconds: body.graceSeconds,
           id: '20000000-0000-4000-8000-000000000099',
           incidentOpenedAt: null,
-          intervalSeconds: body.intervalSeconds,
+          intervalSeconds,
           lastHeartbeatAt: null,
+          name: null,
+          notes: null,
           pausedAt: null,
+          runningSince: null,
           status: 'pending',
+          tags: [],
+          totalPings: 0,
         }
 
         monitors.unshift(monitor)
@@ -218,6 +809,38 @@ export function installApiMock(options: ApiMockOptions = {}) {
           },
           201,
         )
+      }
+
+      if (url.pathname.startsWith('/api/monitors/') && method === 'PATCH') {
+        const monitorId = decodeURIComponent(
+          url.pathname.split('/').at(-1) ?? '',
+        )
+        const monitor = monitors.find((candidate) => candidate.id === monitorId)
+
+        if (!monitor) {
+          return errorResponse(404, 'monitor_not_found')
+        }
+
+        const body = JSON.parse(String(init?.body)) as {
+          cron?: string
+          graceSeconds: number
+          intervalSeconds?: number
+          timezone?: string
+        }
+        const intervalSeconds = body.intervalSeconds ?? 86_400
+
+        monitor.graceSeconds = body.graceSeconds
+        monitor.intervalSeconds = intervalSeconds
+        monitor.cronExpression = body.cron ?? null
+        monitor.cronTimezone = body.cron ? (body.timezone ?? 'UTC') : null
+
+        if (monitor.status !== 'paused' && monitor.status !== 'late') {
+          monitor.alertAt = new Date(
+            Date.now() + (intervalSeconds + body.graceSeconds) * 1_000,
+          ).toISOString()
+        }
+
+        return jsonResponse({ data: { monitor } })
       }
 
       if (url.pathname.startsWith('/api/monitors/') && method === 'DELETE') {
@@ -295,5 +918,5 @@ export function installApiMock(options: ApiMockOptions = {}) {
 
   vi.stubGlobal('fetch', fetchMock)
 
-  return { fetchMock }
+  return { fetchMock, monitors, preferences: () => preferences }
 }

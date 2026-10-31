@@ -25,10 +25,10 @@ describe('demo data adapters', () => {
 
     await expect(getCurrentAccount()).resolves.toEqual(DEMO_ACCOUNT)
     await expect(
-      signIn({ email: 'demo@cronping.local', password: 'unused' }),
+      signIn({ email: 'demo@vextra.local', password: 'unused' }),
     ).resolves.toEqual(DEMO_ACCOUNT)
     await expect(
-      signUp({ email: 'demo@cronping.local', password: 'unused' }),
+      signUp({ email: 'demo@vextra.local', password: 'unused' }),
     ).resolves.toEqual({
       requiresEmailConfirmation: false,
       user: DEMO_ACCOUNT.user,

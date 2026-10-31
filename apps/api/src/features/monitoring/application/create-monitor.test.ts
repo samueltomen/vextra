@@ -50,6 +50,30 @@ describe('CreateMonitor', () => {
     expect(result.heartbeatToken).toBe('raw-secret-token')
   })
 
+  it('derives the interval of a cron monitor from its longest gap', async () => {
+    const dependencies = createDependencies()
+
+    await new CreateMonitor(dependencies).execute({
+      cron: { expression: '0 3 * * *', timezone: 'UTC' },
+      graceSeconds: 60,
+      tenantId: 'tenant-a',
+    })
+
+    expect(dependencies.records[0]).toMatchObject({
+      cron: { expression: '0 3 * * *', timezone: 'UTC' },
+      monitor: { intervalSeconds: 86_400 + 3_600 },
+    })
+  })
+
+  it('requires an interval or a cron schedule', async () => {
+    await expect(
+      new CreateMonitor(createDependencies()).execute({
+        graceSeconds: 60,
+        tenantId: 'tenant-a',
+      }),
+    ).rejects.toBeInstanceOf(RangeError)
+  })
+
   it('persists only the heartbeat token hash and prefix', async () => {
     const dependencies = createDependencies()
     const createMonitor = new CreateMonitor(dependencies)

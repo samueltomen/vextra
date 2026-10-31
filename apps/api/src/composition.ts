@@ -24,7 +24,10 @@ import {
   hashMonitorToken,
 } from './features/monitoring/adapters/outbound/crypto-monitor-token.ts'
 import { SupabaseDueMonitorClaimer } from './features/monitoring/adapters/outbound/supabase-due-monitor-claimer.ts'
-import { SupabaseHeartbeatRecorder } from './features/monitoring/adapters/outbound/supabase-heartbeat-recorder.ts'
+import {
+  SupabaseHeartbeatRecorder,
+  SupabaseRunEventRecorder,
+} from './features/monitoring/adapters/outbound/supabase-heartbeat-recorder.ts'
 import {
   SupabaseMonitorIncidentRepository,
   type MonitorIncidentQueryClient,
@@ -46,13 +49,86 @@ import { CheckDueMonitors } from './features/monitoring/application/check-due-mo
 import { CreateMonitor } from './features/monitoring/application/create-monitor.ts'
 import { MonitorIncidents } from './features/monitoring/application/monitor-incidents.ts'
 import { MonitorLifecycle } from './features/monitoring/application/monitor-lifecycle.ts'
+import { SupabaseCronDeadlines } from './features/monitoring/adapters/outbound/supabase-cron-deadlines.ts'
+import { RefineCronDeadlines } from './features/monitoring/application/refine-cron-deadlines.ts'
+import { UpdateMonitorSchedule } from './features/monitoring/application/update-monitor-schedule.ts'
+import {
+  SupabaseMonitorSchedule,
+  type MonitorScheduleRpcClient,
+} from './features/monitoring/adapters/outbound/supabase-monitor-schedule.ts'
+import {
+  ManageStatusPage,
+  ReadPublicStatusPage,
+} from './features/statuspage/application/status-page.ts'
+import { createStatusPageRoutes } from './features/statuspage/adapters/inbound/http/status-page-routes.ts'
+import {
+  SupabasePublicStatusPage,
+  SupabaseStatusPageSettings,
+} from './features/statuspage/adapters/outbound/supabase-status-page.ts'
+import { ManageMaintenance } from './features/maintenance/application/maintenance.ts'
+import { createMaintenanceRoutes } from './features/maintenance/adapters/inbound/http/maintenance-routes.ts'
+import { SupabaseMaintenance } from './features/maintenance/adapters/outbound/supabase-maintenance.ts'
+import {
+  AuthenticateApiKey,
+  ManageApiKeys,
+} from './features/apikeys/application/api-keys.ts'
+import { createApiKeyRoutes } from './features/apikeys/adapters/inbound/http/api-key-routes.ts'
+import { CryptoApiKeyGenerator } from './features/apikeys/adapters/outbound/crypto-api-key-generator.ts'
+import {
+  SupabaseApiKeyAuthenticator,
+  SupabaseApiKeyStore,
+} from './features/apikeys/adapters/outbound/supabase-api-keys.ts'
+import { ManageTeam } from './features/team/application/team.ts'
+import { createTeamRoutes } from './features/team/adapters/inbound/http/team-routes.ts'
+import { CryptoInvitationToken } from './features/team/adapters/outbound/crypto-invitation-token.ts'
+import { SupabaseTeamStore } from './features/team/adapters/outbound/supabase-team.ts'
 import { MonitorReadService } from './features/monitoring/application/monitor-read.ts'
-import { RecordHeartbeat } from './features/monitoring/application/record-heartbeat.ts'
+import {
+  RecordHeartbeat,
+  RecordRunEvent,
+} from './features/monitoring/application/record-heartbeat.ts'
 import { RotateMonitorToken } from './features/monitoring/application/rotate-monitor-token.ts'
 import { DeliverNotifications } from './features/notifications/application/deliver-notifications.ts'
 import { NotificationHistory } from './features/notifications/application/notification-history.ts'
 import { createNotificationRoutes } from './features/notifications/adapters/inbound/http/notification-routes.ts'
-import { ResendNotificationSender } from './features/notifications/adapters/outbound/resend-notification-sender.ts'
+import { MonitorMetricsService } from './features/monitoring/application/monitor-metrics.ts'
+import { SupabaseMonitorMetrics } from './features/monitoring/adapters/outbound/supabase-monitor-metrics.ts'
+import { createChannelRoutes } from './features/channels/adapters/inbound/http/channel-routes.ts'
+import { HttpChannelSender } from './features/channels/adapters/outbound/http-channel-sender.ts'
+import {
+  SupabaseChannelDeliveryQueue,
+  SupabaseChannelRepository,
+  SupabaseChannelSecrets,
+  SupabaseIncidentReminders,
+} from './features/channels/adapters/outbound/supabase-channels.ts'
+import {
+  DeliverChannelAlerts,
+  EnqueueIncidentReminders,
+  ManageChannels,
+} from './features/channels/application/channels.ts'
+import { createLiveRoutes } from './features/live/adapters/inbound/http/live-routes.ts'
+import { createWorkspaceRoutes } from './features/workspace/adapters/inbound/http/workspace-routes.ts'
+import {
+  SupabaseFolderRepository,
+  SupabaseMonitorDetailsRepository,
+  SupabasePreferencesRepository,
+} from './features/workspace/adapters/outbound/supabase-workspace.ts'
+import {
+  AccountPreferencesService,
+  ManageFolders,
+  ManageMonitorDetails,
+} from './features/workspace/application/workspace.ts'
+import {
+  SmtpNotificationSender,
+  SmtpWeeklyReportSender,
+  type MailTransport,
+} from './features/notifications/adapters/outbound/smtp-email-senders.ts'
+import { SupabaseWeeklyReportQueue } from './features/notifications/adapters/outbound/supabase-weekly-report-queue.ts'
+import { SendWeeklyReports } from './features/notifications/application/send-weekly-reports.ts'
+import {
+  ResendNotificationSender,
+  ResendWeeklyReportSender,
+} from './features/notifications/adapters/outbound/resend-notification-sender.ts'
 import {
   SupabaseNotificationDeliveryQueue,
   type NotificationDeliveryRpcClient,
@@ -61,6 +137,18 @@ import {
   SupabaseNotificationHistory,
   type NotificationHistoryQueryClient,
 } from './features/notifications/adapters/outbound/supabase-notification-history.ts'
+
+import {
+  createCloudflareRateLimiter,
+  type RateLimitBinding,
+} from './rate-limit/rate-limit-guard.ts'
+
+export type TenantLiveHubNamespace = Readonly<{
+  get: (
+    id: unknown,
+  ) => Readonly<{ fetch: (request: Request) => Promise<Response> }>
+  idFromName: (name: string) => unknown
+}>
 
 export type WorkerEnvironment = Readonly<{
   APP_ORIGIN: string
@@ -71,6 +159,13 @@ export type WorkerEnvironment = Readonly<{
   SUPABASE_PUBLISHABLE_KEY: string
   SUPABASE_SERVICE_ROLE_KEY: string
   SUPABASE_URL: string
+  AUTH_RATE_LIMITER?: RateLimitBinding
+  CLIENT_IP_HEADER?: string
+  EMAIL_FROM?: string
+  EMAIL_TRANSPORT?: MailTransport
+  SIGNUPS_ENABLED?: string
+  TENANT_LIVE_HUB?: TenantLiveHubNamespace
+  PING_RATE_LIMITER?: RateLimitBinding
 }>
 
 function createSupabaseClient(
@@ -137,7 +232,30 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     recorder: new SupabaseHeartbeatRecorder(supabase),
   })
 
-  const resolveSession = async (context: Context) => {
+  const recordRunEvent = new RecordRunEvent({
+    hashToken: (token) =>
+      hashMonitorToken(token, environment.PING_TOKEN_PEPPER),
+    recorder: new SupabaseRunEventRecorder(supabase),
+  })
+
+  // One resolution per request: refreshing a session twice would reuse a
+  // rotated refresh token, and the write guard and the route both need it.
+  const sessions = new WeakMap<Request, ReturnType<typeof resolveSessionOnce>>()
+  const resolveSession = (context: Context) => {
+    const cached = sessions.get(context.req.raw)
+
+    if (cached) {
+      return cached
+    }
+
+    const pending = resolveSessionOnce(context)
+
+    sessions.set(context.req.raw, pending)
+
+    return pending
+  }
+
+  async function resolveSessionOnce(context: Context) {
     const tokens = await readSessionCookie(context, codec)
 
     if (!tokens) {
@@ -158,6 +276,34 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     const client = userClient(account.tokens.accessToken)
 
     return { account, client }
+  }
+
+  const invitationTokens = new CryptoInvitationToken(
+    environment.PING_TOKEN_PEPPER,
+  )
+  const authenticateTeam = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    return {
+      role: session.account.role,
+      team: new ManageTeam({
+        store: new SupabaseTeamStore(session.client),
+        tokens: invitationTokens,
+      }),
+      tenantId: session.account.tenantId,
+      userId: session.account.user.id,
+    }
+  }
+
+  /** Viewers are read-only: refuse unsafe methods before any handler runs. */
+  const canWrite = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    return session === null || session.account.role !== 'viewer'
   }
 
   const authenticateMonitor = async (
@@ -199,11 +345,21 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
           client as unknown as MonitorLifecycleRpcClient,
         ),
       ),
+      monitorMetrics: new MonitorMetricsService({
+        nowMs: () => Date.now(),
+        port: new SupabaseMonitorMetrics(client),
+      }),
       monitorRead: new MonitorReadService(
         new SupabaseMonitorQueryRepository(
           client as unknown as MonitorQueryClient,
         ),
       ),
+      monitorSchedule: new UpdateMonitorSchedule({
+        nowMs: () => Date.now(),
+        port: new SupabaseMonitorSchedule(
+          client as unknown as MonitorScheduleRpcClient,
+        ),
+      }),
       principal: {
         tenantId: account.tenantId,
         userId: account.user.id,
@@ -234,6 +390,126 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     }
   }
 
+  const authenticateWorkspace = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    return {
+      details: new ManageMonitorDetails(
+        new SupabaseMonitorDetailsRepository(session.client),
+      ),
+      folders: new ManageFolders(new SupabaseFolderRepository(session.client)),
+      preferences: new AccountPreferencesService(
+        new SupabasePreferencesRepository(session.client),
+      ),
+      tenantId: session.account.tenantId,
+    }
+  }
+
+  const authenticateStatusPage = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    return {
+      settings: new ManageStatusPage(
+        new SupabaseStatusPageSettings(session.client),
+      ),
+      tenantId: session.account.tenantId,
+    }
+  }
+
+  const authenticateMaintenance = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    return {
+      maintenance: new ManageMaintenance(
+        new SupabaseMaintenance(session.client),
+      ),
+      tenantId: session.account.tenantId,
+    }
+  }
+
+  const apiKeyGenerator = new CryptoApiKeyGenerator(
+    environment.PING_TOKEN_PEPPER,
+  )
+  const authenticateApiKeys = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    return {
+      keys: new ManageApiKeys({
+        generator: apiKeyGenerator,
+        store: new SupabaseApiKeyStore(session.client),
+      }),
+      tenantId: session.account.tenantId,
+    }
+  }
+
+  const authenticateChannels = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    return {
+      channels: new ManageChannels({
+        appOrigin: environment.APP_ORIGIN,
+        channels: new SupabaseChannelRepository(session.client),
+        secrets: new SupabaseChannelSecrets(
+          createServiceSupabaseClient(environment),
+        ),
+        sender: new HttpChannelSender(),
+      }),
+      tenantId: session.account.tenantId,
+    }
+  }
+
+  const authenticateLive = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    return session ? { tenantId: session.account.tenantId } : null
+  }
+
+  const connectLive = async (tenantId: string, request: Request) => {
+    const namespace = environment.TENANT_LIVE_HUB
+
+    if (!namespace) {
+      return Response.json(
+        {
+          error: {
+            code: 'live_unavailable',
+            message: 'Live updates are not configured',
+          },
+        },
+        { status: 503 },
+      )
+    }
+
+    const headers = new Headers(request.headers)
+
+    // The hub trusts this header: only the Worker can reach it, and it is
+    // always overwritten with the tenant of the authenticated session.
+    headers.set('x-tenant-id', tenantId)
+
+    return namespace
+      .get(namespace.idFromName(tenantId))
+      .fetch(new Request(request.url, { headers, method: 'GET' }))
+  }
+
   const authenticateAccount = async (context: Context) => {
     const session = await resolveSession(context)
 
@@ -250,19 +526,86 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
   }
 
   return createApiApp({
+    canWrite,
+    teamRoutes: createTeamRoutes({ authenticate: authenticateTeam }),
     accountRoutes: createAccountRoutes({
       authenticate: authenticateAccount,
     }),
     allowedOrigin: environment.APP_ORIGIN,
-    authRoutes: createAuthRoutes({ accounts, codec }),
+    ...(environment.CLIENT_IP_HEADER
+      ? { clientIpHeader: environment.CLIENT_IP_HEADER }
+      : {}),
+    authRoutes: createAuthRoutes({
+      accounts,
+      codec,
+      signupsEnabled: !['false', '0'].includes(
+        environment.SIGNUPS_ENABLED?.toLowerCase() ?? '',
+      ),
+    }),
     monitorRoutes: createMonitorRoutes({ authenticate: authenticateMonitor }),
     notificationRoutes: createNotificationRoutes({
       authenticate: authenticateNotifications,
     }),
     pingRoutes: createPingRoutes({
       execute: (token) => recordHeartbeat.execute(token),
+      recordEvent: (token, kind) => recordRunEvent.execute(token, kind),
     }),
+    channelRoutes: createChannelRoutes({
+      authenticate: authenticateChannels,
+    }),
+    liveRoutes: createLiveRoutes({
+      allowedOrigin: environment.APP_ORIGIN,
+      authenticate: authenticateLive,
+      connect: connectLive,
+    }),
+    apiKeyRoutes: createApiKeyRoutes({
+      authenticate: authenticateApiKeys,
+      authenticator: new AuthenticateApiKey({
+        authenticator: new SupabaseApiKeyAuthenticator(
+          createServiceSupabaseClient(environment),
+        ),
+        generator: apiKeyGenerator,
+      }),
+      // Service client + explicit tenant filter in the repository: the key
+      // grants read access to its own tenant only.
+      monitors: new MonitorReadService(
+        new SupabaseMonitorQueryRepository(
+          createServiceSupabaseClient(
+            environment,
+          ) as unknown as MonitorQueryClient,
+        ),
+      ),
+    }),
+    maintenanceRoutes: createMaintenanceRoutes({
+      authenticate: authenticateMaintenance,
+    }),
+    statusPageRoutes: createStatusPageRoutes({
+      authenticate: authenticateStatusPage,
+      publicPage: new ReadPublicStatusPage(
+        new SupabasePublicStatusPage(supabase),
+      ),
+    }),
+    workspaceRoutes: createWorkspaceRoutes({
+      authenticate: authenticateWorkspace,
+    }),
+    ...(environment.AUTH_RATE_LIMITER && environment.PING_RATE_LIMITER
+      ? {
+          rateLimiters: {
+            auth: createCloudflareRateLimiter(environment.AUTH_RATE_LIMITER),
+            ping: createCloudflareRateLimiter(environment.PING_RATE_LIMITER),
+          },
+        }
+      : {}),
   })
+}
+
+export async function runCronDeadlineRefinement(
+  environment: WorkerEnvironment,
+) {
+  return new RefineCronDeadlines({
+    nowMs: () => Date.now(),
+    port: new SupabaseCronDeadlines(createServiceSupabaseClient(environment)),
+  }).execute()
 }
 
 export async function runScheduledCheck(
@@ -277,11 +620,54 @@ export async function runScheduledCheck(
   return checker.execute(batchSize)
 }
 
+/** E-mail goes through Resend when configured, else through SMTP. */
+function createNotificationSender(environment: WorkerEnvironment) {
+  if (environment.RESEND_API_KEY && environment.RESEND_FROM_EMAIL) {
+    return new ResendNotificationSender({
+      apiKey: environment.RESEND_API_KEY,
+      appOrigin: environment.APP_ORIGIN,
+      from: environment.RESEND_FROM_EMAIL,
+    })
+  }
+
+  if (environment.EMAIL_TRANSPORT && environment.EMAIL_FROM) {
+    return new SmtpNotificationSender({
+      appOrigin: environment.APP_ORIGIN,
+      from: environment.EMAIL_FROM,
+      transport: environment.EMAIL_TRANSPORT,
+    })
+  }
+
+  return null
+}
+
+function createWeeklyReportSender(environment: WorkerEnvironment) {
+  if (environment.RESEND_API_KEY && environment.RESEND_FROM_EMAIL) {
+    return new ResendWeeklyReportSender({
+      apiKey: environment.RESEND_API_KEY,
+      appOrigin: environment.APP_ORIGIN,
+      from: environment.RESEND_FROM_EMAIL,
+    })
+  }
+
+  if (environment.EMAIL_TRANSPORT && environment.EMAIL_FROM) {
+    return new SmtpWeeklyReportSender({
+      appOrigin: environment.APP_ORIGIN,
+      from: environment.EMAIL_FROM,
+      transport: environment.EMAIL_TRANSPORT,
+    })
+  }
+
+  return null
+}
+
 export async function runNotificationDelivery(
   environment: WorkerEnvironment,
   batchSize = 10,
 ) {
-  if (!environment.RESEND_API_KEY || !environment.RESEND_FROM_EMAIL) {
+  const sender = createNotificationSender(environment)
+
+  if (!sender) {
     return null
   }
 
@@ -290,11 +676,68 @@ export async function runNotificationDelivery(
     queue: new SupabaseNotificationDeliveryQueue(
       client as unknown as NotificationDeliveryRpcClient,
     ),
-    sender: new ResendNotificationSender({
-      apiKey: environment.RESEND_API_KEY,
-      from: environment.RESEND_FROM_EMAIL,
-    }),
+    sender,
   })
 
   return deliver.execute(batchSize)
+}
+
+export async function runWeeklyReports(environment: WorkerEnvironment) {
+  const sender = createWeeklyReportSender(environment)
+
+  if (!sender) {
+    return null
+  }
+
+  return new SendWeeklyReports({
+    queue: new SupabaseWeeklyReportQueue(
+      createServiceSupabaseClient(environment),
+    ),
+    sender,
+  }).execute(Date.now())
+}
+
+export async function runIncidentReminders(
+  environment: WorkerEnvironment,
+): Promise<number> {
+  return new EnqueueIncidentReminders(
+    new SupabaseIncidentReminders(createServiceSupabaseClient(environment)),
+  ).execute()
+}
+
+export async function runChannelDelivery(environment: WorkerEnvironment) {
+  return new DeliverChannelAlerts({
+    appOrigin: environment.APP_ORIGIN,
+    queue: new SupabaseChannelDeliveryQueue(
+      createServiceSupabaseClient(environment),
+    ),
+    sender: new HttpChannelSender(),
+  }).execute()
+}
+
+/**
+ * One scheduled pass: detect late monitors, enqueue reminders, then deliver
+ * e-mails, channel alerts and the weekly report. Shared by the Cloudflare cron
+ * trigger and the self-hosted scheduler.
+ */
+export async function runScheduledTick(environment: WorkerEnvironment) {
+  // Exact cron deadlines first, so the check below never uses a provisional one.
+  const cron = await runCronDeadlineRefinement(environment)
+  const opened = await runScheduledCheck(environment)
+  const reminders = await runIncidentReminders(environment)
+  const delivery = await runNotificationDelivery(environment)
+  const channels = await runChannelDelivery(environment)
+  const weekly = await runWeeklyReports(environment)
+
+  console.info(
+    JSON.stringify({
+      channels,
+      cron,
+      delivery,
+      event: 'cron.tick',
+      opened,
+      reminders,
+      weekly,
+    }),
+  )
 }

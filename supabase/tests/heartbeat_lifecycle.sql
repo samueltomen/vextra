@@ -123,8 +123,11 @@ values (
   now() - interval '1 second'
 );
 
+select public.open_due_monitor_incidents(1000);
+
 select is(
-  public.open_due_monitor_incidents(10),
+  (select count(*)::integer from public.incidents
+   where monitor_id = '50000000-0000-4000-8000-000000000002'),
   1,
   'the checker opens one due incident'
 );

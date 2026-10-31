@@ -1,0 +1,21 @@
+# Vextra auto-hébergé. Voir docs/self-hosting.md.
+#
+#   cp .env.example .env     # puis renseigner les valeurs
+#   docker compose up -d --build
+#
+# Gardez UNE seule instance : le planificateur, le limiteur de débit et le temps
+# réel vivent dans le processus.
+services:
+  vextra:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      # Placez un proxy HTTPS (Caddy, Nginx, Traefik) devant, ou changez
+      # l'adresse d'écoute pour 127.0.0.1:8787 si le proxy est sur la machine.
+      - '8787:8787'
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

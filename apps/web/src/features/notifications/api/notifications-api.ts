@@ -1,4 +1,4 @@
-import type { ListNotificationsResponse } from '@cronping/contracts'
+import type { ListNotificationsResponse } from '@vextra/contracts'
 
 import { apiRequest } from '../../../api/client.ts'
 import { isDemoModeEnabled } from '../../../demo/demo-mode.ts'
@@ -8,9 +8,9 @@ export type NotificationDeliveryView = Readonly<{
   attempts: number
   createdAtMs: number
   id: string
-  kind: 'incident_opened' | 'incident_resolved'
+  kind: 'incident_opened' | 'incident_resolved' | 'run_failed'
   monitorId: string
-  status: 'pending' | 'processing' | 'sent' | 'failed' | 'dead'
+  status: 'pending' | 'processing' | 'sent' | 'failed' | 'dead' | 'skipped'
   updatedAtMs: number
 }>
 

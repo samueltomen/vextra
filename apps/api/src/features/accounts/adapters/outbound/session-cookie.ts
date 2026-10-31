@@ -8,6 +8,7 @@ export type SessionPayload = Readonly<{
   accessToken: string
   refreshToken: string
   expiresAtMs: number
+  tenantId?: string | undefined
 }>
 
 function toBase64Url(bytes: Uint8Array): string {
@@ -49,7 +50,8 @@ function isSessionPayload(value: unknown): value is SessionPayload {
     typeof candidate.refreshToken === 'string' &&
     candidate.refreshToken.length > 0 &&
     Number.isSafeInteger(candidate.expiresAtMs) &&
-    (candidate.expiresAtMs ?? 0) > 0
+    (candidate.expiresAtMs ?? 0) > 0 &&
+    (candidate.tenantId === undefined || typeof candidate.tenantId === 'string')
   )
 }
 

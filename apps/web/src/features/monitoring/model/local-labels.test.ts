@@ -12,14 +12,14 @@ describe('local monitor labels', () => {
 
     expect(getLocalMonitorLabel('monitor-1')).toBe('Backup DB')
     expect(getLocalMonitorLabels()).toEqual({ 'monitor-1': 'Backup DB' })
-    expect(window.localStorage.getItem('cronping.monitor-labels.v1')).toContain(
+    expect(window.localStorage.getItem('vextra.monitor-labels.v1')).toContain(
       'Backup DB',
     )
   })
 
   it('ignores empty and malformed stored values', () => {
     saveLocalMonitorLabel('empty', '   ')
-    window.localStorage.setItem('cronping.monitor-labels.v1', 'not-json')
+    window.localStorage.setItem('vextra.monitor-labels.v1', 'not-json')
 
     expect(getLocalMonitorLabels()).toEqual({})
     expect(getLocalMonitorLabel('missing')).toBeNull()

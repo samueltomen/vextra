@@ -4,7 +4,7 @@ import type {
   ListMonitorsResponse,
   MonitorResponse,
   RotateMonitorTokenResponse,
-} from '@cronping/contracts'
+} from '@vextra/contracts'
 
 import { ApiError, apiRequest } from '../../../api/client.ts'
 import {
@@ -14,8 +14,11 @@ import {
   listDemoIncidents,
   listDemoMonitors,
   pauseDemoMonitor,
+  renameDemoMonitor,
   resumeDemoMonitor,
   rotateDemoMonitorToken,
+  updateDemoMonitorDetails,
+  updateDemoMonitorSchedule,
 } from '../../../demo/demo-monitoring-store.ts'
 import { isDemoModeEnabled } from '../../../demo/demo-mode.ts'
 import {
@@ -25,7 +28,13 @@ import {
 } from '../model/local-labels.ts'
 import type { MonitorView } from '../model/monitor.ts'
 
+export type CronScheduleDraft = Readonly<{
+  expression: string
+  timezone: string
+}>
+
 export type CreateMonitorDraft = Readonly<{
+  cron?: CronScheduleDraft | undefined
   graceMinutes: number
   intervalMinutes: number
   localLabel: string
@@ -38,6 +47,7 @@ export type CreatedMonitor = Readonly<{
 
 export type MonitorIncidentView = Readonly<{
   id: string
+  reason: 'heartbeat_missed' | 'run_failed'
   openedAtMs: number
   resolutionReason: 'heartbeat_received' | 'manual' | null
   resolvedAtMs: number | null
@@ -49,7 +59,12 @@ function toMonitorView(
 ): MonitorView {
   return {
     alertAtMs: Date.parse(monitor.alertAt),
+    alertsEnabled: monitor.alertsEnabled,
     createdAtMs: Date.parse(monitor.createdAt),
+    cronExpression: monitor.cronExpression,
+    cronTimezone: monitor.cronTimezone,
+    description: monitor.description,
+    folderId: monitor.folderId,
     graceMinutes: Math.round(monitor.graceSeconds / 60),
     id: monitor.id,
     incidentOpenedAtMs:
@@ -61,9 +76,33 @@ function toMonitorView(
       monitor.lastHeartbeatAt === null
         ? null
         : Date.parse(monitor.lastHeartbeatAt),
-    localLabel,
+    localLabel: monitor.name ?? localLabel,
+    notes: monitor.notes,
+    runningSinceMs:
+      monitor.runningSince === null ? null : Date.parse(monitor.runningSince),
+    serverName: monitor.name,
     status: monitor.status,
+    tags: monitor.tags,
+    totalPings: monitor.totalPings,
   }
+}
+
+function scheduleBody(
+  draft: Readonly<{
+    cron?: CronScheduleDraft | undefined
+    graceMinutes: number
+    intervalMinutes: number
+  }>,
+) {
+  const graceSeconds = Math.round(draft.graceMinutes * 60)
+
+  return draft.cron
+    ? {
+        cron: draft.cron.expression.trim(),
+        graceSeconds,
+        timezone: draft.cron.timezone,
+      }
+    : { graceSeconds, intervalSeconds: Math.round(draft.intervalMinutes * 60) }
 }
 
 function fallbackLabel(monitorId: string): string {
@@ -116,30 +155,101 @@ export async function createMonitor(
   }
 
   const response = await apiRequest<CreateMonitorResponse>('/api/monitors', {
-    body: JSON.stringify({
-      graceSeconds: Math.round(draft.graceMinutes * 60),
-      intervalSeconds: Math.round(draft.intervalMinutes * 60),
-    }),
+    body: JSON.stringify(scheduleBody(draft)),
     method: 'POST',
   })
   const nowMs = Date.now()
 
   saveLocalMonitorLabel(response.data.id, draft.localLabel)
 
+  if (draft.localLabel.trim().length > 0) {
+    // Best effort: the name is only a convenience, the monitor already exists.
+    await updateMonitorDetails(response.data.id, {
+      name: draft.localLabel.trim(),
+    }).catch(() => undefined)
+  }
+
   return {
     heartbeatToken: response.data.heartbeatToken,
     monitor: {
       alertAtMs: Date.parse(response.data.alertAt),
+      alertsEnabled: true,
       createdAtMs: nowMs,
+      cronExpression: draft.cron?.expression ?? null,
+      cronTimezone: draft.cron?.timezone ?? null,
+      description: null,
+      folderId: null,
       graceMinutes: draft.graceMinutes,
       id: response.data.id,
       incidentOpenedAtMs: null,
       intervalMinutes: draft.intervalMinutes,
       lastHeartbeatAtMs: null,
       localLabel: draft.localLabel.trim(),
+      notes: null,
+      runningSinceMs: null,
+      serverName: draft.localLabel.trim() || null,
       status: response.data.status,
+      tags: [],
+      totalPings: 0,
     },
   }
+}
+
+export async function renameMonitor(
+  monitorId: string,
+  label: string,
+): Promise<void> {
+  if (isDemoModeEnabled()) {
+    return renameDemoMonitor(monitorId, label)
+  }
+
+  saveLocalMonitorLabel(monitorId, label)
+  await updateMonitorDetails(monitorId, { name: label.trim() || null })
+}
+
+export type MonitorDetailsChanges = Readonly<{
+  alertsEnabled?: boolean
+  description?: string | null
+  name?: string | null
+  notes?: string | null
+  tags?: readonly string[]
+}>
+
+export async function updateMonitorDetails(
+  monitorId: string,
+  changes: MonitorDetailsChanges,
+): Promise<void> {
+  if (isDemoModeEnabled()) {
+    return updateDemoMonitorDetails(monitorId, changes)
+  }
+
+  await apiRequest(`/api/monitors/${encodeURIComponent(monitorId)}/details`, {
+    body: JSON.stringify(changes),
+    method: 'PATCH',
+  })
+}
+
+export type MonitorScheduleDraft = Readonly<{
+  cron?: CronScheduleDraft | undefined
+  graceMinutes: number
+  intervalMinutes: number
+}>
+
+export async function updateMonitorSchedule(
+  monitorId: string,
+  draft: MonitorScheduleDraft,
+): Promise<void> {
+  if (isDemoModeEnabled()) {
+    return updateDemoMonitorSchedule(monitorId, draft)
+  }
+
+  await apiRequest<MonitorResponse>(
+    `/api/monitors/${encodeURIComponent(monitorId)}`,
+    {
+      body: JSON.stringify(scheduleBody(draft)),
+      method: 'PATCH',
+    },
+  )
 }
 
 export async function pauseMonitor(monitorId: string): Promise<void> {
@@ -188,6 +298,7 @@ export async function listMonitorIncidents(
   return response.data.incidents.map((incident) => ({
     id: incident.id,
     openedAtMs: Date.parse(incident.openedAt),
+    reason: incident.reason,
     resolutionReason: incident.resolutionReason,
     resolvedAtMs:
       incident.resolvedAt === null ? null : Date.parse(incident.resolvedAt),

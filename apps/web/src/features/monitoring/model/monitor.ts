@@ -4,14 +4,25 @@ export type StatusFilter = 'all' | MonitorStatus
 
 export type MonitorView = Readonly<{
   alertAtMs: number
+  alertsEnabled: boolean
   createdAtMs: number
+  cronExpression: string | null
+  cronTimezone: string | null
+  description: string | null
+  folderId: string | null
   graceMinutes: number
   id: string
   incidentOpenedAtMs: number | null
   intervalMinutes: number
   localLabel: string
   lastHeartbeatAtMs: number | null
+  notes: string | null
+  runningSinceMs: number | null
+  /** Server-side name; `localLabel` is the name actually displayed. */
+  serverName: string | null
   status: MonitorStatus
+  tags: readonly string[]
+  totalPings: number
 }>
 
 export type MonitorSummary = Readonly<{

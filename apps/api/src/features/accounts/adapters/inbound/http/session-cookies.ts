@@ -4,7 +4,7 @@ import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import type { SessionTokens } from '../../../application/account-service.ts'
 import type { SessionCookieCodec } from '../../outbound/session-cookie.ts'
 
-export const SESSION_COOKIE_NAME = '__Host-cronping_session' as const
+export const SESSION_COOKIE_NAME = '__Host-vextra_session' as const
 export const SESSION_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
 
 const SESSION_COOKIE_OPTIONS = {

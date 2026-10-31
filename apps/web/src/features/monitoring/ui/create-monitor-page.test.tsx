@@ -65,4 +65,43 @@ describe('CreateMonitorPage', () => {
       await screen.findByRole('heading', { level: 1, name: 'Moniteurs' }),
     ).toBeInTheDocument()
   })
+
+  it('creates a monitor driven by a cron expression', async () => {
+    await renderApp('/monitors/new')
+
+    fireEvent.change(await screen.findByLabelText('Libellé local'), {
+      target: { value: 'Rapport nocturne' },
+    })
+    fireEvent.click(screen.getByRole('radio', { name: 'Expression cron' }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Lundi à 03:00' }),
+    )
+
+    expect(screen.getByLabelText('Expression cron')).toHaveValue('0 3 * * 1')
+    expect(
+      screen.getByText('Prochaines exécutions attendues'),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Créer le moniteur' }))
+
+    expect(await screen.findByText('Moniteur créé')).toBeInTheDocument()
+  })
+
+  it('blocks the submission while the cron expression is invalid', async () => {
+    await renderApp('/monitors/new')
+
+    fireEvent.change(await screen.findByLabelText('Libellé local'), {
+      target: { value: 'Rapport' },
+    })
+    fireEvent.click(screen.getByRole('radio', { name: 'Expression cron' }))
+    fireEvent.change(await screen.findByLabelText('Expression cron'), {
+      target: { value: 'pas du cron' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Créer le moniteur' }))
+
+    expect(
+      await screen.findByText('Corrigez l’expression cron avant de continuer.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Moniteur créé')).not.toBeInTheDocument()
+  })
 })

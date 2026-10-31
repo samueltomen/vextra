@@ -41,32 +41,34 @@ export function StatusSummary({
   return (
     <section
       aria-label="Résumé des statuts"
-      className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+      className="grid grid-cols-2 overflow-hidden rounded-lg border border-line bg-surface lg:grid-cols-4"
     >
-      {ITEMS.map((item) => {
+      {ITEMS.map((item, index) => {
         const Icon = item.icon
 
         return (
           <button
             aria-pressed={activeFilter === item.key}
-            className={`rounded-xl border bg-surface p-4 text-left transition-colors hover:border-border-strong ${
-              activeFilter === item.key
-                ? 'border-action ring-1 ring-action'
-                : 'border-line'
-            }`}
+            className={`flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-canvas ${
+              index > 0 ? 'lg:border-l lg:border-line' : ''
+            } ${index % 2 === 1 ? 'border-l border-line lg:border-l' : ''} ${
+              index >= 2 ? 'border-t border-line lg:border-t-0' : ''
+            } ${activeFilter === item.key ? 'bg-action-soft' : ''}`}
             key={item.key}
             onClick={() =>
               onSelect(activeFilter === item.key ? 'all' : item.key)
             }
             type="button"
           >
-            <div className={`flex items-center gap-2 ${item.className}`}>
-              <Icon aria-hidden="true" size={17} />
-              <span className="text-sm font-medium">{item.label}</span>
-            </div>
-            <p className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">
+            <span
+              className={`flex items-center gap-2 text-sm ${item.className}`}
+            >
+              <Icon aria-hidden="true" size={15} />
+              <span className="font-medium">{item.label}</span>
+            </span>{' '}
+            <span className="font-mono text-xl font-semibold tabular-nums text-ink">
               {summary[item.key]}
-            </p>
+            </span>
           </button>
         )
       })}

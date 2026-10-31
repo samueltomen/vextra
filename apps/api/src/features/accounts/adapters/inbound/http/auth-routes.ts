@@ -1,4 +1,8 @@
-import { signInRequestSchema, signUpRequestSchema } from '@cronping/contracts'
+import {
+  signInRequestSchema,
+  signUpRequestSchema,
+  switchTenantRequestSchema,
+} from '@vextra/contracts'
 import { Hono, type Context } from 'hono'
 
 import {
@@ -23,6 +27,8 @@ type AuthRoutesAccounts = Pick<
 export type AuthRoutesDependencies = Readonly<{
   accounts: AuthRoutesAccounts
   codec: SessionCookieCodec
+  /** Self-hosted installs can close registration. Defaults to open. */
+  signupsEnabled?: boolean
 }>
 
 function invalidJson(context: Context) {
@@ -91,6 +97,7 @@ async function readJson(context: Context): Promise<
 function sessionResponse(account: AuthenticatedAccount) {
   return {
     data: {
+      role: account.role,
       tenantId: account.tenantId,
       user: account.user,
     },
@@ -101,6 +108,18 @@ export function createAuthRoutes(dependencies: AuthRoutesDependencies): Hono {
   const routes = new Hono()
 
   routes.post('/api/auth/signup', async (context) => {
+    if (dependencies.signupsEnabled === false) {
+      return context.json(
+        {
+          error: {
+            code: 'signup_disabled',
+            message: 'Registration is closed on this installation',
+          },
+        },
+        403,
+      )
+    }
+
     const body = await readJson(context)
 
     if (!body.ok) {
@@ -217,6 +236,51 @@ export function createAuthRoutes(dependencies: AuthRoutesDependencies): Hono {
     if (account.refreshed) {
       await writeSessionCookie(context, dependencies.codec, account.tokens)
     }
+
+    return context.json(sessionResponse(account), 200)
+  })
+
+  // Switch the active space. The target must be one the user belongs to:
+  // the membership lookup falls back to the default space otherwise, which is
+  // detected and refused (the client-supplied id is never trusted).
+  routes.post('/api/auth/tenant', async (context) => {
+    const tokens = await readSessionCookie(context, dependencies.codec)
+
+    if (!tokens) {
+      return unauthorized(context)
+    }
+
+    const body = await readJson(context)
+
+    if (!body.ok) {
+      return body.response
+    }
+
+    const parsed = switchTenantRequestSchema.safeParse(body.value)
+
+    if (!parsed.success) {
+      return validationError(context, parsed.error.issues)
+    }
+
+    const account = await dependencies.accounts.authenticate({
+      ...tokens,
+      tenantId: parsed.data.tenantId,
+    })
+
+    if (!account) {
+      clearSessionCookie(context)
+
+      return unauthorized(context)
+    }
+
+    if (account.tenantId !== parsed.data.tenantId) {
+      return context.json(
+        { error: { code: 'forbidden', message: 'Not a member of this space' } },
+        403,
+      )
+    }
+
+    await writeSessionCookie(context, dependencies.codec, account.tokens)
 
     return context.json(sessionResponse(account), 200)
   })

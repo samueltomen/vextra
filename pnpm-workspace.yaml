@@ -7,3 +7,13 @@ allowBuilds:
   '@swc/core': true
   esbuild: true
   workerd: true
+
+permissions:
+  '@tanstack/react-router':
+    skills: false
+  '@tanstack/router-plugin':
+    skills: false
+
+overrides:
+  esbuild: '>=0.28.1'
+  minimatch: '>=11.0.1'

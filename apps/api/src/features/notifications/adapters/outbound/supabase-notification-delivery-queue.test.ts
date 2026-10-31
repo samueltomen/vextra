@@ -17,6 +17,7 @@ describe('SupabaseNotificationDeliveryQueue', () => {
             email: 'owner@example.test',
             kind: 'incident_opened',
             monitor_id: '20000000-0000-4000-8000-000000000001',
+            monitor_name: 'Sauvegarde nocturne',
           },
         ],
         error: null,
@@ -33,6 +34,7 @@ describe('SupabaseNotificationDeliveryQueue', () => {
         email: 'owner@example.test',
         kind: 'incident_opened',
         monitorId: '20000000-0000-4000-8000-000000000001',
+        monitorName: 'Sauvegarde nocturne',
       },
     ])
     await queue.complete({

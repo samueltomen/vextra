@@ -34,6 +34,10 @@ const STATUS_CONFIG = {
     className: 'border-danger-border bg-danger-bg text-danger',
     label: 'Échec définitif',
   },
+  skipped: {
+    className: 'border-neutral-border bg-neutral-bg text-neutral',
+    label: 'Ignoré (préférences)',
+  },
 } as const
 
 function DeliveryRow({
@@ -52,7 +56,9 @@ function DeliveryRow({
         <p className="mt-1 text-sm text-muted">
           {delivery.kind === 'incident_opened'
             ? 'Incident ouvert'
-            : 'Incident résolu'}
+            : delivery.kind === 'run_failed'
+              ? 'Exécution en échec'
+              : 'Incident résolu'}
         </p>
         <p className="mt-1 font-mono text-xs text-muted">
           {delivery.monitorId.slice(0, 8)}
@@ -96,12 +102,10 @@ export function NotificationsPage() {
         <p className="mb-2 text-sm font-medium text-action">
           Canal e-mail uniquement
         </p>
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Notifications
-        </h1>
+        <h1 className="text-xl font-semibold tracking-tight">Notifications</h1>
         <p className="mt-3 max-w-2xl text-muted">
-          CronPing alerte l’adresse de votre compte lorsqu’un incident s’ouvre
-          ou se résout.
+          Vextra alerte l’adresse de votre compte lorsqu’un incident s’ouvre ou
+          se résout.
         </p>
       </header>
 
@@ -124,11 +128,15 @@ export function NotificationsPage() {
         </div>
         <div className="rounded-xl border border-line bg-surface p-5">
           <p className="text-sm text-muted">Livrés</p>
-          <p className="mt-3 text-3xl font-semibold tabular-nums">{sent}</p>
+          <p className="mt-2 font-mono text-2xl font-semibold tabular-nums">
+            {sent}
+          </p>
         </div>
         <div className="rounded-xl border border-line bg-surface p-5">
           <p className="text-sm text-muted">À surveiller</p>
-          <p className="mt-3 text-3xl font-semibold tabular-nums">{failed}</p>
+          <p className="mt-2 font-mono text-2xl font-semibold tabular-nums">
+            {failed}
+          </p>
         </div>
       </section>
 

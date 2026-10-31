@@ -1,4 +1,4 @@
-import type { MonitorStatus } from '@cronping/domain'
+import type { MonitorStatus } from '@vextra/domain'
 
 import type {
   MonitorQueryPort,
@@ -6,19 +6,29 @@ import type {
 } from '../../application/monitor-read.ts'
 
 const MONITOR_STATE_COLUMNS =
-  'id, tenant_id, interval_seconds, grace_seconds, status, last_heartbeat_at, alert_at, incident_opened_at, paused_at, created_at'
+  'id, tenant_id, interval_seconds, grace_seconds, status, last_heartbeat_at, alert_at, incident_opened_at, paused_at, created_at, folder_id, total_pings, name, description, notes, alerts_enabled, running_since, cron_expression, cron_timezone, tags'
 
 type MonitorStateRow = Readonly<{
   alert_at: string
+  alerts_enabled: boolean
+  tags: string[]
   created_at: string
+  cron_expression: string | null
+  cron_timezone: string | null
+  description: string | null
+  folder_id: string | null
   grace_seconds: number
   id: string
   incident_opened_at: string | null
   interval_seconds: number
   last_heartbeat_at: string | null
+  name: string | null
+  notes: string | null
   paused_at: string | null
+  running_since: string | null
   status: MonitorStatus
   tenant_id: string
+  total_pings: number
 }>
 
 type QueryError = Readonly<{ message: string }>
@@ -63,15 +73,25 @@ function toNullableTimestamp(value: string | null): number | null {
 function toRecord(row: MonitorStateRow): MonitorStateRecord {
   return {
     alertAtMs: toTimestamp(row.alert_at),
+    alertsEnabled: row.alerts_enabled,
     createdAtMs: toTimestamp(row.created_at),
+    cronExpression: row.cron_expression,
+    cronTimezone: row.cron_timezone,
+    description: row.description,
+    folderId: row.folder_id,
     graceSeconds: row.grace_seconds,
     id: row.id,
     incidentOpenedAtMs: toNullableTimestamp(row.incident_opened_at),
     intervalSeconds: row.interval_seconds,
     lastHeartbeatAtMs: toNullableTimestamp(row.last_heartbeat_at),
+    name: row.name,
+    notes: row.notes,
     pausedAtMs: toNullableTimestamp(row.paused_at),
+    runningSinceMs: toNullableTimestamp(row.running_since),
     status: row.status,
+    tags: row.tags,
     tenantId: row.tenant_id,
+    totalPings: Number(row.total_pings),
   }
 }
 

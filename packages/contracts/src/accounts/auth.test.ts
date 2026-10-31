@@ -5,9 +5,21 @@ import {
   signInRequestSchema,
   signUpRequestSchema,
   signUpResponseSchema,
+  switchTenantRequestSchema,
 } from './auth.ts'
 
 describe('account contracts', () => {
+  it('validates a space switch request', () => {
+    expect(
+      switchTenantRequestSchema.safeParse({
+        tenantId: '10000000-0000-4000-8000-000000000001',
+      }).success,
+    ).toBe(true)
+    expect(
+      switchTenantRequestSchema.safeParse({ tenantId: 'nope' }).success,
+    ).toBe(false)
+  })
+
   it('normalizes sign-up email addresses and requires a strong password', () => {
     expect(
       signUpRequestSchema.parse({
@@ -51,14 +63,14 @@ describe('account contracts', () => {
     })
     expect(
       authenticatedSessionResponseSchema.parse({
-        data: { tenantId, user },
+        data: { role: 'owner', tenantId, user },
       }),
     ).toEqual({
-      data: { tenantId, user },
+      data: { role: 'owner', tenantId, user },
     })
     expect(
       authenticatedSessionResponseSchema.safeParse({
-        data: { accessToken: 'secret', tenantId, user },
+        data: { accessToken: 'secret', role: 'owner', tenantId, user },
       }).success,
     ).toBe(false)
   })

@@ -25,7 +25,7 @@ describe('MonitorDetailPage', () => {
     expect(screen.getByText('Alertes e-mail')).toBeInTheDocument()
     expect(screen.getAllByText('alice@example.test')).toHaveLength(2)
     expect(
-      screen.getByText(/Authorization: Bearer \$CRONPING_TOKEN/),
+      screen.getByText(/Authorization: Bearer \$VEXTRA_TOKEN/),
     ).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Copier la commande' }))
@@ -95,6 +95,67 @@ describe('MonitorDetailPage', () => {
       screen.getByText('Aucun incident récent pour ce moniteur.'),
     ).toBeInTheDocument()
     expect(screen.queryByText('Heartbeat attendu mais non reçu')).toBeNull()
+  })
+
+  it('edits the schedule of a monitor and shows the new configuration', async () => {
+    await renderApp('/monitors/20000000-0000-4000-8000-000000000001')
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Modifier la planification' }),
+    )
+
+    const save = screen.getByRole('button', {
+      name: 'Enregistrer la planification',
+    })
+    expect(save).toBeDisabled()
+
+    fireEvent.click(screen.getAllByRole('button', { name: '15 min' })[0]!)
+    expect(save).toBeEnabled()
+    fireEvent.click(save)
+
+    expect(
+      await screen.findByRole('button', { name: 'Modifier la planification' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Toutes les 15 minutes')).toBeInTheDocument()
+  })
+
+  it('switches a monitor to a cron schedule and shows the expression', async () => {
+    await renderApp('/monitors/20000000-0000-4000-8000-000000000001')
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Modifier la planification' }),
+    )
+    fireEvent.click(screen.getByRole('radio', { name: 'Expression cron' }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Jours ouvrés à 09:00' }),
+    )
+
+    const save = screen.getByRole('button', {
+      name: 'Enregistrer la planification',
+    })
+
+    expect(save).toBeEnabled()
+    fireEvent.click(save)
+
+    expect(await screen.findByText(/^0 9 \* \* 1-5 \(/)).toBeInTheDocument()
+    expect(screen.getByText('Planification')).toBeInTheDocument()
+  })
+
+  it('cancels a schedule edit without saving it', async () => {
+    await renderApp('/monitors/20000000-0000-4000-8000-000000000001')
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Modifier la planification' }),
+    )
+    fireEvent.click(screen.getAllByRole('button', { name: '15 min' })[0]!)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Annuler la modification' }),
+    )
+
+    expect(screen.getByText('Tous les jours')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Enregistrer la planification' }),
+    ).toBeNull()
   })
 
   it('shows a safe not-found state', async () => {

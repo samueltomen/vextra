@@ -5,14 +5,24 @@ import { summarizeMonitors, type MonitorView } from './monitor.ts'
 function monitor(status: MonitorView['status']): MonitorView {
   return {
     alertAtMs: 0,
+    alertsEnabled: true,
     createdAtMs: 0,
+    cronExpression: null,
+    cronTimezone: null,
+    description: null,
+    folderId: null,
     graceMinutes: 2,
     id: status,
     incidentOpenedAtMs: null,
     intervalMinutes: 5,
     localLabel: status,
     lastHeartbeatAtMs: null,
+    notes: null,
+    runningSinceMs: null,
+    serverName: null,
     status,
+    tags: [],
+    totalPings: 0,
   }
 }
 

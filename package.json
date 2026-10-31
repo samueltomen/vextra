@@ -1,6 +1,7 @@
 {
-  "name": "cronping",
+  "name": "vextra",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.15.0",
@@ -13,7 +14,8 @@
     "check:no-bootstrap": "node scripts/check-no-bootstrap.mjs",
     "db:lint": "supabase db lint --local",
     "db:reset": "supabase db reset",
-    "dev": "pnpm --parallel --stream --filter @cronping/web --filter @cronping/api dev",
+    "deploy:production": "pnpm build && pnpm --filter @vextra/api exec wrangler deploy -e production",
+    "dev": "pnpm --parallel --stream --filter @vextra/web --filter @vextra/api dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
@@ -24,13 +26,13 @@
     "typecheck": "pnpm -r --if-present typecheck"
   },
   "devDependencies": {
-    "@eslint/js": "9.39.4",
-    "eslint": "9.39.4",
-    "eslint-plugin-react-hooks": "7.0.1",
+    "@eslint/js": "10.0.1",
+    "eslint": "10.13.0",
+    "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-react-refresh": "0.4.26",
     "globals": "16.5.0",
     "prettier": "3.9.10",
-    "supabase": "^2.121.0",
+    "supabase": "^2.122.0",
     "typescript-eslint": "8.58.0"
   }
 }

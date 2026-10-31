@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const notificationDeliveryKindSchema = z.enum([
   'incident_opened',
   'incident_resolved',
+  'run_failed',
 ])
 
 export const notificationDeliveryStatusSchema = z.enum([
@@ -11,6 +12,7 @@ export const notificationDeliveryStatusSchema = z.enum([
   'sent',
   'failed',
   'dead',
+  'skipped',
 ])
 
 export const notificationDeliverySchema = z.strictObject({

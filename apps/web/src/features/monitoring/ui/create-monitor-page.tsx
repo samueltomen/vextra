@@ -1,50 +1,111 @@
-import { Button, Input, Select, SelectItem } from '@heroui/react'
+import { Button, Input } from '@heroui/react'
 import { useForm } from '@tanstack/react-form'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import {
   ArrowLeft,
   Check,
-  Clipboard,
   KeyRound,
+  Loader2,
   LockKeyhole,
   RadioTower,
+  Timer,
 } from 'lucide-react'
 import { useState } from 'react'
 
+import { setMonitorFolder } from '../../workspace/api/workspace-api.ts'
+import { usePreferences } from '../../workspace/query/use-preferences.ts'
+
+import { CodeTabs } from '../../../components/code-tabs.tsx'
 import { readFieldError } from '../../../lib/read-field-error.ts'
-import { createMonitor, type CreatedMonitor } from '../api/monitoring-api.ts'
+import {
+  createMonitor,
+  getMonitor,
+  type CreatedMonitor,
+} from '../api/monitoring-api.ts'
+import { formatDuration } from '../model/availability.ts'
+import { buildIntegrationSnippets } from '../model/integration-snippets.ts'
+import { validateCronSchedule } from '../model/cron-schedule.ts'
+import { formatFrequency } from '../model/monitor-format.ts'
+import { getDisplayTimeZone } from '../../../lib/display-time.ts'
+import {
+  CronScheduleFields,
+  ScheduleKindToggle,
+  type ScheduleKind,
+} from './cron-schedule-fields.tsx'
+import { DurationPicker } from './duration-picker.tsx'
+import {
+  GRACE_PRESETS,
+  INTERVAL_PRESETS,
+  validateGrace,
+  validateInterval,
+} from './schedule-presets.ts'
 
-const INTERVAL_OPTIONS = [
-  ['5', 'Toutes les 5 minutes'],
-  ['15', 'Toutes les 15 minutes'],
-  ['60', 'Toutes les heures'],
-  ['1440', 'Tous les jours'],
-  ['10080', 'Toutes les semaines'],
-] as const
+const FIRST_SIGNAL_POLL_MS = 3_000
 
-function SuccessState({ created }: Readonly<{ created: CreatedMonitor }>) {
-  const [copied, setCopied] = useState(false)
+function FirstSignalStatus({ monitorId }: Readonly<{ monitorId: string }>) {
+  const monitorQuery = useQuery({
+    queryKey: ['monitors', monitorId],
+    queryFn: () => getMonitor(monitorId),
+    refetchInterval: (query) =>
+      query.state.data?.lastHeartbeatAtMs ? false : FIRST_SIGNAL_POLL_MS,
+  })
+  const received = Boolean(monitorQuery.data?.lastHeartbeatAtMs)
+
+  return (
+    <div
+      aria-live="polite"
+      className={`flex items-start gap-3 rounded-xl border p-4 ${
+        received
+          ? 'border-healthy-border bg-healthy-bg text-healthy'
+          : 'border-line bg-canvas text-ink'
+      }`}
+      role="status"
+    >
+      {received ? (
+        <Check aria-hidden="true" className="mt-0.5 shrink-0" size={19} />
+      ) : (
+        <Loader2
+          aria-hidden="true"
+          className="mt-0.5 shrink-0 text-action motion-safe:animate-spin"
+          size={19}
+        />
+      )}
+      <div>
+        <p className="font-semibold">
+          {received ? 'Premier signal reçu' : 'En attente du premier signal'}
+        </p>
+        <p className="mt-1 text-sm text-muted">
+          {received
+            ? 'Votre moniteur est opérationnel et surveille votre tâche.'
+            : 'Exécutez la commande une fois : cette page vérifie automatiquement toutes les 3 secondes.'}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function SuccessState({
+  created,
+  onCreateAnother,
+}: Readonly<{ created: CreatedMonitor; onCreateAnother: () => void }>) {
   const navigate = useNavigate()
   const pingUrl = new URL('/api/ping', window.location.origin).toString()
-  const command = `curl --fail --silent --show-error --retry 3 \\
-  --request POST \\
-  --header "Authorization: Bearer ${created.heartbeatToken}" \\
-  "${pingUrl}"`
-
-  async function copyCommand() {
-    await navigator.clipboard.writeText(command)
-    setCopied(true)
-  }
+  const snippets = buildIntegrationSnippets({
+    cronExpression: created.monitor.cronExpression,
+    intervalMinutes: created.monitor.intervalMinutes,
+    pingUrl,
+    token: created.heartbeatToken,
+  })
 
   return (
     <section className="mx-auto max-w-3xl">
-      <div className="rounded-xl border border-healthy-border bg-surface p-6 sm:p-8">
+      <div className="rounded-xl border border-healthy-border bg-surface p-5 sm:p-6">
         <span className="grid size-12 place-items-center rounded-full bg-healthy-bg text-healthy">
           <Check aria-hidden="true" size={24} />
         </span>
         <p className="mt-5 text-sm font-semibold text-healthy">Moniteur créé</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+        <h1 className="mt-1 text-xl font-semibold tracking-tight">
           {created.monitor.localLabel}
         </h1>
         <p className="mt-3 max-w-xl text-muted">
@@ -52,31 +113,21 @@ function SuccessState({ created }: Readonly<{ created: CreatedMonitor }>) {
           affiché après avoir quitté cet écran.
         </p>
 
-        <div className="mt-6 rounded-lg border border-line bg-canvas">
-          <div className="flex items-center gap-2 border-b border-line px-4 py-3 text-sm font-medium">
+        <div className="mt-6 rounded-xl border border-line p-4 sm:p-5">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium">
             <KeyRound aria-hidden="true" size={16} />
             Token affiché une seule fois
           </div>
-          <pre className="overflow-x-auto p-4 font-mono text-sm leading-6 text-ink">
-            <code>{command}</code>
-          </pre>
+          <CodeTabs snippets={snippets} />
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-3">
+        <div className="mt-5">
+          <FirstSignalStatus monitorId={created.monitor.id} />
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-3 border-t border-line pt-5">
           <Button
-            className="min-h-11 bg-action text-white"
-            onPress={() => void copyCommand()}
-            radius="md"
-          >
-            {copied ? (
-              <Check aria-hidden="true" size={17} />
-            ) : (
-              <Clipboard aria-hidden="true" size={17} />
-            )}
-            {copied ? 'Commande copiée' : 'Copier la commande'}
-          </Button>
-          <Button
-            className="min-h-11 border-line"
+            className="min-h-11 bg-action font-semibold text-action-fg"
             onPress={() =>
               void navigate({
                 params: { monitorId: created.monitor.id },
@@ -84,9 +135,16 @@ function SuccessState({ created }: Readonly<{ created: CreatedMonitor }>) {
               })
             }
             radius="md"
-            variant="bordered"
           >
             Voir le moniteur
+          </Button>
+          <Button
+            className="min-h-11 border-line"
+            onPress={onCreateAnother}
+            radius="md"
+            variant="bordered"
+          >
+            Ajouter un autre moniteur
           </Button>
         </div>
       </div>
@@ -95,6 +153,40 @@ function SuccessState({ created }: Readonly<{ created: CreatedMonitor }>) {
 }
 
 export function CreateMonitorPage() {
+  const preferences = usePreferences()
+  const search = useSearch({ from: '/monitors/new' })
+
+  if (preferences.isPending) {
+    return (
+      <p className="text-sm text-muted" role="status">
+        Chargement…
+      </p>
+    )
+  }
+
+  return (
+    <CreateMonitorForm
+      initialGrace={search.grace ?? preferences.data?.defaultGraceMinutes ?? 2}
+      initialInterval={
+        search.interval ?? preferences.data?.defaultIntervalMinutes ?? 5
+      }
+      initialLabel={search.name ?? ''}
+      defaultFolderId={preferences.data?.defaultFolderId ?? null}
+    />
+  )
+}
+
+function CreateMonitorForm({
+  defaultFolderId,
+  initialGrace,
+  initialInterval,
+  initialLabel,
+}: Readonly<{
+  defaultFolderId: string | null
+  initialGrace: number
+  initialInterval: number
+  initialLabel: string
+}>) {
   const [created, setCreated] = useState<CreatedMonitor | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const queryClient = useQueryClient()
@@ -102,15 +194,48 @@ export function CreateMonitorPage() {
   const mutation = useMutation({ mutationFn: createMonitor })
   const form = useForm({
     defaultValues: {
-      localLabel: '',
-      intervalMinutes: 5,
-      graceMinutes: 2,
+      localLabel: initialLabel,
+      intervalMinutes: initialInterval,
+      graceMinutes: initialGrace,
+      scheduleKind: 'interval' as ScheduleKind,
+      cronExpression: '0 3 * * *',
+      cronTimezone: getDisplayTimeZone() ?? 'UTC',
     },
     onSubmit: async ({ value }) => {
       setSubmitError(null)
 
+      const isCron = value.scheduleKind === 'cron'
+
+      if (
+        isCron &&
+        validateCronSchedule(value.cronExpression, value.cronTimezone)
+      ) {
+        setSubmitError('Corrigez l’expression cron avant de continuer.')
+
+        return
+      }
+
       try {
-        const result = await mutation.mutateAsync(value)
+        const result = await mutation.mutateAsync({
+          graceMinutes: value.graceMinutes,
+          intervalMinutes: value.intervalMinutes,
+          localLabel: value.localLabel,
+          ...(isCron
+            ? {
+                cron: {
+                  expression: value.cronExpression,
+                  timezone: value.cronTimezone,
+                },
+              }
+            : {}),
+        })
+
+        if (defaultFolderId) {
+          await setMonitorFolder(result.monitor.id, defaultFolderId).catch(
+            () => undefined,
+          )
+        }
+
         await queryClient.invalidateQueries({ queryKey: ['monitors'] })
         setCreated(result)
       } catch {
@@ -122,7 +247,15 @@ export function CreateMonitorPage() {
   })
 
   if (created) {
-    return <SuccessState created={created} />
+    return (
+      <SuccessState
+        created={created}
+        onCreateAnother={() => {
+          form.reset()
+          setCreated(null)
+        }}
+      />
+    )
   }
 
   return (
@@ -137,17 +270,17 @@ export function CreateMonitorPage() {
 
       <div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <section>
-          <p className="text-sm font-medium text-action">Nouveau moniteur</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+          <p className="text-sm font-semibold text-action">Nouveau moniteur</p>
+          <h1 className="mt-2 text-xl font-semibold tracking-tight">
             Ajouter un heartbeat
           </h1>
           <p className="mt-3 max-w-2xl text-muted">
-            CronPing ne reçoit qu&apos;un signal. Le contenu du script et de la
+            Vextra ne reçoit qu&apos;un signal. Le contenu du script et de la
             tâche planifiée reste sur votre serveur.
           </p>
 
           <form
-            className="mt-8 space-y-6 rounded-xl border border-line bg-surface p-5 sm:p-6"
+            className="mt-8 space-y-7 rounded-xl border border-line bg-surface p-5 shadow-card sm:p-6"
             onSubmit={(event) => {
               event.preventDefault()
               event.stopPropagation()
@@ -208,59 +341,71 @@ export function CreateMonitorPage() {
               }}
             </form.Field>
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              <form.Field name="intervalMinutes">
-                {(field) => (
-                  <Select
-                    label="Fréquence attendue"
-                    onSelectionChange={(keys) => {
-                      const selected = [...keys][0]
-                      if (selected !== undefined) {
-                        field.handleChange(Number(selected))
-                      }
-                    }}
-                    radius="md"
-                    selectedKeys={[String(field.state.value)]}
-                  >
-                    {INTERVAL_OPTIONS.map(([value, label]) => (
-                      <SelectItem key={value}>{label}</SelectItem>
-                    ))}
-                  </Select>
-                )}
-              </form.Field>
+            <form.Field name="scheduleKind">
+              {(kind) => (
+                <div className="space-y-5">
+                  <ScheduleKindToggle
+                    onChange={kind.handleChange}
+                    value={kind.state.value}
+                  />
+                  {kind.state.value === 'interval' ? (
+                    <form.Field
+                      name="intervalMinutes"
+                      validators={{
+                        onChange: ({ value }) => validateInterval(value),
+                      }}
+                    >
+                      {(field) => (
+                        <DurationPicker
+                          description="Le rythme auquel votre tâche doit envoyer un signal."
+                          error={readFieldError(field.state.meta.errors)}
+                          label="Fréquence attendue"
+                          onChange={field.handleChange}
+                          presets={INTERVAL_PRESETS}
+                          value={field.state.value}
+                        />
+                      )}
+                    </form.Field>
+                  ) : (
+                    <form.Subscribe selector={(state) => state.values}>
+                      {(values) => (
+                        <CronScheduleFields
+                          onChange={(next) => {
+                            form.setFieldValue(
+                              'cronExpression',
+                              next.expression,
+                            )
+                            form.setFieldValue('cronTimezone', next.timezone)
+                          }}
+                          value={{
+                            expression: values.cronExpression,
+                            timezone: values.cronTimezone,
+                          }}
+                        />
+                      )}
+                    </form.Subscribe>
+                  )}
+                </div>
+              )}
+            </form.Field>
 
-              <form.Field
-                name="graceMinutes"
-                validators={{
-                  onChange: ({ value }) =>
-                    value < 0
-                      ? 'La marge ne peut pas être négative.'
-                      : undefined,
-                }}
-              >
-                {(field) => {
-                  const error = readFieldError(field.state.meta.errors)
-
-                  return (
-                    <Input
-                      description="Temps accordé avant l’alerte."
-                      errorMessage={error}
-                      id={field.name}
-                      isInvalid={Boolean(error)}
-                      label="Marge"
-                      min={0}
-                      onBlur={field.handleBlur}
-                      onValueChange={(value) =>
-                        field.handleChange(Number(value))
-                      }
-                      radius="md"
-                      type="number"
-                      value={String(field.state.value)}
-                    />
-                  )
-                }}
-              </form.Field>
-            </div>
+            <form.Field
+              name="graceMinutes"
+              validators={{
+                onChange: ({ value }) => validateGrace(value),
+              }}
+            >
+              {(field) => (
+                <DurationPicker
+                  description="Temps accordé avant l’alerte, pour absorber les exécutions lentes."
+                  error={readFieldError(field.state.meta.errors)}
+                  label="Marge"
+                  onChange={field.handleChange}
+                  presets={GRACE_PRESETS}
+                  value={field.state.value}
+                />
+              )}
+            </form.Field>
 
             {submitError ? (
               <p
@@ -281,7 +426,7 @@ export function CreateMonitorPage() {
                 Annuler
               </Button>
               <Button
-                className="min-h-11 bg-action px-5 font-semibold text-white"
+                className="min-h-11 bg-action px-5 font-semibold text-action-fg"
                 isLoading={form.state.isSubmitting || mutation.isPending}
                 radius="md"
                 type="submit"
@@ -294,26 +439,64 @@ export function CreateMonitorPage() {
 
         <aside
           aria-label="Résumé de la configuration"
-          className="h-fit rounded-xl border border-line bg-surface p-5"
+          className="h-fit space-y-4"
         >
-          <div className="flex items-center gap-2 text-action">
-            <RadioTower aria-hidden="true" size={18} />
-            <h2 className="text-sm font-semibold">Fonctionnement</h2>
-          </div>
-          <ol className="mt-5 space-y-4 text-sm text-muted">
-            <li>1. CronPing génère une commande curl unique.</li>
-            <li>2. Votre script appelle cette commande à la fin.</li>
-            <li>3. Sans signal avant l’échéance, une alerte est créée.</li>
-          </ol>
-          <div className="mt-6 flex gap-3 rounded-lg bg-canvas p-3">
-            <LockKeyhole
-              aria-hidden="true"
-              className="mt-0.5 shrink-0 text-healthy"
-              size={17}
-            />
-            <p className="text-xs leading-5 text-muted">
-              Aucun script, log ou commande cron ne sera enregistré.
-            </p>
+          <form.Subscribe selector={(state) => state.values}>
+            {(values) => (
+              <div className="rounded-xl border border-line bg-surface p-5 shadow-card">
+                <div className="flex items-center gap-2 text-action">
+                  <Timer aria-hidden="true" size={18} />
+                  <h2 className="text-sm font-semibold">Aperçu</h2>
+                </div>
+                <dl className="mt-4 space-y-3 text-sm">
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted">Signal attendu</dt>
+                    <dd className="text-right font-medium">
+                      {values.scheduleKind === 'cron'
+                        ? `${values.cronExpression} (${values.cronTimezone})`
+                        : formatFrequency(values.intervalMinutes)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted">Alerte après</dt>
+                    <dd className="text-right font-medium">
+                      {values.scheduleKind === 'cron'
+                        ? `${values.graceMinutes} min après l’échéance`
+                        : formatDuration(
+                            (values.intervalMinutes + values.graceMinutes) *
+                              60_000,
+                          )}
+                    </dd>
+                  </div>
+                </dl>
+                <p className="mt-3 text-xs leading-5 text-muted">
+                  Sans signal pendant ce délai, un incident est ouvert et vous
+                  recevez un e-mail.
+                </p>
+              </div>
+            )}
+          </form.Subscribe>
+
+          <div className="rounded-xl border border-line bg-surface p-5 shadow-card">
+            <div className="flex items-center gap-2 text-action">
+              <RadioTower aria-hidden="true" size={18} />
+              <h2 className="text-sm font-semibold">Fonctionnement</h2>
+            </div>
+            <ol className="mt-5 space-y-4 text-sm text-muted">
+              <li>1. Vextra génère une commande unique.</li>
+              <li>2. Votre script appelle cette commande à la fin.</li>
+              <li>3. Sans signal avant l’échéance, une alerte est créée.</li>
+            </ol>
+            <div className="mt-6 flex gap-3 rounded-lg bg-canvas p-3">
+              <LockKeyhole
+                aria-hidden="true"
+                className="mt-0.5 shrink-0 text-healthy"
+                size={17}
+              />
+              <p className="text-xs leading-5 text-muted">
+                Aucun script, log ou commande cron ne sera enregistré.
+              </p>
+            </div>
           </div>
         </aside>
       </div>

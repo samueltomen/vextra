@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createOriginGuard } from './origin-guard.ts'
 
-const APP_ORIGIN = 'https://app.cronping.test'
+const APP_ORIGIN = 'https://app.vextra.test'
 
 function createApp() {
   const app = new Hono()

@@ -10,6 +10,7 @@ type ClaimRow = Readonly<{
   email: string
   kind: NotificationKind
   monitor_id: string
+  monitor_name: string | null
 }>
 
 type ClaimResult = PromiseLike<
@@ -60,6 +61,7 @@ export class SupabaseNotificationDeliveryQueue implements NotificationDeliveryQu
       email: row.email,
       kind: row.kind,
       monitorId: row.monitor_id,
+      monitorName: row.monitor_name,
     }))
   }
 

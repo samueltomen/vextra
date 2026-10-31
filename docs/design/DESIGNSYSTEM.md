@@ -1,16 +1,33 @@
-# CronPing - Design System V1
+# Vextra - Design System V1
 
 Ce document est la référence visuelle de la V1.
 
 - **Statut** : proposition pour la V1
 - **Date** : 2026-10-24
-- **Plateforme** : application web responsive, thème clair en priorité
+- **Plateforme** : application web responsive, thème sombre par défaut (clair et système disponibles)
 - **Bibliothèque de composants** : HeroUI
 - **Source de vérité visuelle** : tokens CSS de ce document
 
+## 0. Évolution V2 (2026-10-31)
+
+Direction « console de monitoring » inspirée de Linear (sobriété, densité,
+clavier d'abord) et de Grafana (panneaux, valeurs chiffrées, tableaux) :
+
+- thème sombre par défaut, palette bleu-gris neutre (`#0b0c0f` / `#111318`),
+  accent teal conservé comme identité de marque ;
+- polices auto-hébergées : Inter (texte) et JetBrains Mono (valeurs, durées,
+  identifiants), racine à 15 px ;
+- rayons réduits (6 / 8 / 10 px), bordures fines, ombres supprimées ;
+- liste de moniteurs en tableau dense avec en-têtes en monospace ;
+- résumé d'état en bande unique de compteurs, bandeau d'état sur une ligne ;
+- les couleurs d'état utilisent uniquement les tokens sémantiques, jamais de
+  valeur codée en dur.
+
+Les règles ci-dessous restent valables sauf mention contraire de cette section.
+
 ## 1. Intention
 
-CronPing doit inspirer le calme et la précision. L'interface surveille des
+Vextra doit inspirer le calme et la précision. L'interface surveille des
 tâches invisibles ; elle doit rendre leur état immédiatement compréhensible sans
 créer d'anxiété ni surcharger l'utilisateur.
 
@@ -89,7 +106,7 @@ Règles impératives :
   source de vérité ;
 - les variantes HeroUI par défaut ne doivent pas imposer une couleur, un rayon
   ou une ombre hors du système ;
-- les wrappers locaux servent uniquement à appliquer les variantes CronPing et
+- les wrappers locaux servent uniquement à appliquer les variantes Vextra et
   à préserver l'accessibilité, pas à recréer les comportements fournis par
   HeroUI ;
 - les composants doivent être importés directement afin de préserver le
@@ -101,7 +118,7 @@ Règles impératives :
 
 ### Logotype
 
-Le mot-symbole « CronPing » utilise la fonte UI en graisse 600 et un
+Le mot-symbole « Vextra » utilise la fonte UI en graisse 600 et un
 interlettrage légèrement resserré. L'icône est un anneau simple avec un point
 central, évocation d'un signal reçu. Elle ne dépend ni d'un dégradé ni d'une
 animation.
@@ -426,10 +443,10 @@ Règles :
 ## 11. Composants V1
 
 Chaque composant interactif est construit sur HeroUI puis habillé avec les
-tokens CronPing. Les éléments purement métier, comme `MonitorRow`,
+tokens Vextra. Les éléments purement métier, comme `MonitorRow`,
 `StatusSummary` et `CodeSnippet`, sont des compositions locales autorisées.
 
-| Composant CronPing         | Base HeroUI                                          |
+| Composant Vextra           | Base HeroUI                                          |
 | -------------------------- | ---------------------------------------------------- |
 | `Button`                   | `Button`                                             |
 | `IconButton`               | `Button` avec mode icône seule                       |
@@ -541,7 +558,7 @@ conservée. Les chiffres suffisent à la V1.
 - Un bouton « Copier » de 44 px est toujours disponible.
 - Le token complet est visible une seule fois, avec un avertissement explicite.
 - Après fermeture, seul le préfixe est affiché.
-- La commande utilise `CRONPING_TOKEN` et ne contient jamais de token en clair.
+- La commande utilise `VEXTRA_TOKEN` et ne contient jamais de token en clair.
 - La rotation demande une confirmation.
 
 ### Dialog

@@ -3,6 +3,7 @@ import type { MonitorView } from '../features/monitoring/model/monitor.ts'
 import type { NotificationDeliveryView } from '../features/notifications/api/notifications-api.ts'
 
 type DemoCreateInput = Readonly<{
+  cron?: { expression: string; timezone: string } | undefined
   graceMinutes: number
   intervalMinutes: number
   localLabel: string
@@ -15,47 +16,87 @@ const demoId = (suffix: string) =>
 let monitors: MonitorView[] = [
   {
     alertAtMs: nowMs + 3_600_000,
+    alertsEnabled: true,
     createdAtMs: nowMs - 86_400_000,
+    cronExpression: null,
+    cronTimezone: null,
+    description: null,
+    folderId: '30000000-0000-4000-8000-000000000001',
     graceMinutes: 30,
     id: demoId('1'),
     incidentOpenedAtMs: null,
     intervalMinutes: 1_440,
     lastHeartbeatAtMs: nowMs - 2_520_000,
     localLabel: 'Sauvegarde PostgreSQL',
+    notes: null,
+    runningSinceMs: null,
+    serverName: null,
     status: 'healthy',
+    tags: ['prod', 'db'],
+    totalPings: 0,
   },
   {
     alertAtMs: nowMs - 360_000,
+    alertsEnabled: true,
     createdAtMs: nowMs - 86_400_000,
+    cronExpression: null,
+    cronTimezone: null,
+    description: null,
+    folderId: '30000000-0000-4000-8000-000000000001',
     graceMinutes: 3,
     id: demoId('2'),
     incidentOpenedAtMs: nowMs - 360_000,
     intervalMinutes: 15,
     lastHeartbeatAtMs: nowMs - 1_440_000,
     localLabel: 'Synchronisation Stripe',
+    notes: null,
+    runningSinceMs: null,
+    serverName: null,
     status: 'late',
+    tags: ['prod', 'paiement'],
+    totalPings: 0,
   },
   {
     alertAtMs: nowMs + 345_600_000,
+    alertsEnabled: true,
     createdAtMs: nowMs - 604_800_000,
+    cronExpression: null,
+    cronTimezone: null,
+    description: null,
+    folderId: null,
     graceMinutes: 120,
     id: demoId('3'),
     incidentOpenedAtMs: null,
     intervalMinutes: 10_080,
     lastHeartbeatAtMs: nowMs - 345_600_000,
     localLabel: 'Rapport hebdomadaire',
+    notes: null,
+    runningSinceMs: null,
+    serverName: null,
     status: 'paused',
+    tags: ['staging'],
+    totalPings: 0,
   },
   {
     alertAtMs: nowMs + 21_600_000,
+    alertsEnabled: true,
     createdAtMs: nowMs - 60_000,
+    cronExpression: null,
+    cronTimezone: null,
+    description: null,
+    folderId: null,
     graceMinutes: 20,
     id: demoId('4'),
     incidentOpenedAtMs: null,
     intervalMinutes: 360,
     lastHeartbeatAtMs: null,
     localLabel: 'Nettoyage des médias',
+    notes: null,
+    runningSinceMs: null,
+    serverName: null,
     status: 'pending',
+    tags: ['prod'],
+    totalPings: 0,
   },
 ]
 
@@ -63,12 +104,14 @@ let incidents: MonitorIncidentView[] = [
   {
     id: '60000000-0000-4000-8000-000000000001',
     openedAtMs: nowMs - 360_000,
+    reason: 'heartbeat_missed',
     resolutionReason: null,
     resolvedAtMs: null,
   },
   {
     id: '60000000-0000-4000-8000-000000000002',
     openedAtMs: nowMs - 172_800_000,
+    reason: 'run_failed',
     resolutionReason: 'heartbeat_received',
     resolvedAtMs: nowMs - 172_200_000,
   },
@@ -91,14 +134,24 @@ export async function createDemoMonitor(input: DemoCreateInput) {
   const monitor: MonitorView = {
     alertAtMs:
       createdAtMs + (input.intervalMinutes + input.graceMinutes) * 60_000,
+    alertsEnabled: true,
     createdAtMs,
+    cronExpression: input.cron?.expression ?? null,
+    cronTimezone: input.cron?.timezone ?? null,
+    description: null,
+    folderId: null,
     graceMinutes: input.graceMinutes,
     id: crypto.randomUUID(),
     incidentOpenedAtMs: null,
     intervalMinutes: input.intervalMinutes,
     lastHeartbeatAtMs: null,
     localLabel: input.localLabel.trim(),
+    notes: null,
+    runningSinceMs: null,
+    serverName: null,
     status: 'pending',
+    tags: [],
+    totalPings: 0,
   }
 
   monitors = [monitor, ...monitors]
@@ -107,6 +160,56 @@ export async function createDemoMonitor(input: DemoCreateInput) {
     heartbeatToken: `cp_demo_${crypto.randomUUID().replaceAll('-', '')}`,
     monitor: { ...monitor },
   }
+}
+
+export function setDemoMonitorFolder(
+  monitorId: string,
+  folderId: string | null,
+): void {
+  monitors = monitors.map((monitor) =>
+    monitor.id === monitorId ? { ...monitor, folderId } : monitor,
+  )
+}
+
+export async function renameDemoMonitor(
+  monitorId: string,
+  label: string,
+): Promise<void> {
+  const localLabel = label.trim()
+
+  if (!localLabel) {
+    return
+  }
+
+  monitors = monitors.map((monitor) =>
+    monitor.id === monitorId ? { ...monitor, localLabel } : monitor,
+  )
+}
+
+export async function updateDemoMonitorSchedule(
+  monitorId: string,
+  schedule: Readonly<{
+    cron?: { expression: string; timezone: string } | undefined
+    graceMinutes: number
+    intervalMinutes: number
+  }>,
+): Promise<void> {
+  monitors = monitors.map((monitor) =>
+    monitor.id === monitorId
+      ? {
+          ...monitor,
+          alertAtMs:
+            monitor.status === 'paused' || monitor.status === 'late'
+              ? monitor.alertAtMs
+              : Date.now() +
+                (schedule.intervalMinutes + schedule.graceMinutes) * 60_000,
+          cronExpression: schedule.cron?.expression ?? null,
+          cronTimezone: schedule.cron?.timezone ?? null,
+          graceMinutes: schedule.graceMinutes,
+          intervalMinutes: schedule.intervalMinutes,
+        }
+      : monitor,
+  )
 }
 
 export async function pauseDemoMonitor(monitorId: string): Promise<void> {
@@ -196,4 +299,37 @@ export async function listDemoNotifications(): Promise<
       updatedAtMs: nowMs - 3_000_000,
     },
   ]
+}
+
+export async function updateDemoMonitorDetails(
+  monitorId: string,
+  changes: Readonly<{
+    alertsEnabled?: boolean
+    description?: string | null
+    name?: string | null
+    notes?: string | null
+    tags?: readonly string[]
+  }>,
+): Promise<void> {
+  monitors = monitors.map((monitor) =>
+    monitor.id === monitorId
+      ? {
+          ...monitor,
+          ...(changes.alertsEnabled !== undefined
+            ? { alertsEnabled: changes.alertsEnabled }
+            : {}),
+          ...(changes.tags !== undefined ? { tags: changes.tags } : {}),
+          ...(changes.description !== undefined
+            ? { description: changes.description }
+            : {}),
+          ...(changes.name !== undefined
+            ? {
+                localLabel: changes.name ?? monitor.localLabel,
+                serverName: changes.name,
+              }
+            : {}),
+          ...(changes.notes !== undefined ? { notes: changes.notes } : {}),
+        }
+      : monitor,
+  )
 }

@@ -5,6 +5,12 @@ import { Bell, Mail, ShieldAlert, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { deleteAccount } from '../api/account-api.ts'
+import { TeamCard } from '../../team/ui/team-card.tsx'
+import { MaintenanceCard } from '../../maintenance/ui/maintenance-card.tsx'
+import { ApiKeysCard } from '../../apikeys/ui/api-keys-card.tsx'
+import { StatusPageCard } from '../../status/ui/status-page-card.tsx'
+import { ChannelsCard } from '../../workspace/ui/channels-card.tsx'
+import { PreferencesCard } from '../../workspace/ui/preferences-card.tsx'
 import { useCurrentAccount } from '../query/use-current-account.ts'
 
 export function SettingsPage() {
@@ -27,17 +33,27 @@ export function SettingsPage() {
     <div className="mx-auto max-w-4xl space-y-8">
       <header>
         <p className="mb-2 text-sm font-medium text-action">Compte</p>
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Réglages
-        </h1>
+        <h1 className="text-xl font-semibold tracking-tight">Réglages</h1>
         <p className="mt-3 text-muted">
           Gérez votre compte, votre adresse de notification et les données de
           votre espace personnel.
         </p>
       </header>
 
+      <PreferencesCard />
+
+      <ChannelsCard />
+
+      <TeamCard />
+
+      <MaintenanceCard />
+
+      <StatusPageCard />
+
+      <ApiKeysCard />
+
       <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-line bg-surface p-5 sm:p-6">
+        <div className="rounded-xl border border-line bg-surface p-4 sm:p-5">
           <div className="flex items-center gap-2 text-action">
             <Mail aria-hidden="true" size={18} />
             <h2 className="text-sm font-semibold">Compte</h2>
@@ -52,7 +68,7 @@ export function SettingsPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-line bg-surface p-5 sm:p-6">
+        <div className="rounded-xl border border-line bg-surface p-4 sm:p-5">
           <div className="flex items-center gap-2 text-healthy">
             <Bell aria-hidden="true" size={18} />
             <h2 className="text-sm font-semibold">Notifications</h2>
@@ -110,7 +126,7 @@ export function SettingsPage() {
               </p>
             ) : null}
             <Button
-              className="mt-4 min-h-11 bg-danger text-white"
+              className="mt-4 min-h-11 bg-danger text-white dark:text-[#2d1010]"
               isDisabled={!canDelete}
               isLoading={deletion.isPending}
               onPress={() => {

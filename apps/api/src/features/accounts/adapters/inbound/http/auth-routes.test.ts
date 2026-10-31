@@ -23,6 +23,7 @@ const TOKENS = {
 }
 const ACCOUNT: AuthenticatedAccount = {
   refreshed: false,
+  role: 'owner',
   tenantId: TENANT_ID,
   tokens: TOKENS,
   user: USER,
@@ -61,7 +62,7 @@ function createJsonRequest(
   body: unknown,
   headers: Record<string, string> = {},
 ) {
-  return new Request(`https://api.cronping.test${path}`, {
+  return new Request(`https://api.vextra.test${path}`, {
     body: JSON.stringify(body),
     headers: { 'content-type': 'application/json', ...headers },
     method: 'POST',
@@ -213,7 +214,7 @@ describe('account HTTP routes', () => {
 
   it('requires a valid encrypted session for the current account', async () => {
     const { app } = createRoutes()
-    const response = await app.request('https://api.cronping.test/api/auth/me')
+    const response = await app.request('https://api.vextra.test/api/auth/me')
 
     expect(response.status).toBe(401)
     await expect(response.json()).resolves.toEqual({
@@ -230,31 +231,94 @@ describe('account HTTP routes', () => {
       authenticate: async () => refreshedAccount,
     })
     const cookie = await encodeSessionCookie(codec, TOKENS)
-    const response = await app.request(
-      'https://api.cronping.test/api/auth/me',
-      {
-        headers: { cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
-      },
-    )
+    const response = await app.request('https://api.vextra.test/api/auth/me', {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
+    })
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual({
-      data: { tenantId: TENANT_ID, user: USER },
+      data: { role: 'owner', tenantId: TENANT_ID, user: USER },
     })
     expect(response.headers.get('set-cookie')).toContain(
       `${SESSION_COOKIE_NAME}=`,
     )
   })
 
+  describe('POST /api/auth/tenant', () => {
+    const OTHER = '10000000-0000-4000-8000-000000000002'
+
+    async function switchTo(
+      routes: ReturnType<typeof createRoutes>,
+      body: unknown,
+      withCookie = true,
+    ) {
+      const cookie = await encodeSessionCookie(routes.codec, TOKENS)
+
+      return routes.app.request(
+        createJsonRequest(
+          '/api/auth/tenant',
+          body,
+          withCookie ? { cookie: `${SESSION_COOKIE_NAME}=${cookie}` } : {},
+        ),
+      )
+    }
+
+    it('persists the chosen space in the encrypted session cookie', async () => {
+      const authenticate = vi.fn(async () => ({
+        ...ACCOUNT,
+        role: 'viewer' as const,
+        tenantId: OTHER,
+        tokens: { ...TOKENS, tenantId: OTHER },
+      }))
+      const routes = createRoutes({ authenticate })
+      const response = await switchTo(routes, { tenantId: OTHER })
+
+      expect(response.status).toBe(200)
+      await expect(response.json()).resolves.toEqual({
+        data: { role: 'viewer', tenantId: OTHER, user: USER },
+      })
+      expect(authenticate).toHaveBeenCalledWith(
+        expect.objectContaining({ tenantId: OTHER }),
+      )
+      expect(response.headers.get('set-cookie')).toContain(
+        `${SESSION_COOKIE_NAME}=`,
+      )
+    })
+
+    it('refuses a space the user does not belong to', async () => {
+      const routes = createRoutes()
+      const response = await switchTo(routes, { tenantId: OTHER })
+
+      expect(response.status).toBe(403)
+      expect(response.headers.get('set-cookie')).toBeNull()
+    })
+
+    it('requires a session and a valid body', async () => {
+      const routes = createRoutes()
+
+      expect((await switchTo(routes, { tenantId: OTHER }, false)).status).toBe(
+        401,
+      )
+      expect((await switchTo(routes, { tenantId: 'nope' })).status).toBe(422)
+    })
+
+    it('clears an expired session', async () => {
+      const routes = createRoutes({ authenticate: async () => null })
+      const response = await switchTo(routes, { tenantId: OTHER })
+
+      expect(response.status).toBe(401)
+      expect(response.headers.get('set-cookie')).toContain(
+        `${SESSION_COOKIE_NAME}=;`,
+      )
+    })
+  })
+
   it('does not rewrite a cookie when the session did not refresh', async () => {
     const { app, codec } = createRoutes()
     const cookie = await encodeSessionCookie(codec, TOKENS)
-    const response = await app.request(
-      'https://api.cronping.test/api/auth/me',
-      {
-        headers: { cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
-      },
-    )
+    const response = await app.request('https://api.vextra.test/api/auth/me', {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
+    })
 
     expect(response.status).toBe(200)
     expect(response.headers.get('set-cookie')).toBeNull()
@@ -265,12 +329,9 @@ describe('account HTTP routes', () => {
       authenticate: async () => null,
     })
     const cookie = await encodeSessionCookie(codec, TOKENS)
-    const response = await app.request(
-      'https://api.cronping.test/api/auth/me',
-      {
-        headers: { cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
-      },
-    )
+    const response = await app.request('https://api.vextra.test/api/auth/me', {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
+    })
 
     expect(response.status).toBe(401)
     expect(response.headers.get('set-cookie')).toContain('Max-Age=0')
@@ -278,12 +339,9 @@ describe('account HTTP routes', () => {
 
   it('clears malformed session cookies', async () => {
     const { app } = createRoutes()
-    const response = await app.request(
-      'https://api.cronping.test/api/auth/me',
-      {
-        headers: { cookie: `${SESSION_COOKIE_NAME}=not-encrypted` },
-      },
-    )
+    const response = await app.request('https://api.vextra.test/api/auth/me', {
+      headers: { cookie: `${SESSION_COOKIE_NAME}=not-encrypted` },
+    })
 
     expect(response.status).toBe(401)
     expect(response.headers.get('set-cookie')).toContain('Max-Age=0')
@@ -294,7 +352,7 @@ describe('account HTTP routes', () => {
     const { app, codec } = createRoutes({ revoke })
     const cookie = await encodeSessionCookie(codec, TOKENS)
     const response = await app.request(
-      'https://api.cronping.test/api/auth/logout',
+      'https://api.vextra.test/api/auth/logout',
       {
         headers: { cookie: `${SESSION_COOKIE_NAME}=${cookie}` },
         method: 'POST',
@@ -309,7 +367,7 @@ describe('account HTTP routes', () => {
   it('clears logout cookies even when no session is present', async () => {
     const { accounts, app } = createRoutes()
     const response = await app.request(
-      'https://api.cronping.test/api/auth/logout',
+      'https://api.vextra.test/api/auth/logout',
       { method: 'POST' },
     )
 
@@ -343,5 +401,29 @@ describe('account HTTP routes', () => {
     await expect(response.json()).resolves.toMatchObject({
       error: { code: 'validation_error' },
     })
+  })
+})
+
+describe('closed registration', () => {
+  it('refuses sign-ups without calling the account service when closed', async () => {
+    const signUp = vi.fn()
+    const accounts = { signIn: vi.fn(), signUp } as never
+    const app = createAuthRoutes({
+      accounts,
+      codec: new SessionCookieCodec(SECRET),
+      signupsEnabled: false,
+    })
+    const response = await app.request(
+      createJsonRequest('/api/auth/signup', {
+        email: 'ada@example.test',
+        password: 'correct horse battery staple',
+      }),
+    )
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'signup_disabled' },
+    })
+    expect(signUp).not.toHaveBeenCalled()
   })
 })

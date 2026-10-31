@@ -10,7 +10,7 @@ type DeliveryRow = Readonly<{
   attempts: number
   created_at: string
   id: string
-  kind: 'incident_opened' | 'incident_resolved'
+  kind: 'incident_opened' | 'incident_resolved' | 'run_failed'
   monitor_id: string
   status: 'pending' | 'processing' | 'sent' | 'failed' | 'dead'
   updated_at: string

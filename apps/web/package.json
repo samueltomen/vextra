@@ -1,6 +1,7 @@
 {
-  "name": "@cronping/web",
+  "name": "@vextra/web",
   "version": "0.0.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,7 +12,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json"
   },
   "dependencies": {
-    "@cronping/contracts": "workspace:*",
+    "@vextra/contracts": "workspace:*",
+    "@vextra/domain": "workspace:*",
+    "@fontsource-variable/inter": "5.3.0",
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
     "@heroui/react": "2.8.5",
     "@heroui/theme": "2.4.23",
     "@tanstack/react-form": "1.28.4",
@@ -35,7 +39,7 @@
     "jsdom": "29.1.1",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3",
-    "vite": "7.3.1",
+    "vite": "7.3.7",
     "vitest": "4.1.12"
   }
 }

@@ -8,15 +8,25 @@ import {
 
 const MONITOR: MonitorStateRecord = {
   alertAtMs: Date.parse('2026-10-24T12:05:30.000Z'),
+  alertsEnabled: true,
   createdAtMs: Date.parse('2026-10-24T12:00:00.000Z'),
+  cronExpression: null,
+  cronTimezone: null,
+  tags: ['prod'],
+  description: null,
+  folderId: null,
   graceSeconds: 30,
   id: '20000000-0000-4000-8000-000000000001',
   incidentOpenedAtMs: null,
   intervalSeconds: 300,
   lastHeartbeatAtMs: null,
+  name: null,
+  notes: null,
   pausedAtMs: null,
+  runningSinceMs: null,
   status: 'pending',
   tenantId: '10000000-0000-4000-8000-000000000001',
+  totalPings: 0,
 }
 
 function createPort(

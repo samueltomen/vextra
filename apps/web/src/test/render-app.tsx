@@ -20,7 +20,7 @@ export async function renderApp(
 ) {
   installApiMock(apiOptions)
   window.localStorage.setItem(
-    'cronping.monitor-labels.v1',
+    'vextra.monitor-labels.v1',
     JSON.stringify(TEST_MONITOR_LABELS),
   )
   const queryClient = new QueryClient({

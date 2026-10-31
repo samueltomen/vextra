@@ -1,17 +1,21 @@
 import {
   createMonitorRequestSchema,
   monitorIdSchema,
-} from '@cronping/contracts'
+  updateMonitorScheduleRequestSchema,
+} from '@vextra/contracts'
+import { InvalidCronError } from '@vextra/domain'
 import { Hono, type Context } from 'hono'
 
 import type { CreateMonitor } from '../../../application/create-monitor.ts'
 import type { MonitorIncidents } from '../../../application/monitor-incidents.ts'
+import type { MonitorMetricsService } from '../../../application/monitor-metrics.ts'
 import type { MonitorLifecycle } from '../../../application/monitor-lifecycle.ts'
 import type {
   MonitorReadService,
   MonitorStateRecord,
 } from '../../../application/monitor-read.ts'
 import type { RotateMonitorToken } from '../../../application/rotate-monitor-token.ts'
+import type { UpdateMonitorSchedule } from '../../../application/update-monitor-schedule.ts'
 
 export type AuthenticatedPrincipal = Readonly<{
   tenantId: string
@@ -22,7 +26,9 @@ export type AuthenticatedMonitorScope = Readonly<{
   createMonitor: Pick<CreateMonitor, 'execute'>
   monitorIncidents: Pick<MonitorIncidents, 'list'>
   monitorLifecycle: Pick<MonitorLifecycle, 'delete' | 'pause' | 'resume'>
+  monitorMetrics: Pick<MonitorMetricsService, 'activity' | 'get' | 'runs'>
   monitorRead: Pick<MonitorReadService, 'get' | 'list'>
+  monitorSchedule: Pick<UpdateMonitorSchedule, 'execute'>
   principal: AuthenticatedPrincipal
   rotateToken: Pick<RotateMonitorToken, 'execute'>
 }>
@@ -49,6 +55,37 @@ export function createMonitorRoutes(
       return context.json({
         data: {
           monitors: monitors.map(toMonitorResponse),
+        },
+      })
+    } catch {
+      return internalError(context)
+    }
+  })
+
+  routes.get('/api/monitors/activity', async (context) => {
+    const scope = await dependencies.authenticate(context)
+
+    if (!scope) {
+      return unauthorized(context)
+    }
+
+    try {
+      const rows = await scope.monitorMetrics.activity(scope.principal.tenantId)
+      const byMonitor = new Map<string, { day: string; pings: number }[]>()
+
+      for (const row of rows) {
+        const days = byMonitor.get(row.monitorId) ?? []
+
+        days.push({ day: row.day, pings: row.pings })
+        byMonitor.set(row.monitorId, days)
+      }
+
+      return context.json({
+        data: {
+          monitors: [...byMonitor].map(([monitorId, days]) => ({
+            days,
+            monitorId,
+          })),
         },
       })
     } catch {
@@ -96,46 +133,24 @@ export function createMonitorRoutes(
       return unauthorized(context)
     }
 
-    let body: unknown
+    const parsed = await parseJsonBody(context, createMonitorRequestSchema)
 
-    try {
-      body = await context.req.json()
-    } catch {
-      return context.json(
-        {
-          error: {
-            code: 'invalid_json',
-            message: 'Request body must be valid JSON',
-          },
-        },
-        400,
-      )
-    }
-
-    const parsed = createMonitorRequestSchema.safeParse(body)
-
-    if (!parsed.success) {
-      return context.json(
-        {
-          error: {
-            code: 'validation_error',
-            message: 'Request validation failed',
-            details: parsed.error.issues.map((issue) => ({
-              code: issue.code,
-              field: issue.path.join('.'),
-              message: issue.message,
-            })),
-          },
-        },
-        422,
-      )
+    if ('response' in parsed) {
+      return parsed.response
     }
 
     try {
       const result = await scope.createMonitor.execute({
-        tenantId: scope.principal.tenantId,
-        intervalSeconds: parsed.data.intervalSeconds,
+        ...('cron' in parsed.data
+          ? {
+              cron: {
+                expression: parsed.data.cron,
+                timezone: parsed.data.timezone,
+              },
+            }
+          : { intervalSeconds: parsed.data.intervalSeconds }),
         graceSeconds: parsed.data.graceSeconds,
+        tenantId: scope.principal.tenantId,
       })
 
       return context.json(
@@ -155,6 +170,18 @@ export function createMonitorRoutes(
         },
       )
     } catch (error) {
+      if (error instanceof InvalidCronError) {
+        return context.json(
+          {
+            error: {
+              code: 'invalid_cron',
+              message: 'The cron expression is not valid',
+            },
+          },
+          422,
+        )
+      }
+
       if (error instanceof RangeError) {
         return context.json(
           {
@@ -197,6 +224,70 @@ export function createMonitorRoutes(
     }
   })
 
+  routes.get('/api/monitors/:monitorId/metrics', async (context) => {
+    const scope = await dependencies.authenticate(context)
+
+    if (!scope) {
+      return unauthorized(context)
+    }
+
+    const parsedId = monitorIdSchema.safeParse(context.req.param('monitorId'))
+
+    if (!parsedId.success) {
+      return monitorNotFound(context)
+    }
+
+    try {
+      const metrics = await scope.monitorMetrics.get(
+        scope.principal.tenantId,
+        parsedId.data,
+      )
+
+      return metrics
+        ? context.json({ data: metrics })
+        : monitorNotFound(context)
+    } catch {
+      return internalError(context)
+    }
+  })
+
+  routes.get('/api/monitors/:monitorId/runs', async (context) => {
+    const scope = await dependencies.authenticate(context)
+
+    if (!scope) {
+      return unauthorized(context)
+    }
+
+    const parsedId = monitorIdSchema.safeParse(context.req.param('monitorId'))
+
+    if (!parsedId.success) {
+      return monitorNotFound(context)
+    }
+
+    try {
+      const runs = await scope.monitorMetrics.runs(
+        scope.principal.tenantId,
+        parsedId.data,
+      )
+
+      return runs
+        ? context.json({
+            data: {
+              runs: runs.map((run) => ({
+                createdAt: new Date(run.createdAtMs).toISOString(),
+                durationMs: run.durationMs,
+                id: run.id,
+                kind: run.kind,
+                overlapped: run.overlapped,
+              })),
+            },
+          })
+        : monitorNotFound(context)
+    } catch {
+      return internalError(context)
+    }
+  })
+
   routes.post('/api/monitors/:monitorId/pause', async (context) => {
     return lifecycleAction(
       context,
@@ -211,6 +302,83 @@ export function createMonitorRoutes(
       dependencies.authenticate,
       (lifecycle, monitorId) => lifecycle.resume(monitorId),
     )
+  })
+
+  routes.patch('/api/monitors/:monitorId', async (context) => {
+    const scope = await dependencies.authenticate(context)
+
+    if (!scope) {
+      return unauthorized(context)
+    }
+
+    const parsedId = monitorIdSchema.safeParse(context.req.param('monitorId'))
+
+    if (!parsedId.success) {
+      return monitorNotFound(context)
+    }
+
+    const parsed = await parseJsonBody(
+      context,
+      updateMonitorScheduleRequestSchema,
+    )
+
+    if ('response' in parsed) {
+      return parsed.response
+    }
+
+    try {
+      const updated = await scope.monitorSchedule.execute({
+        ...('cron' in parsed.data
+          ? {
+              cron: {
+                expression: parsed.data.cron,
+                timezone: parsed.data.timezone,
+              },
+            }
+          : { intervalSeconds: parsed.data.intervalSeconds }),
+        graceSeconds: parsed.data.graceSeconds,
+        monitorId: parsedId.data,
+      })
+
+      if (!updated) {
+        return monitorNotFound(context)
+      }
+
+      const monitor = await scope.monitorRead.get(
+        scope.principal.tenantId,
+        parsedId.data,
+      )
+
+      return monitor
+        ? context.json({ data: { monitor: toMonitorResponse(monitor) } })
+        : monitorNotFound(context)
+    } catch (error) {
+      if (error instanceof InvalidCronError) {
+        return context.json(
+          {
+            error: {
+              code: 'invalid_cron',
+              message: 'The cron expression is not valid',
+            },
+          },
+          422,
+        )
+      }
+
+      if (error instanceof RangeError) {
+        return context.json(
+          {
+            error: {
+              code: 'validation_error',
+              message: 'Request validation failed',
+            },
+          },
+          422,
+        )
+      }
+
+      return internalError(context)
+    }
   })
 
   routes.delete('/api/monitors/:monitorId', async (context) => {
@@ -248,6 +416,67 @@ export function createMonitorRoutes(
   return routes
 }
 
+type ParseableSchema<T> = Readonly<{
+  safeParse(input: unknown):
+    | Readonly<{ data: T; success: true }>
+    | Readonly<{
+        error: Readonly<{
+          issues: readonly Readonly<{
+            code: string
+            message: string
+            path: readonly PropertyKey[]
+          }>[]
+        }>
+        success: false
+      }>
+}>
+
+async function parseJsonBody<T>(
+  context: Context,
+  schema: ParseableSchema<T>,
+): Promise<Readonly<{ data: T }> | Readonly<{ response: Response }>> {
+  let body: unknown
+
+  try {
+    body = await context.req.json()
+  } catch {
+    return {
+      response: context.json(
+        {
+          error: {
+            code: 'invalid_json',
+            message: 'Request body must be valid JSON',
+          },
+        },
+        400,
+      ),
+    }
+  }
+
+  const parsed = schema.safeParse(body)
+
+  if (!parsed.success) {
+    return {
+      response: context.json(
+        {
+          error: {
+            code: 'validation_error',
+            message: 'Request validation failed',
+            details: parsed.error.issues.map((issue) => ({
+              code: issue.code,
+              field: issue.path.join('.'),
+              message: issue.message,
+            })),
+          },
+        },
+        422,
+      ),
+    }
+  }
+
+  return { data: parsed.data }
+}
+
 async function lifecycleAction(
   context: Context,
   authenticate: MonitorRoutesDependencies['authenticate'],
@@ -277,10 +506,16 @@ async function lifecycleAction(
   }
 }
 
-function toMonitorResponse(monitor: MonitorStateRecord) {
+export function toMonitorResponse(monitor: MonitorStateRecord) {
   return {
     alertAt: new Date(monitor.alertAtMs).toISOString(),
+    alertsEnabled: monitor.alertsEnabled,
+    tags: [...monitor.tags],
     createdAt: new Date(monitor.createdAtMs).toISOString(),
+    cronExpression: monitor.cronExpression,
+    cronTimezone: monitor.cronTimezone,
+    description: monitor.description,
+    folderId: monitor.folderId,
     graceSeconds: monitor.graceSeconds,
     id: monitor.id,
     incidentOpenedAt:
@@ -292,11 +527,18 @@ function toMonitorResponse(monitor: MonitorStateRecord) {
       monitor.lastHeartbeatAtMs === null
         ? null
         : new Date(monitor.lastHeartbeatAtMs).toISOString(),
+    name: monitor.name,
+    notes: monitor.notes,
     pausedAt:
       monitor.pausedAtMs === null
         ? null
         : new Date(monitor.pausedAtMs).toISOString(),
+    runningSince:
+      monitor.runningSinceMs === null
+        ? null
+        : new Date(monitor.runningSinceMs).toISOString(),
     status: monitor.status,
+    totalPings: monitor.totalPings,
   }
 }
 

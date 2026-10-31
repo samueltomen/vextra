@@ -6,7 +6,9 @@ import {
   type AccountsGateway,
   type AuthUser,
   type Credentials,
+  type MembershipRole,
   type ProviderSession,
+  type ResolvedMembership,
   type SessionTokens,
 } from '../../application/account-service.ts'
 
@@ -60,6 +62,13 @@ export class SupabaseAccountsGateway implements AccountsGateway {
     const { data, error } = await this.client.auth.signUp(credentials)
 
     if (error || !data.user) {
+      console.warn(
+        JSON.stringify({
+          code: error?.code ?? null,
+          event: 'auth.signup_failed',
+          status: error?.status ?? null,
+        }),
+      )
       throw new AccountCreationError()
     }
 
@@ -110,22 +119,39 @@ export class SupabaseAccountsGateway implements AccountsGateway {
 
   async resolvePrimaryTenantId(input: {
     accessToken: string
+    preferredTenantId?: string | undefined
     userId: string
-  }): Promise<string | null> {
+  }): Promise<ResolvedMembership | null> {
     const client = this.createUserClient(input.accessToken)
     const { data, error } = await client
       .from('tenant_memberships')
-      .select('tenant_id')
+      .select('tenant_id, role')
       .eq('user_id', input.userId)
       .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle()
 
-    if (error || !data) {
+    if (error || !data || data.length === 0) {
+      console.warn(
+        JSON.stringify({
+          code: error?.code ?? null,
+          event: 'auth.tenant_lookup_failed',
+        }),
+      )
+
       return null
     }
 
-    return typeof data.tenant_id === 'string' ? data.tenant_id : null
+    const memberships = (data as readonly Record<string, unknown>[]).filter(
+      (row): row is { role: MembershipRole; tenant_id: string } =>
+        typeof row.tenant_id === 'string' &&
+        (row.role === 'owner' ||
+          row.role === 'member' ||
+          row.role === 'viewer'),
+    )
+    const chosen =
+      memberships.find((row) => row.tenant_id === input.preferredTenantId) ??
+      memberships[0]
+
+    return chosen ? { role: chosen.role, tenantId: chosen.tenant_id } : null
   }
 
   async revokeSession(accessToken: string): Promise<void> {
