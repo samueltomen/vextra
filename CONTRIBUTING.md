@@ -48,3 +48,16 @@ attendu, les risques, les migrations et les commandes de validation exécutées.
 
 Ouvrez une issue en décrivant le contexte, les étapes pour reproduire et le
 résultat attendu. Pour une faille de sécurité, suivez [SECURITY.md](SECURITY.md).
+
+## Publier une version (mainteneurs)
+
+L'image Docker est construite, testée puis publiée sur GHCR par le workflow
+`Docker` : à chaque push sur `main` (tag `latest`) et à chaque tag de version.
+
+```bash
+git tag v1.2.0
+git push origin v1.2.0   # publie 1.2.0, 1.2 et latest
+```
+
+Pensez à appliquer les nouvelles migrations (`supabase db push`) avant de
+déployer la version correspondante.
