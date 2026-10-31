@@ -19,3 +19,20 @@ coverage/
 .DS_Store
 .wrangler/
 dist-node/
+
+# Fichiers d'assistants IA, d'agents et de skills (configuration personnelle)
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.agents/
+.claude/
+.codex/
+.cursor/
+.cursorrules
+.windsurf/
+.aider*
+.continue/
+.github/copilot-instructions.md
+.mcp.json
+skills/
+.ecc/

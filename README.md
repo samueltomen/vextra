@@ -1,361 +1,226 @@
+<div align="center">
+
 # Vextra
 
-Vextra est un SaaS multi-tenant de heartbeat pour tâches planifiées. Il
-détecte l'absence d'exécution d'un script et alerte son propriétaire sans
-recevoir ni stocker le contenu du script ou du cron.
+**Sachez quand une tâche planifiée ne s'est pas exécutée, avant vos utilisateurs.**
+
+Surveillance de _heartbeats_ pour sauvegardes, imports, jobs cron et pipelines.
+Libre (MIT), multi-équipe, hébergeable chez vous en une commande.
+
+[Démarrage rapide](#démarrage-rapide) ·
+[Fonctionnalités](#fonctionnalités) ·
+[Auto-hébergement](docs/self-hosting.md) ·
+[Référence de l'API](docs/api.md) ·
+[Contribuer](CONTRIBUTING.md)
+
+</div>
+
+---
+
+## Le principe
+
+Votre tâche planifiée appelle une URL de Vextra quand elle se termine. Si l'appel
+n'arrive pas dans la fenêtre attendue, Vextra ouvre un incident et vous alerte.
+Quand le job repart, l'incident se ferme et vous êtes prévenu de la reprise.
+
+```text
+   votre job cron                 Vextra                         vous
+ ┌──────────────┐  ping   ┌─────────────────────┐  alerte  ┌──────────────┐
+ │ sauvegarde.sh│ ──────▶ │ échéance recalculée │ ───────▶ │ e-mail       │
+ └──────────────┘         │ rien reçu à l'heure │          │ Slack Discord│
+        ✕ ne tourne plus  │ → incident ouvert   │          │ Telegram …   │
+                          └─────────────────────┘          └──────────────┘
+```
+
+Vextra ne reçoit **jamais** le contenu de vos scripts, de vos logs ni de vos
+sorties : un heartbeat est une requête vide.
+
+## Fonctionnalités
+
+**Surveillance**
+
+- Moniteurs par **intervalle** ou par **expression cron** (cinq champs, fuseau
+  horaire au choix), avec une marge de tolérance.
+- Cycle de vie complet d'un job : `start`, `success`, `fail`, `warn`, avec durée
+  d'exécution et historique sur 90 jours.
+- Détection au plus une minute après l'échéance, ouverture d'incident idempotente.
+- Pause, reprise, rotation du token, clonage, dossiers et **tags** avec filtres.
+- **Fenêtres de maintenance** qui suspendent incidents et alertes.
+
+**Alertes**
+
+- E-mail (Resend ou SMTP), **Slack, Discord, Telegram, Microsoft Teams,
+  PagerDuty** et webhook générique, avec bouton de test.
+- Alerte à l'ouverture et à la résolution, **rappels** tant qu'un incident reste
+  ouvert, alertes activables par moniteur.
+- **Rapport hebdomadaire** par e-mail, désactivable.
+
+**Partage et intégration**
+
+- **Page de statut publique** sans compte, et **badges SVG** pour vos README.
+- **Équipes** : rôles propriétaire, membre et lecture seule, invitations par lien
+  à usage unique.
+- **API en lecture seule** avec clés d'API (`vx_…`).
+- Interface mise à jour **en direct**, thème clair et sombre, mode démo sans base.
+
+**Sécurité et vie privée**
+
+- Isolation stricte entre espaces par _Row Level Security_ PostgreSQL.
+- Tokens de ping et clés d'API hachés (HMAC), jamais stockés en clair.
+- Session dans un cookie chiffré `__Host-`, `HttpOnly`, `SameSite=Strict`.
+- Limitation de débit, garde d'origine sur toute écriture, CSP stricte.
+- Audit de sécurité publié : [docs/audits/securite-avant-production.md](docs/audits/securite-avant-production.md).
 
 ## Deux façons de l'utiliser
 
-- **Service hébergé** : rien à installer, aucune maintenance.
-- **Auto-hébergé** : une image Docker unique à brancher sur votre projet Supabase,
-  avec vos propres e-mails (SMTP ou Resend) et vos propres clés. Tout le code est
-  libre (MIT) et identique dans les deux cas.
+|              | Service hébergé  | Auto-hébergé                   |
+| ------------ | ---------------- | ------------------------------ |
+| Installation | Aucune           | `docker compose up`            |
+| Maintenance  | Gérée pour vous  | À votre charge                 |
+| Données      | Chez l'hébergeur | Dans **votre** projet Supabase |
+| E-mails      | Inclus           | Votre Resend ou votre SMTP     |
+| Code         | Identique, MIT   | Identique, MIT                 |
+
+## Démarrage rapide
+
+### 1. Créer un moniteur
+
+Connectez-vous, cliquez sur **Nouveau moniteur**, choisissez la fréquence
+attendue (intervalle ou expression cron) et une marge. Vextra affiche une
+commande prête à copier avec votre token.
+
+### 2. Ajouter le ping à votre job
 
 ```bash
-git clone <ce dépôt> && cd <dossier>
-cp .env.example .env        # renseignez APP_ORIGIN, Supabase et deux secrets
+# À la fin de votre script, ou dans votre crontab :
+0 3 * * *  /opt/scripts/sauvegarde.sh && curl -fsS -m 10 --retry 3 -X POST \
+  -H "Authorization: Bearer $VEXTRA_TOKEN" https://<votre-instance>/api/ping
+```
+
+Stockez le token dans un gestionnaire de secrets ou une variable d'environnement,
+pas dans le dépôt. Pour mesurer la durée ou signaler un échec explicitement,
+voir [la référence de l'API](docs/api.md).
+
+### 3. Choisir vos alertes
+
+Dans **Réglages**, ajoutez un canal (Slack, Discord, e-mail…), testez-le, puis
+laissez Vextra surveiller. Vérifiez que les alertes du moniteur sont bien
+**activées** : un moniteur en sourdine enregistre ses incidents sans prévenir
+personne.
+
+## Auto-hébergement
+
+L'application, son planificateur et les mises à jour en direct tournent dans
+**un seul conteneur**, relié à **un projet Supabase** (base et authentification).
+
+```bash
+git clone https://github.com/samueltomen/vextra.git && cd vextra
+cp .env.example .env     # APP_ORIGIN, clés Supabase, deux secrets aléatoires
+pnpm install && pnpm exec supabase link --project-ref <ref> && pnpm exec supabase db push
 docker compose up -d --build
 ```
 
-Guide complet, avec Supabase, HTTPS, e-mails et sauvegardes :
-[docs/self-hosting.md](docs/self-hosting.md)
-([ADR 0011](docs/adr/0011-auto-hebergement.md)).
+Mettez ensuite un proxy HTTPS devant (Caddy, Nginx, Traefik) : les cookies de
+session sont `Secure`. Le guide complet couvre Supabase, HTTPS, e-mails,
+sauvegardes et mises à jour : **[docs/self-hosting.md](docs/self-hosting.md)**.
 
-Les moniteurs peuvent suivre un intervalle ou une expression cron avec fuseau
-horaire ([ADR 0012](docs/adr/0012-planification-par-expression-cron.md)).
+### Configuration
 
-Une page de statut publique, sans compte, peut exposer les moniteurs de votre
-choix à l'adresse `/status/<adresse>`
-([ADR 0013](docs/adr/0013-page-de-statut-publique.md)), avec des badges SVG
-pour vos README.
+| Variable                              | Rôle                                                         |
+| ------------------------------------- | ------------------------------------------------------------ |
+| `APP_ORIGIN`                          | URL publique exacte (cookies, garde d'origine, e-mails)      |
+| `SUPABASE_URL`                        | URL de votre projet Supabase                                 |
+| `SUPABASE_PUBLISHABLE_KEY`            | Clé publique (anon / publishable)                            |
+| `SUPABASE_SERVICE_ROLE_KEY`           | Clé secrète, reste sur le serveur                            |
+| `SESSION_ENCRYPTION_KEY`              | Secret aléatoire (≥ 32 caractères) du cookie de session      |
+| `PING_TOKEN_PEPPER`                   | Secret aléatoire (≥ 32 caractères). **Ne jamais le changer** |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | E-mail via Resend (option A)                                 |
+| `SMTP_*`, `EMAIL_FROM`                | E-mail via SMTP (option B)                                   |
+| `SIGNUPS_ENABLED`                     | `false` pour fermer les inscriptions                         |
 
-Des fenêtres de maintenance suspendent incidents et alertes pendant une
-opération planifiée ([ADR 0015](docs/adr/0015-fenetres-de-maintenance.md)).
+Générez les secrets avec `openssl rand -base64 48`. Le détail de chaque variable
+est dans [`.env.example`](.env.example).
 
-Des clés d'API en lecture seule permettent d'interroger les moniteurs depuis un
-script : `curl -H "Authorization: Bearer vx_…" <origine>/api/v1/monitors`
-([ADR 0016](docs/adr/0016-cles-d-api-en-lecture-seule.md)).
+## Architecture
 
-Une équipe peut partager un espace avec des rôles propriétaire, membre et
-lecture seule, via des liens d'invitation à usage unique
-([ADR 0017](docs/adr/0017-equipes-roles-et-invitations.md)).
-
-Audit de sécurité avant production :
-[docs/audits/securite-avant-production.md](docs/audits/securite-avant-production.md).
-
-## État actuel
-
-Le dépôt contient le socle de la V1 :
-
-- SPA React, Vite, TanStack Router, TanStack Query et HeroUI ;
-- API Hono prévue pour Cloudflare Workers ;
-- endpoint de santé `GET /api/health` ;
-- domaine monitoring pur avec calcul d'échéance et machine à états ;
-- contrats de création d'un moniteur et pipeline serveur avec token HMAC ;
-- schéma Supabase initial avec isolation RLS entre tenants ;
-- inscription, connexion, déconnexion et session chiffrée dans un cookie
-  `__Host-` inaccessible au JavaScript ;
-- création automatique d'un tenant personnel et de son propriétaire à
-  l'inscription ;
-- tokens du design system ;
-- UI connectée avec connexion, dashboard, création et détail d'un moniteur ;
-- ingestion de heartbeats par token `Bearer`, hash HMAC et résolution
-  d'incident ;
-- checker planifié chaque minute avec ouverture idempotente des incidents ;
-- outbox e-mail transactionnelle avec claim atomique, retries et
-  déduplication ;
-- configuration TypeScript stricte, Prettier, ESLint et Vitest ;
-- garde-fou interdisant Bootstrap.
-
-Le flux normal utilise désormais l'API et Supabase. Seuls les libellés choisis
-par l'utilisateur restent dans `localStorage` ; le serveur ne reçoit que
-l'intervalle et la marge techniques. Les états `?state=loading`, `?state=empty`
-et `?state=error` restent disponibles en développement pour prévisualiser le
-dashboard.
-
-## Prérequis
-
-- Node.js 22 ou plus récent ;
-- pnpm 12.15.0.
-
-## Installation
-
-```bash
-pnpm install
-cp apps/web/.env.example apps/web/.env.local
-pnpm setup:local
-```
-
-Renseigner ensuite dans `apps/api/.dev.vars` la clé publishable Supabase
-locale et deux secrets indépendants d'au moins 32 octets :
-`SESSION_ENCRYPTION_KEY` et `PING_TOKEN_PEPPER`. Ces valeurs restent côté
-Worker et ne doivent jamais recevoir le préfixe `VITE_`.
-
-`pnpm setup:local` lit les clés du Supabase local et génère
-`apps/api/.dev.vars` avec des secrets aléatoires. Le fichier est ignoré par Git
-et reçoit les permissions `0600`. Si le fichier existe déjà, la commande
-refuse de l'écraser sans `--force`.
-
-Pour vérifier uniquement l'UX sans Supabase, ouvrir
-`http://localhost:5173/?demo=1`. Ce mode est limité au développement et
-n'effectue aucun appel API.
-
-`SUPABASE_SERVICE_ROLE_KEY` est uniquement requis par le handler planifié pour
-exécuter la RPC interne du checker. Il ne doit jamais être exposé à la SPA.
-
-La livraison e-mail nécessite aussi `RESEND_API_KEY` et
-`RESEND_FROM_EMAIL`. Sans ces deux valeurs, les événements restent dans
-l'outbox et aucun envoi externe n'est tenté.
-
-Pour les tests sans domaine vérifié, utiliser
-`RESEND_FROM_EMAIL=Vextra <onboarding@resend.dev>` et une adresse de compte
-liée au compte Resend. Pour envoyer à des utilisateurs quelconques, vérifier un
-domaine dans Resend puis utiliser une adresse de ce domaine, par exemple
-`Vextra <alerts@mail.votre-domaine.com>`.
-
-## Développement
-
-```bash
-pnpm dev
-```
-
-- SPA : `http://localhost:5173`
-- API : `http://localhost:8787`
-- Health check : `http://localhost:8787/api/health`
-
-Le proxy Vite transmet `/api` vers le Worker local.
-
-Routes d'authentification :
-
-- `POST /api/auth/signup` ;
-- `POST /api/auth/login` ;
-- `POST /api/auth/logout` ;
-- `GET /api/auth/me`.
-
-Les moniteurs utilisent :
-
-- `GET /api/monitors` pour la liste ;
-- `GET /api/monitors/:monitorId` pour le détail ;
-- `POST /api/monitors` pour la création.
-- `PATCH /api/monitors/:monitorId` pour modifier la fréquence et la marge
-  (`intervalSeconds`, `graceSeconds`) ; un moniteur en attente ou opérationnel
-  reçoit une nouvelle échéance, un moniteur en pause ou en retard conserve la
-  sienne ;
-- `POST /api/monitors/:monitorId/pause` pour la mise en pause ;
-- `POST /api/monitors/:monitorId/resume` pour la reprise ;
-- `POST /api/monitors/:monitorId/rotate-token` pour remplacer le token ;
-- `DELETE /api/monitors/:monitorId` pour la suppression ;
-- `GET /api/monitors/:monitorId/incidents` pour l'historique.
-
-Les notifications e-mail utilisent `GET /api/notifications` pour afficher les
-50 dernières livraisons du tenant. La réponse contient le type d'événement,
-l'état, les tentatives et l'identifiant du moniteur, jamais l'adresse
-destinataire.
-
-La suppression du compte utilise `DELETE /api/account`. L'identifiant supprimé
-est toujours celui de la session courante ; aucun identifiant utilisateur n'est
-accepté depuis le navigateur. La suppression du membership déclenche le
-nettoyage du tenant devenu vide et la suppression en cascade de ses données.
-
-Le heartbeat public utilise :
-
-```bash
-curl --fail --silent --show-error --retry 3 \
-  --request POST \
-  --header "Authorization: Bearer $VEXTRA_TOKEN" \
-  "https://api.vextra.app/api/ping"
-```
-
-La requête ne doit contenir ni corps, ni paramètres de requête. Le token brut
-est hashé avec `PING_TOKEN_PEPPER` avant l'appel Supabase et n'est jamais
-persisté ni journalisé. Un heartbeat accepté renvoie `204`; un token invalide
-et un token inconnu partagent la même réponse `401`.
-
-Le tenant est toujours résolu côté serveur depuis la session ; un `tenantId`
-envoyé par le navigateur est rejeté. Un libellé local n'est jamais inclus dans
-une requête API.
-
-La session est chiffrée avec AES-GCM et transmise uniquement via
-`__Host-vextra_session`, avec `HttpOnly`, `Secure`, `SameSite=Strict` et
-`Path=/`. Les JWT Supabase ne sont jamais renvoyés au navigateur. Les mutations
-du dashboard exigent l'origine exacte configurée dans `APP_ORIGIN` ; le futur
-heartbeat serveur restera hors de cette garde navigateur.
-
-Les routes publiques `login`, `signup` et `ping` sont limitées par IP via les
-bindings Cloudflare `AUTH_RATE_LIMITER` (10/min) et `PING_RATE_LIMITER`
-(120/min), avec échec ouvert si le binding est indisponible (voir
-[ADR 0002](docs/adr/0002-limitation-de-debit.md)). Le déploiement en production
-se fait sur une seule origine (voir
-[ADR 0001](docs/adr/0001-deploiement-meme-origine.md)).
-
-## Déploiement
-
-Un seul Worker Cloudflare (`vextra`, environnement `production` de
-`apps/api/wrangler.toml`) sert le SPA en assets statiques et l'API sous
-`/api/*`, donc sous une seule origine (ADR 0001).
-
-1. Se connecter : `pnpm --filter @vextra/api exec wrangler login`.
-2. Appliquer les migrations sur le projet Supabase de production :
-   `pnpm exec supabase link --project-ref <ref>` puis `pnpm exec supabase db push`.
-3. Définir les secrets (une commande par secret) :
-   `pnpm --filter @vextra/api exec wrangler secret put <NOM> -e production`
-   pour `APP_ORIGIN` (l'URL publique du Worker), `SUPABASE_URL`,
-   `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
-   `SESSION_ENCRYPTION_KEY`, `PING_TOKEN_PEPPER`, `RESEND_API_KEY` et
-   `RESEND_FROM_EMAIL`. Ne jamais les committer.
-4. Déployer : `pnpm deploy:production` (build du web, puis `wrangler deploy`).
-5. Vérifier : `curl https://<worker>/api/health` doit répondre `status: ok`.
-
-La CI (`.github/workflows/ci.yml`) exécute `pnpm check` et les tests de base. Le
-workflow `deploy.yml` est manuel et exige les secrets GitHub
-`CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ACCOUNT_ID`.
-
-## Organisation, métriques et préférences
-
-- **Dossiers** : dossiers plats par espace, création, renommage et suppression
-  depuis le dashboard, rangement d'un moniteur depuis sa page
-  ([ADR 0003](docs/adr/0003-dossiers-de-moniteurs.md)).
-- **Métriques** : compteurs de heartbeats par jour (90 jours conservés),
-  intervalle moyen et plus long intervalle, sans contenu ni IP
-  ([ADR 0004](docs/adr/0004-metriques-heartbeat-agregees.md)).
-- **Préférences** : nom affiché, fuseau horaire et alertes e-mail à l'ouverture
-  ou à la résolution d'un incident
-  ([ADR 0005](docs/adr/0005-preferences-de-compte.md)).
-
-L'interface se met à jour **en direct** (WebSocket par espace, indicateur « En
-direct » dans la barre latérale) : un heartbeat reçu ou un incident ouvert
-apparaît en quelques secondes sans recharger
-([ADR 0006](docs/adr/0006-mises-a-jour-en-direct.md)). Le premier déploiement
-après cette version crée le Durable Object `TenantLiveHub` (migration `v1`).
-
-Chaque moniteur a un **nom, une description et des notes** stockés côté serveur
-(le nom apparaît dans les e-mails), des **alertes activables par moniteur** et
-un bouton **Cloner**. Les réglages ajoutent le format de l'heure, la densité,
-la vue et le tri par défaut, ainsi que la fréquence, la marge et le dossier
-proposés à la création
-([ADR 0007](docs/adr/0007-personnalisation-de-la-configuration.md)).
-
-Les jobs peuvent aussi signaler leur cycle de vie : `start` (mesure la durée),
-`success`, `fail` (ouvre un incident immédiatement) et `warn`, par en-tête
-`Authorization` (recommandé) ou par URL (`/api/ping/<token>[/start|fail|warn|<code>]`
-en `GET`, `HEAD` ou `POST`). La page d'un moniteur affiche l'historique des
-exécutions (90 jours), les durées et les échecs, sans jamais conserver de
-contenu ([ADR 0008](docs/adr/0008-evenements-d-execution.md)).
-
-Les alertes peuvent aussi partir vers **Slack, Discord, Telegram, Microsoft
-Teams, PagerDuty ou un webhook** (Réglages, « Canaux d'alerte », avec un bouton
-de test). La destination est un secret : l'API ne la renvoie jamais. Un
-**rappel** périodique peut être activé tant qu'un incident reste ouvert
-([ADR 0009](docs/adr/0009-canaux-d-alerte-et-rappels.md)).
-
-Chaque **lundi à 9 h UTC**, le propriétaire reçoit un **rapport hebdomadaire**
-(heartbeats, échecs, incidents, moniteurs à surveiller), désactivable dans les
-réglages ([ADR 0010](docs/adr/0010-rapport-hebdomadaire.md)).
-
-Ces fonctions s'appuient sur sept migrations (`20261031100000`,
-`20261031110000`, `20261031120000`, `20261031130000`, `20261031140000`,
-`20261031150000`, `20261031160000`) à appliquer avec `supabase db push` avant de
-déployer l'API.
-
-## Commandes
-
-```bash
-pnpm format
-pnpm format:check
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm test:coverage
-pnpm test:db
-pnpm db:lint
-pnpm build
-pnpm check
-pnpm deploy:production
-```
-
-Le contrôle anti-Bootstrap peut être exécuté seul :
-
-```bash
-pnpm check:no-bootstrap
-```
-
-## Interface
-
-```text
-/                       Dashboard et résumé des statuts
-/login                  Connexion et inscription
-/notifications          Centre de notifications e-mail
-/settings               Compte, notifications et suppression
-/monitors/new           Création d'un moniteur
-/monitors/:monitorId    Détail et commande heartbeat
-```
-
-En développement, les états du dashboard peuvent être prévisualisés avec
-`?state=loading`, `?state=empty` ou `?state=error`.
-
-Les commandes base de données nécessitent Supabase local :
-
-```bash
-pnpm exec supabase start
-pnpm exec supabase db reset
-pnpm test:db
-pnpm db:lint
-pnpm exec supabase stop
-```
-
-Le service Analytics local est désactivé pour éviter des ports et services
-inutiles au développement de Vextra.
-
-Le Cron Trigger Cloudflare s'exécute toutes les minutes. Il ouvre les incidents
-échus, puis traite un lot borné de livraisons e-mail. L'adresse du propriétaire
-est résolue depuis Supabase uniquement pendant le claim et n'est jamais stockée
-dans l'outbox.
-
-## Structure
+Un monolithe modulaire, organisé par domaine métier, sur une architecture
+hexagonale : le domaine ne dépend ni du framework, ni de la base, ni du transport.
 
 ```text
 apps/
-  api/              API Hono et futur Worker planifié
-  web/              SPA React/Vite/TanStack/HeroUI
-docs/
-  design/           design system
-  plans/            plans de construction
-  releases/         preuves TDD et notes de version
+  api/        API Hono (Cloudflare Workers ou serveur Node/Docker)
+  web/        SPA React, Vite, TanStack Router/Query, HeroUI
 packages/
-  contracts/       schémas Zod et contrats API partagés
-  domain/           règles métier monitoring sans I/O
-scripts/            automatisation locale
-supabase/           configuration, migrations et tests pgTAP
+  domain/     règles métier pures : échéances, états, expressions cron
+  contracts/  schémas Zod partagés entre l'API et l'interface
+supabase/     migrations versionnées et tests pgTAP
+docs/         guides, décisions d'architecture (ADR), audit de sécurité
+scripts/      automatisation locale
 ```
 
-### Fichiers de configuration racine
+| Couche          | Technologie                                                |
+| --------------- | ---------------------------------------------------------- |
+| Interface       | React, Vite, TanStack, HeroUI, Tailwind                    |
+| API             | Hono, TypeScript strict, Zod                               |
+| Exécution       | Cloudflare Workers (+ Durable Objects) ou Node.js / Docker |
+| Données et auth | Supabase (PostgreSQL, RLS, Auth)                           |
+| Qualité         | Vitest, pgTAP, ESLint, Prettier, TypeScript strict         |
 
-| Fichier                                                 | Rôle                                           |
-| ------------------------------------------------------- | ---------------------------------------------- |
-| `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml` | workspace et dépendances                       |
-| `.npmrc`                                                | politiques pnpm strictes                       |
-| `.nvmrc`                                                | version Node.js du projet                      |
-| `tsconfig.base.json`                                    | règles TypeScript partagées                    |
-| `eslint.config.js`                                      | lint JavaScript et TypeScript                  |
-| `.prettierrc.json`, `.prettierignore`                   | formatage                                      |
-| `.editorconfig`                                         | conventions d'édition                          |
-| `.gitignore`                                            | exclusion des dépendances et artefacts générés |
+Les choix structurants sont consignés dans les
+[décisions d'architecture](docs/README.md#décisions-darchitecture).
 
-Chaque application conserve uniquement ses configurations spécifiques. Les
-dossiers `node_modules`, `dist`, `coverage` et `.wrangler` sont générés par
-l'outillage et ne doivent jamais être commités.
+## Développer
 
-## Principes
+Prérequis : Node.js 22, pnpm 12.15.0, Docker et le CLI Supabase pour la base locale.
 
-- Aucun contenu de script, de cron, de log ou de sortie n'est reçu.
-- Les heartbeats ne transportent pas de données métier.
-- Les secrets restent côté serveur et ne doivent jamais utiliser `VITE_`.
-- L'isolation multi-tenant et RLS seront obligatoires pour toute donnée
-  persistée.
-- Bootstrap et ses dérivés sont interdits.
+```bash
+pnpm install
+pnpm exec supabase start     # base locale
+pnpm setup:local             # génère apps/api/.dev.vars avec des secrets aléatoires
+pnpm dev                     # web http://localhost:5173, API http://localhost:8787
+```
 
-## Licence et contribution
+Le mode démo (`http://localhost:5173/?demo=1`) parcourt l'interface sans base.
 
-Vextra est un logiciel libre, distribué sous [licence MIT](LICENSE). Les
-contributions sont les bienvenues : voir [CONTRIBUTING.md](CONTRIBUTING.md), le
-[code de conduite](CODE_OF_CONDUCT.md) et la [politique de sécurité](SECURITY.md).
+| Commande             | Rôle                                                 |
+| -------------------- | ---------------------------------------------------- |
+| `pnpm check`         | Format, lint, types, tests et build (la barrière CI) |
+| `pnpm test`          | Tests unitaires et d'intégration                     |
+| `pnpm test:coverage` | Couverture (seuil de 80 %)                           |
+| `pnpm test:db`       | Tests pgTAP sur la base locale                       |
+| `pnpm db:lint`       | Analyse statique du schéma                           |
+| `pnpm format`        | Formate le dépôt                                     |
+
+### Déployer sur Cloudflare
+
+Un seul Worker sert l'interface (assets) et l'API sous une même origine
+([ADR 0001](docs/adr/0001-deploiement-meme-origine.md)).
+
+1. `pnpm --filter @vextra/api exec wrangler login`
+2. Appliquez les migrations : `pnpm exec supabase link --project-ref <ref>` puis
+   `pnpm exec supabase db push`.
+3. Définissez les secrets, un par un, avec
+   `pnpm --filter @vextra/api exec wrangler secret put <NOM> -e production`
+   (variables du tableau ci-dessus).
+4. `pnpm deploy:production`, puis vérifiez `curl https://<worker>/api/health`.
+
+Adaptez le nom du Worker (`[env.production]` de `apps/api/wrangler.toml`) à votre
+compte. Le planificateur s'exécute chaque minute via un Cron Trigger.
+
+## Documentation
+
+- [Auto-héberger Vextra](docs/self-hosting.md)
+- [Référence de l'API](docs/api.md)
+- [Décisions d'architecture (ADR)](docs/README.md#décisions-darchitecture)
+- [Audit de sécurité](docs/audits/securite-avant-production.md)
+- [Design system](docs/design/DESIGNSYSTEM.md)
+
+## Contribuer
+
+Les contributions sont les bienvenues : lisez [CONTRIBUTING.md](CONTRIBUTING.md)
+et le [code de conduite](CODE_OF_CONDUCT.md). Pour signaler une faille, suivez
+la [politique de sécurité](SECURITY.md) : n'ouvrez pas d'issue publique.
+
+## Licence
+
+[MIT](LICENSE) © Samuel Tomen

@@ -13,5 +13,4 @@ node_modules
 **/.dev.vars
 supabase/.temp
 supabase/.branches
-docs/evidence
 *.log
