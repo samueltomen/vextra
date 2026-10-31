@@ -3,6 +3,7 @@ import {
   runChannelDelivery,
   runIncidentReminders,
   runNotificationDelivery,
+  runWeeklyReports,
   runScheduledCheck,
   type WorkerEnvironment,
 } from './composition.ts'
@@ -40,6 +41,7 @@ export default {
         const reminders = await runIncidentReminders(environment)
         const delivery = await runNotificationDelivery(environment)
         const channels = await runChannelDelivery(environment)
+        const weekly = await runWeeklyReports(environment)
 
         console.info(
           JSON.stringify({
@@ -48,6 +50,7 @@ export default {
             event: 'cron.tick',
             opened,
             reminders,
+            weekly,
           }),
         )
       })(),

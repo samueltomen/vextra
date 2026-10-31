@@ -26,6 +26,7 @@ let preferences: Preferences = {
   reminderIntervalMinutes: null,
   timeFormat: '24h',
   timezone: 'Europe/Paris',
+  weeklyReportEnabled: true,
 }
 
 export function listDemoFolders(): readonly DemoFolder[] {

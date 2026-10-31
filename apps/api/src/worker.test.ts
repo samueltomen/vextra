@@ -16,6 +16,7 @@ function mockSupabase(overrides: Record<string, unknown> = {}) {
   const responses: Record<string, unknown> = {
     claim_channel_deliveries: [],
     claim_notification_deliveries: [],
+    claim_weekly_reports: [],
     enqueue_incident_reminders: 0,
     open_due_monitor_incidents: 0,
     ...overrides,
@@ -125,6 +126,7 @@ describe('Cloudflare Worker entrypoint', () => {
         event: 'cron.tick',
         opened: 2,
         reminders: 1,
+        weekly: null,
       }),
     )
     info.mockRestore()

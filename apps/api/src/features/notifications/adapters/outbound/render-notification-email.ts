@@ -1,5 +1,7 @@
 import type { NotificationKind } from '../../application/deliver-notifications.ts'
 
+import type { WeeklyReport } from '../../application/send-weekly-reports.ts'
+
 export type RenderedEmail = Readonly<{
   html: string
   subject: string
@@ -132,4 +134,105 @@ export function renderNotificationEmail(
   ].join('\n')
 
   return { html, subject: variant.subject, text }
+}
+
+const NUMBER_FORMAT = new Intl.NumberFormat('fr-FR')
+
+export function renderWeeklyReportEmail(
+  input: Readonly<{ appOrigin: string; report: WeeklyReport }>,
+): RenderedEmail {
+  const { report } = input
+  const origin = input.appOrigin.replace(/\/+$/u, '')
+  const subject = 'CronPing · votre rapport de la semaine'
+  const greeting = report.displayName?.trim()
+    ? `Bonjour ${report.displayName.trim()},`
+    : 'Bonjour,'
+  const healthy = report.incidentsOpenNow === 0
+  const accent = healthy ? '#16a36a' : '#d6403a'
+  const stats: readonly (readonly [string, number])[] = [
+    ['Moniteurs', report.monitorsTotal],
+    ['Heartbeats reçus', report.pings7d],
+    ['Échecs signalés', report.fails7d],
+    ['Incidents ouverts', report.incidentsOpened],
+    ['Incidents en cours', report.incidentsOpenNow],
+  ]
+  const problems = report.problemMonitors.map((monitor) => ({
+    label: monitor.name?.trim() || `Moniteur ${monitor.id.slice(0, 8)}`,
+    url: `${origin}/monitors/${monitor.id}`,
+    incidents: monitor.incidents,
+  }))
+
+  const statRows = stats
+    .map(
+      ([label, value]) =>
+        `<tr><td class="cp-muted" style="padding:8px 0;font:400 14px -apple-system,'Segoe UI',Roboto,sans-serif;color:#55655f;border-bottom:1px solid #e3e6eb;">${escapeHtml(label)}</td><td class="cp-text" style="padding:8px 0;text-align:right;font:600 16px ui-monospace,'SFMono-Regular',Menlo,monospace;color:#10201e;border-bottom:1px solid #e3e6eb;">${escapeHtml(NUMBER_FORMAT.format(value))}</td></tr>`,
+    )
+    .join('')
+  const problemRows = problems
+    .map(
+      (problem) =>
+        `<li style="margin:0 0 6px;font:400 14px -apple-system,'Segoe UI',Roboto,sans-serif;"><a class="cp-link" href="${escapeHtml(problem.url)}" style="color:#0f766e;">${escapeHtml(problem.label)}</a> <span class="cp-muted" style="color:#55655f;">· ${problem.incidents} incident${problem.incidents > 1 ? 's' : ''}</span></li>`,
+    )
+    .join('')
+
+  const html = `<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>${escapeHtml(subject)}</title>
+<style>
+  @media (prefers-color-scheme: dark) {
+    .cp-canvas { background: #0b0c0f !important; }
+    .cp-card { background: #111318 !important; border-left-color: #23262e !important; border-right-color: #23262e !important; border-bottom-color: #23262e !important; }
+    .cp-text { color: #e6e8ec !important; }
+    .cp-muted { color: #8a909c !important; }
+    .cp-link { color: #5eead4 !important; }
+    .cp-cta { background: #2dd4bf !important; color: #04211e !important; }
+  }
+</style>
+</head>
+<body class="cp-canvas" style="margin:0;padding:0;background:#f6f7f9;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="cp-canvas" style="background:#f6f7f9;">
+  <tr><td align="center" style="padding:32px 16px;">
+    <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="width:100%;max-width:560px;">
+      <tr><td style="background:#0a1816;border-radius:16px 16px 0 0;padding:20px 28px;font:600 18px -apple-system,'Segoe UI',Roboto,sans-serif;color:#e8f1ef;">CronPing · Rapport hebdomadaire</td></tr>
+      <tr><td class="cp-card" style="background:#ffffff;border:1px solid #e3e6eb;border-top:4px solid ${accent};border-radius:0 0 16px 16px;padding:28px;">
+        <p class="cp-text" style="margin:0 0 6px;font:600 16px -apple-system,'Segoe UI',Roboto,sans-serif;color:#10201e;">${escapeHtml(greeting)}</p>
+        <p class="cp-muted" style="margin:0 0 20px;font:400 14px/1.6 -apple-system,'Segoe UI',Roboto,sans-serif;color:#55655f;">${healthy ? 'Aucun incident en cours : vos jobs sont dans les temps.' : 'Un ou plusieurs incidents sont encore ouverts : pensez à les consulter.'} Voici le résumé des 7 derniers jours.</p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">${statRows}</table>
+        ${problems.length > 0 ? `<p class="cp-text" style="margin:22px 0 8px;font:600 14px -apple-system,'Segoe UI',Roboto,sans-serif;color:#10201e;">Moniteurs à surveiller</p><ul style="margin:0;padding-left:18px;">${problemRows}</ul>` : ''}
+        <p style="margin:26px 0 0;"><a class="cp-cta" href="${escapeHtml(origin)}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#0f766e;color:#ffffff;font:600 15px -apple-system,'Segoe UI',Roboto,sans-serif;text-decoration:none;">Ouvrir CronPing</a></p>
+      </td></tr>
+      <tr><td style="padding:18px 8px 0;text-align:center;"><p class="cp-muted" style="margin:0;font:400 12px/1.6 -apple-system,'Segoe UI',Roboto,sans-serif;color:#55655f;">Rapport envoyé le lundi à 9 h UTC. <a class="cp-link" href="${escapeHtml(origin)}/settings" style="color:#0f766e;">Désactiver dans les réglages</a></p></td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`
+
+  const text = [
+    greeting,
+    '',
+    'Résumé des 7 derniers jours :',
+    ...stats.map(
+      ([label, value]) => `- ${label} : ${NUMBER_FORMAT.format(value)}`,
+    ),
+    ...(problems.length > 0
+      ? [
+          '',
+          'Moniteurs à surveiller :',
+          ...problems.map(
+            (problem) =>
+              `- ${problem.label} (${problem.incidents} incident${problem.incidents > 1 ? 's' : ''}) ${problem.url}`,
+          ),
+        ]
+      : []),
+    '',
+    `Ouvrir CronPing : ${origin}`,
+    `Désactiver ce rapport : ${origin}/settings`,
+  ].join('\n')
+
+  return { html, subject, text }
 }

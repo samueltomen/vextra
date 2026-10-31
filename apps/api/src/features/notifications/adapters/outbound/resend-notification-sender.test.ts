@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { ResendNotificationSender } from './resend-notification-sender.ts'
+import {
+  ResendNotificationSender,
+  ResendWeeklyReportSender,
+} from './resend-notification-sender.ts'
 
 const INPUT = {
   kind: 'incident_opened' as const,
@@ -94,6 +97,67 @@ describe('ResendNotificationSender', () => {
         status: 403,
       }),
     )
+    warn.mockRestore()
+  })
+})
+
+describe('ResendWeeklyReportSender', () => {
+  const REPORT = {
+    displayName: null,
+    email: 'owner@example.test',
+    fails7d: 0,
+    incidentsOpenNow: 0,
+    incidentsOpened: 0,
+    monitorsTotal: 1,
+    pings7d: 10,
+    problemMonitors: [],
+    tenantId: 't1',
+    weekStart: '2026-11-02',
+  }
+  const dependencies = {
+    apiKey: 're_test',
+    appOrigin: 'https://app.test',
+    from: 'CronPing <reports@example.test>',
+  }
+
+  it('sends the HTML report to the owner through Resend', async () => {
+    const fetchMock = vi.fn(async () => Response.json({ id: 'email-1' }))
+
+    vi.stubGlobal('fetch', fetchMock)
+    await new ResendWeeklyReportSender(dependencies).send(REPORT)
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ]
+    const body = JSON.parse(String(init.body))
+
+    expect(url).toBe('https://api.resend.com/emails')
+    expect(body).toMatchObject({
+      from: dependencies.from,
+      subject: 'CronPing · votre rapport de la semaine',
+      to: 'owner@example.test',
+    })
+    expect(body.html).toContain('<!doctype html>')
+  })
+
+  it('logs only the status when the provider refuses', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json({ message: 'owner@example.test' }, { status: 403 }),
+      ),
+    )
+
+    await expect(
+      new ResendWeeklyReportSender(dependencies).send(REPORT),
+    ).rejects.toThrow('weekly report delivery failed')
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({ event: 'weekly_report.provider_rejected', status: 403 }),
+    )
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('owner@example.test')
     warn.mockRestore()
   })
 })
