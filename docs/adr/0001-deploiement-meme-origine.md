@@ -22,12 +22,16 @@ appels cross-site : la connexion échouerait.
 
 Servir le web et l'API **sous une seule origine** (`https://app.<domaine>`) :
 
-- le SPA est servi en assets statiques sur ce domaine ;
-- une route Cloudflare `app.<domaine>/api/*` dirige vers le Worker `cronping-api` ;
+- un seul Worker (`cronping`) sert le SPA en assets statiques et l'API sous
+  `/api/*` (`run_worker_first = ["/api/*"]`) : la même origine est garantie par
+  construction, sans route ni domaine personnalisé obligatoires ;
+- un domaine personnalisé (`app.<domaine>`) pourra être attaché plus tard au
+  même Worker sans changement de code ;
 - `APP_ORIGIN` vaut cette origine ; `VITE_API_URL` n'est pas utilisé en
   production ;
-- `workers_dev` passe à `false` en production afin de ne pas exposer une
-  seconde origine.
+- l'URL `*.workers.dev` du Worker est la seule origine tant qu'aucun domaine
+  personnalisé n'est attaché ; une fois attaché, passer `workers_dev` à `false`
+  pour ne pas laisser deux origines actives.
 
 Aucun CORS n'est ajouté. Cookies `Strict` et garde d'origine restent inchangés.
 

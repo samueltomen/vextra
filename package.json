@@ -13,6 +13,7 @@
     "check:no-bootstrap": "node scripts/check-no-bootstrap.mjs",
     "db:lint": "supabase db lint --local",
     "db:reset": "supabase db reset",
+    "deploy:production": "pnpm build && pnpm --filter @cronping/api exec wrangler deploy -e production",
     "dev": "pnpm --parallel --stream --filter @cronping/web --filter @cronping/api dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
