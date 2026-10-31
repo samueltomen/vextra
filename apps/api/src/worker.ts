@@ -5,6 +5,8 @@ import {
   type WorkerEnvironment,
 } from './composition.ts'
 
+export { TenantLiveHub } from './features/live/adapters/outbound/tenant-live-hub.ts'
+
 type ScheduledContext = Readonly<{
   waitUntil(promise: Promise<unknown>): void
 }>

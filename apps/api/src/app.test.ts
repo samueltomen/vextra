@@ -8,6 +8,7 @@ function createApp() {
     accountRoutes: new Hono(),
     allowedOrigin: 'http://localhost:5173',
     authRoutes: new Hono(),
+    liveRoutes: new Hono(),
     monitorRoutes: new Hono(),
     notificationRoutes: new Hono(),
     pingRoutes: new Hono(),
@@ -46,6 +47,7 @@ describe('rate limiting wiring', () => {
       authRoutes: new Hono()
         .post('/api/auth/login', (context) => context.json({ ok: 1 }))
         .post('/api/auth/signup', (context) => context.json({ ok: 1 })),
+      liveRoutes: new Hono(),
       monitorRoutes: new Hono(),
       notificationRoutes: new Hono(),
       pingRoutes: new Hono().post('/api/ping', (context) =>

@@ -10,6 +10,7 @@ export type ApiApplicationDependencies = Readonly<{
   accountRoutes: Hono
   allowedOrigin: string
   authRoutes: Hono
+  liveRoutes: Hono
   monitorRoutes: Hono
   notificationRoutes: Hono
   pingRoutes: Hono
@@ -77,6 +78,7 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
   app.route('/', dependencies.monitorRoutes)
   app.route('/', dependencies.notificationRoutes)
   app.route('/', dependencies.workspaceRoutes)
+  app.route('/', dependencies.liveRoutes)
   app.route('/', dependencies.pingRoutes)
 
   return app
