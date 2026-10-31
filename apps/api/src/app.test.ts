@@ -98,3 +98,31 @@ describe('rate limiting wiring', () => {
     expect(response.status).not.toBe(429)
   })
 })
+
+describe('cache policy', () => {
+  it('keeps a route-provided Cache-Control while hardening other headers', async () => {
+    const statusPageRoutes = new Hono().get('/api/status/x/badge.svg', (c) => {
+      c.header('Cache-Control', 'public, max-age=300')
+
+      return c.body('<svg/>')
+    })
+    const app = createApiApp({
+      accountRoutes: new Hono(),
+      allowedOrigin: 'http://localhost:5173',
+      apiKeyRoutes: new Hono(),
+      authRoutes: new Hono(),
+      channelRoutes: new Hono(),
+      liveRoutes: new Hono(),
+      maintenanceRoutes: new Hono(),
+      monitorRoutes: new Hono(),
+      notificationRoutes: new Hono(),
+      pingRoutes: new Hono(),
+      statusPageRoutes,
+      workspaceRoutes: new Hono(),
+    })
+    const response = await app.request('/api/status/x/badge.svg')
+
+    expect(response.headers.get('cache-control')).toBe('public, max-age=300')
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff')
+  })
+})

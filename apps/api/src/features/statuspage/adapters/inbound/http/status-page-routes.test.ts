@@ -105,3 +105,57 @@ describe('GET /api/status/:slug', () => {
     expect(JSON.stringify(await response.json())).not.toContain('boom')
   })
 })
+
+describe('GET /api/status/:slug/badge.svg', () => {
+  const PAGE = {
+    monitors: [{ name: 'API', status: 'healthy', uptime30d: 99.95 }],
+  }
+
+  it('serves a cacheable SVG badge without authentication', async () => {
+    const { app, read } = setup(false)
+
+    read.mockResolvedValueOnce(PAGE)
+    const response = await app.request('/api/status/acme-status/badge.svg')
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toContain('image/svg+xml')
+    expect(response.headers.get('cache-control')).toBe('public, max-age=300')
+    await expect(response.text()).resolves.toContain('opérationnel')
+  })
+
+  it('supports the uptime metric', async () => {
+    const { app, read } = setup(false)
+
+    read.mockResolvedValueOnce(PAGE)
+    const response = await app.request(
+      '/api/status/acme-status/badge.svg?metric=uptime',
+    )
+
+    await expect(response.text()).resolves.toContain('99.95 %')
+  })
+
+  it('answers 404 badges for unknown pages and invalid slugs', async () => {
+    const { app, read } = setup(false)
+
+    expect(
+      (await app.request('/api/status/acme-status/badge.svg')).status,
+    ).toBe(404)
+    expect((await app.request('/api/status/Bad_Slug/badge.svg')).status).toBe(
+      404,
+    )
+    expect(read).toHaveBeenCalledTimes(1)
+  })
+
+  it('degrades to an unavailable badge on provider failures', async () => {
+    const { app, read } = setup(false)
+
+    read.mockRejectedValueOnce(new Error('boom'))
+    const response = await app.request('/api/status/acme-status/badge.svg')
+
+    expect(response.status).toBe(200)
+    const body = await response.text()
+
+    expect(body).toContain('indisponible')
+    expect(body).not.toContain('boom')
+  })
+})

@@ -43,6 +43,29 @@ function describeError(error: unknown): string {
   return 'La page de statut n’a pas pu être enregistrée. Réessayez.'
 }
 
+function BadgeSnippets({
+  origin,
+  slug,
+}: Readonly<{ origin: string; slug: string }>) {
+  const statusUrl = `${origin}/api/status/${slug}/badge.svg`
+  const uptimeUrl = `${statusUrl}?metric=uptime`
+  const pageUrl = `${origin}/status/${slug}`
+
+  return (
+    <div className="rounded-lg border border-line bg-canvas/40 p-3">
+      <p className="text-sm font-medium">Badges pour votre README</p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <img alt="Badge de statut" height={20} src={statusUrl} />
+        <img alt="Badge de disponibilité" height={20} src={uptimeUrl} />
+      </div>
+      <p className="mt-3 text-xs text-muted">Markdown</p>
+      <pre className="overflow-x-auto rounded bg-canvas p-2 font-mono text-xs">
+        {`[![Statut](${statusUrl})](${pageUrl})\n[![Disponibilité](${uptimeUrl})](${pageUrl})`}
+      </pre>
+    </div>
+  )
+}
+
 function StatusPageForm({
   settings,
 }: Readonly<{ settings: StatusPageSettingsView }>) {
@@ -207,6 +230,13 @@ function StatusPageForm({
             'La page n’est pas encore publiée.'
           )}
         </p>
+      ) : null}
+
+      {settings.page?.enabled && publicUrl ? (
+        <BadgeSnippets
+          origin={window.location.origin}
+          slug={settings.page.slug}
+        />
       ) : null}
 
       <Button

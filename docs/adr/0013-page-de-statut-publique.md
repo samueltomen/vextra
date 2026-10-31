@@ -36,6 +36,17 @@ qui ne doivent jamais sortir de l'espace.
 - **Interface** : route `/status/$slug` hors de la coque applicative, rafraîchie
   toutes les 30 secondes ; carte de configuration dans les réglages.
 
+## Addendum — Badges SVG
+
+`GET /api/status/:slug/badge.svg` (public) renvoie un badge « statut » (vert
+opérationnel, rouge incident, gris inconnu) ; `?metric=uptime` renvoie la
+disponibilité moyenne sur 30 jours, tronquée (jamais arrondie vers le haut).
+Le SVG n'utilise que des attributs (aucun CSS ni script, texte échappé), est
+servi en `image/svg+xml` avec `Cache-Control: public, max-age=300` (le seul
+endpoint qui déroge au `no-store` global) et se dégrade en badge
+« indisponible » plutôt qu'en erreur si la base est inaccessible. La carte de
+configuration affiche l'aperçu et les extraits Markdown prêts à coller.
+
 ## Alternatives écartées
 
 - **Vue SQL ouverte à `anon`** : expose plus facilement des colonnes par

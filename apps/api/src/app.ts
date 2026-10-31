@@ -42,7 +42,10 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
 
   app.use('*', async (context, next) => {
     await next()
-    context.header('Cache-Control', 'no-store')
+    // Endpoints that opt into caching (public badges) set their own header.
+    if (!context.res.headers.has('Cache-Control')) {
+      context.header('Cache-Control', 'no-store')
+    }
     context.header(
       'Content-Security-Policy',
       "default-src 'none'; base-uri 'none'; frame-ancestors 'none'",

@@ -26,7 +26,8 @@ horaire ([ADR 0012](docs/adr/0012-planification-par-expression-cron.md)).
 
 Une page de statut publique, sans compte, peut exposer les moniteurs de votre
 choix à l'adresse `/status/<adresse>`
-([ADR 0013](docs/adr/0013-page-de-statut-publique.md)).
+([ADR 0013](docs/adr/0013-page-de-statut-publique.md)), avec des badges SVG
+pour vos README.
 
 Des fenêtres de maintenance suspendent incidents et alertes pendant une
 opération planifiée ([ADR 0015](docs/adr/0015-fenetres-de-maintenance.md)).
