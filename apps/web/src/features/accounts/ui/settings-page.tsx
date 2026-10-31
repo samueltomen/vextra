@@ -5,6 +5,7 @@ import { Bell, Mail, ShieldAlert, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { deleteAccount } from '../api/account-api.ts'
+import { TeamCard } from '../../team/ui/team-card.tsx'
 import { MaintenanceCard } from '../../maintenance/ui/maintenance-card.tsx'
 import { ApiKeysCard } from '../../apikeys/ui/api-keys-card.tsx'
 import { StatusPageCard } from '../../status/ui/status-page-card.tsx'
@@ -42,6 +43,8 @@ export function SettingsPage() {
       <PreferencesCard />
 
       <ChannelsCard />
+
+      <TeamCard />
 
       <MaintenanceCard />
 
