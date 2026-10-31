@@ -2,6 +2,7 @@
 
 Ce dossier regroupe les documents de référence du projet :
 
+- [Auto-héberger CronPing](self-hosting.md)
 - [Design system V1](design/DESIGNSYSTEM.md)
 - [Plan du MVP](plans/cronping-mvp.md)
 - [Preuves TDD de l'étape 1](releases/v0.1.0/step-1-socle.tdd.md)
@@ -21,3 +22,4 @@ Décisions d'architecture (`docs/adr/`) :
 - [ADR 0008 — Événements d'exécution, ping par URL et historique](adr/0008-evenements-d-execution.md)
 - [ADR 0009 — Canaux d'alerte et rappels](adr/0009-canaux-d-alerte-et-rappels.md)
 - [ADR 0010 — Rapport hebdomadaire](adr/0010-rapport-hebdomadaire.md)
+- [ADR 0011 — Auto-hébergement](adr/0011-auto-hebergement.md)
