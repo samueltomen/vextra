@@ -74,7 +74,8 @@ select is(
 );
 
 select is(
-  (select count(*) from public.claim_notification_deliveries(10)),
+  (select count(*) from public.claim_notification_deliveries(100)
+   where monitor_id = 'a2000000-0000-4000-8000-000000000001'),
   1::bigint,
   'the service can claim one pending delivery'
 );
