@@ -89,7 +89,8 @@ select is(
 reset role;
 
 select is(
-  (select count(*)::integer from public.claim_notification_deliveries(10)),
+  (select count(*)::integer from public.claim_notification_deliveries(100)
+   where monitor_id = '7b000000-0000-4000-8000-000000000001'),
   1,
   'only the alerts enabled by the preferences are claimed'
 );

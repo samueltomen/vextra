@@ -138,7 +138,10 @@ select is(
 reset role;
 
 select is(
-  (select count(*)::integer from public.claim_notification_deliveries(10)),
+  (select count(*)::integer from public.claim_notification_deliveries(100)
+   where monitor_id in (
+     '7f000000-0000-4000-8000-000000000001',
+     '7f000000-0000-4000-8000-000000000002')),
   1,
   'only the alert of an unmuted monitor is claimed'
 );
