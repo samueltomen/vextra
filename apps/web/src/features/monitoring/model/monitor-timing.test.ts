@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { MonitorView } from './monitor.ts'
-import { getDueProgress, sortMonitors } from './monitor-timing.ts'
+import {
+  getDueProgress,
+  sortMonitors,
+  withEffectiveStatus,
+} from './monitor-timing.ts'
 
 const NOW_MS = 1_000_000_000
 
@@ -94,5 +98,24 @@ describe('sortMonitors', () => {
     const input = [paused, late]
     sortMonitors(input, 'priority')
     expect(input.map((item) => item.id)).toEqual(['paused', 'late'])
+  })
+})
+
+describe('withEffectiveStatus', () => {
+  it('shows an overdue active monitor as late without waiting for the server', () => {
+    const overdue = monitor({ alertAtMs: NOW_MS - 60_000, status: 'healthy' })
+
+    expect(withEffectiveStatus(overdue, NOW_MS).status).toBe('late')
+    expect(
+      withEffectiveStatus({ ...overdue, status: 'pending' }, NOW_MS).status,
+    ).toBe('late')
+  })
+
+  it('keeps paused, late and on-time monitors unchanged', () => {
+    const paused = monitor({ alertAtMs: NOW_MS - 60_000, status: 'paused' })
+    const onTime = monitor({ alertAtMs: NOW_MS + 60_000, status: 'healthy' })
+
+    expect(withEffectiveStatus(paused, NOW_MS)).toBe(paused)
+    expect(withEffectiveStatus(onTime, NOW_MS)).toBe(onTime)
   })
 })

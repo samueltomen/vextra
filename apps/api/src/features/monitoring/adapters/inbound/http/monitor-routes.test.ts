@@ -63,7 +63,10 @@ function createRoutes(principal: AuthenticatedPrincipal | null = null) {
         ? {
             createMonitor: { execute },
             monitorIncidents: { list: listIncidents },
-            monitorMetrics: { get: vi.fn(async () => null) },
+            monitorMetrics: {
+              activity: vi.fn(async () => []),
+              get: vi.fn(async () => null),
+            },
             monitorLifecycle: { delete: remove, pause, resume },
             monitorRead: { get, list },
             monitorSchedule: { execute: updateSchedule },
@@ -208,7 +211,10 @@ describe('POST /api/monitors', () => {
           },
         },
         monitorIncidents: { list: vi.fn(async () => []) },
-        monitorMetrics: { get: vi.fn(async () => null) },
+        monitorMetrics: {
+          activity: vi.fn(async () => []),
+          get: vi.fn(async () => null),
+        },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
           pause: vi.fn(async () => true),
@@ -248,7 +254,10 @@ describe('POST /api/monitors', () => {
           },
         },
         monitorIncidents: { list: vi.fn(async () => []) },
-        monitorMetrics: { get: vi.fn(async () => null) },
+        monitorMetrics: {
+          activity: vi.fn(async () => []),
+          get: vi.fn(async () => null),
+        },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
           pause: vi.fn(async () => true),
@@ -354,7 +363,10 @@ describe('monitor read routes', () => {
       authenticate: async () => ({
         createMonitor: { execute: vi.fn() },
         monitorIncidents: { list: vi.fn(async () => []) },
-        monitorMetrics: { get: vi.fn(async () => null) },
+        monitorMetrics: {
+          activity: vi.fn(async () => []),
+          get: vi.fn(async () => null),
+        },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
           pause: vi.fn(async () => true),
@@ -389,7 +401,10 @@ describe('monitor read routes', () => {
       authenticate: async () => ({
         createMonitor: { execute: vi.fn() },
         monitorIncidents: { list: vi.fn(async () => []) },
-        monitorMetrics: { get: vi.fn(async () => null) },
+        monitorMetrics: {
+          activity: vi.fn(async () => []),
+          get: vi.fn(async () => null),
+        },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
           pause: vi.fn(async () => true),
@@ -616,7 +631,10 @@ describe('POST /api/monitors/:monitorId/rotate-token', () => {
       authenticate: async () => ({
         createMonitor: { execute: vi.fn() },
         monitorIncidents: { list: vi.fn(async () => []) },
-        monitorMetrics: { get: vi.fn(async () => null) },
+        monitorMetrics: {
+          activity: vi.fn(async () => []),
+          get: vi.fn(async () => null),
+        },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
           pause: vi.fn(async () => true),
@@ -640,6 +658,65 @@ describe('POST /api/monitors/:monitorId/rotate-token', () => {
   })
 })
 
+describe('GET /api/monitors/activity', () => {
+  it('groups daily pings by monitor for the authenticated tenant', async () => {
+    const activity = vi.fn(async () => [
+      { day: '2026-10-30', monitorId: 'm1', pings: 2 },
+      { day: '2026-10-31', monitorId: 'm1', pings: 3 },
+      { day: '2026-10-31', monitorId: 'm2', pings: 1 },
+    ])
+    const app = createMonitorRoutes({
+      authenticate: async () =>
+        ({
+          monitorMetrics: { activity, get: vi.fn() },
+          principal: { tenantId: 'tenant-a', userId: 'u' },
+        }) as never,
+    })
+    const response = await app.request('/api/monitors/activity')
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      data: {
+        monitors: [
+          {
+            days: [
+              { day: '2026-10-30', pings: 2 },
+              { day: '2026-10-31', pings: 3 },
+            ],
+            monitorId: 'm1',
+          },
+          { days: [{ day: '2026-10-31', pings: 1 }], monitorId: 'm2' },
+        ],
+      },
+    })
+    expect(activity).toHaveBeenCalledWith('tenant-a')
+  })
+
+  it('requires authentication and hides failures', async () => {
+    expect(
+      (
+        await createMonitorRoutes({ authenticate: async () => null }).request(
+          '/api/monitors/activity',
+        )
+      ).status,
+    ).toBe(401)
+
+    const failing = createMonitorRoutes({
+      authenticate: async () =>
+        ({
+          monitorMetrics: {
+            activity: async () => {
+              throw new Error('db')
+            },
+          },
+          principal: { tenantId: 't', userId: 'u' },
+        }) as never,
+    })
+
+    expect((await failing.request('/api/monitors/activity')).status).toBe(500)
+  })
+})
+
 describe('GET /api/monitors/:monitorId/metrics', () => {
   const ID = '20000000-0000-4000-8000-000000000001'
 
@@ -647,7 +724,7 @@ describe('GET /api/monitors/:monitorId/metrics', () => {
     return createMonitorRoutes({
       authenticate: async () =>
         ({
-          monitorMetrics: { get },
+          monitorMetrics: { activity: vi.fn(async () => []), get },
           principal: { tenantId: 'tenant-a', userId: 'u' },
         }) as never,
     })

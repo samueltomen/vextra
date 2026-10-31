@@ -14,6 +14,8 @@ export type MonitorMetricsView = Readonly<{
 export type MetricsSummary = Readonly<{
   avgIntervalSeconds: number | null
   bars: readonly Readonly<{ day: string; pings: number }>[]
+  /** Average gap per day in seconds, `null` when the day had no gap. */
+  dailyAvgIntervalSeconds: readonly (number | null)[]
   maxGapSeconds: number | null
   peakPings: number
   pings30d: number
@@ -48,6 +50,13 @@ export function summarizeMetrics(
   return {
     avgIntervalSeconds,
     bars,
+    dailyAvgIntervalSeconds: bars.map((bar) => {
+      const entry = byDay.get(bar.day)
+
+      return entry && entry.gapCount > 0
+        ? entry.gapSumSeconds / entry.gapCount
+        : null
+    }),
     maxGapSeconds:
       inWindow.length > 0 && gapCount > 0
         ? Math.max(...inWindow.map((entry) => entry.gapMaxSeconds))
@@ -82,4 +91,21 @@ export function formatSeconds(seconds: number | null): string {
   return hours < 48
     ? `${hours.toFixed(1).replace('.', ',')} h`
     : `${Math.round(hours / 24)} j`
+}
+
+/** Dense per-day ping counts (oldest first) ending today, UTC. */
+export function denseActivity(
+  days: readonly Readonly<{ day: string; pings: number }>[],
+  nowMs: number,
+  windowDays = 14,
+): readonly number[] {
+  const byDay = new Map(days.map((entry) => [entry.day, entry.pings]))
+
+  return Array.from({ length: windowDays }, (_, index) => {
+    const day = new Date(nowMs - (windowDays - 1 - index) * DAY_MS)
+      .toISOString()
+      .slice(0, 10)
+
+    return byDay.get(day) ?? 0
+  })
 }

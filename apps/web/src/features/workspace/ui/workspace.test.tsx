@@ -122,10 +122,15 @@ describe('monitor metrics', () => {
 
     expect(await within(panel).findByText('42')).toBeInTheDocument()
     expect(within(panel).getByText('Intervalle moyen')).toBeInTheDocument()
-    expect(within(panel).getByText('60 min')).toBeInTheDocument()
+    expect(within(panel).getAllByText('60 min').length).toBeGreaterThan(0)
     expect(
       within(panel).getByRole('img', {
         name: 'Heartbeats reçus par jour sur 30 jours',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      within(panel).getByRole('img', {
+        name: 'Intervalle moyen entre heartbeats sur 30 jours',
       }),
     ).toBeInTheDocument()
   })

@@ -21,6 +21,7 @@ import { useState, type ReactNode } from 'react'
 
 import { CodeTabs } from '../../../components/code-tabs.tsx'
 import { useNow } from '../../../lib/use-now.ts'
+import { withEffectiveStatus } from '../model/monitor-timing.ts'
 import { useCurrentAccount } from '../../accounts/query/use-current-account.ts'
 import {
   deleteMonitor,
@@ -184,6 +185,8 @@ export function MonitorDetailPage({
   }
 
   const monitor = monitorQuery.data
+    ? withEffectiveStatus(monitorQuery.data, nowMs)
+    : monitorQuery.data
 
   if (!monitor) {
     return (

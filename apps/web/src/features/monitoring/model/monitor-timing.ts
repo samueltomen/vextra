@@ -33,6 +33,21 @@ export function getDueProgress(
   }
 }
 
+/**
+ * The server flags a monitor as late on its next one-minute check. Until then
+ * the interface already shows an overdue active monitor as late.
+ */
+export function withEffectiveStatus(
+  monitor: MonitorView,
+  nowMs: number,
+): MonitorView {
+  const overdue =
+    (monitor.status === 'healthy' || monitor.status === 'pending') &&
+    nowMs >= monitor.alertAtMs
+
+  return overdue ? { ...monitor, status: 'late' } : monitor
+}
+
 export type MonitorSort = 'name' | 'priority' | 'recent' | 'signal'
 
 const STATUS_RANK = { late: 0, pending: 1, healthy: 2, paused: 3 } as const

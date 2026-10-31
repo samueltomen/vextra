@@ -25,7 +25,7 @@ export type AuthenticatedMonitorScope = Readonly<{
   createMonitor: Pick<CreateMonitor, 'execute'>
   monitorIncidents: Pick<MonitorIncidents, 'list'>
   monitorLifecycle: Pick<MonitorLifecycle, 'delete' | 'pause' | 'resume'>
-  monitorMetrics: Pick<MonitorMetricsService, 'get'>
+  monitorMetrics: Pick<MonitorMetricsService, 'activity' | 'get'>
   monitorRead: Pick<MonitorReadService, 'get' | 'list'>
   monitorSchedule: Pick<UpdateMonitorSchedule, 'execute'>
   principal: AuthenticatedPrincipal
@@ -54,6 +54,37 @@ export function createMonitorRoutes(
       return context.json({
         data: {
           monitors: monitors.map(toMonitorResponse),
+        },
+      })
+    } catch {
+      return internalError(context)
+    }
+  })
+
+  routes.get('/api/monitors/activity', async (context) => {
+    const scope = await dependencies.authenticate(context)
+
+    if (!scope) {
+      return unauthorized(context)
+    }
+
+    try {
+      const rows = await scope.monitorMetrics.activity(scope.principal.tenantId)
+      const byMonitor = new Map<string, { day: string; pings: number }[]>()
+
+      for (const row of rows) {
+        const days = byMonitor.get(row.monitorId) ?? []
+
+        days.push({ day: row.day, pings: row.pings })
+        byMonitor.set(row.monitorId, days)
+      }
+
+      return context.json({
+        data: {
+          monitors: [...byMonitor].map(([monitorId, days]) => ({
+            days,
+            monitorId,
+          })),
         },
       })
     } catch {

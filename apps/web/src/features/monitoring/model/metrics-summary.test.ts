@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatSeconds, summarizeMetrics } from './metrics-summary.ts'
+import {
+  denseActivity,
+  formatSeconds,
+  summarizeMetrics,
+} from './metrics-summary.ts'
 
 const NOW = Date.parse('2026-10-31T12:00:00.000Z')
 
@@ -52,6 +56,9 @@ describe('summarizeMetrics', () => {
     expect(summary.avgIntervalSeconds).toBe(3_600)
     expect(summary.maxGapSeconds).toBe(4_000)
     expect(summary.regularity).toBe(1)
+    expect(summary.dailyAvgIntervalSeconds.at(-1)).toBe(3_700)
+    expect(summary.dailyAvgIntervalSeconds.at(-2)).toBe(3_500)
+    expect(summary.dailyAvgIntervalSeconds[0]).toBeNull()
   })
 })
 
@@ -62,5 +69,24 @@ describe('formatSeconds', () => {
     expect(formatSeconds(600)).toBe('10 min')
     expect(formatSeconds(7_200)).toBe('2,0 h')
     expect(formatSeconds(3 * 86_400)).toBe('3 j')
+  })
+})
+
+describe('denseActivity', () => {
+  it('fills missing days with zero, oldest first', () => {
+    const activity = denseActivity(
+      [
+        { day: '2026-10-31', pings: 4 },
+        { day: '2026-10-29', pings: 2 },
+        { day: '2026-01-01', pings: 9 },
+      ],
+      NOW,
+    )
+
+    expect(activity).toHaveLength(14)
+    expect(activity.at(-1)).toBe(4)
+    expect(activity.at(-2)).toBe(0)
+    expect(activity.at(-3)).toBe(2)
+    expect(activity.reduce((sum, value) => sum + value, 0)).toBe(6)
   })
 })

@@ -75,3 +75,24 @@ export function getDemoMetrics(intervalMinutes: number): MonitorMetricsView {
     totalPings: days.reduce((sum, entry) => sum + entry.pings, 0),
   }
 }
+
+export function getDemoActivity(
+  monitorIds: readonly string[],
+): ReadonlyMap<string, readonly Readonly<{ day: string; pings: number }>[]> {
+  const nowMs = Date.now()
+
+  return new Map(
+    monitorIds.map((monitorId, monitorIndex) => [
+      monitorId,
+      Array.from({ length: 14 }, (_, index) => ({
+        day: new Date(nowMs - (13 - index) * 86_400_000)
+          .toISOString()
+          .slice(0, 10),
+        pings:
+          (index + monitorIndex * 3) % 7 === 0
+            ? 0
+            : 2 + ((index * 5 + monitorIndex) % 4),
+      })),
+    ]),
+  )
+}

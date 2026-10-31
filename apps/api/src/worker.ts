@@ -32,8 +32,10 @@ export default {
   ) {
     context.waitUntil(
       (async () => {
-        await runScheduledCheck(environment)
-        await runNotificationDelivery(environment)
+        const opened = await runScheduledCheck(environment)
+        const delivery = await runNotificationDelivery(environment)
+
+        console.info(JSON.stringify({ delivery, event: 'cron.tick', opened }))
       })(),
     )
   },

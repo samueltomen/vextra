@@ -78,6 +78,7 @@ export {
   folderSchema,
   listFoldersResponseSchema,
   metricsDaySchema,
+  monitorActivityResponseSchema,
   monitorMetricsResponseSchema,
   preferencesResponseSchema,
   preferencesSchema,

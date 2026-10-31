@@ -92,4 +92,26 @@ describe('Cloudflare Worker entrypoint', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
+
+  it('logs one structured tick per scheduled run', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json(2)),
+    )
+    let scheduledTask: Promise<unknown> | undefined
+
+    worker.scheduled({}, ENVIRONMENT, {
+      waitUntil(promise) {
+        scheduledTask = promise
+      },
+    })
+    await scheduledTask
+
+    expect(info).toHaveBeenCalledWith(
+      JSON.stringify({ delivery: null, event: 'cron.tick', opened: 2 }),
+    )
+    info.mockRestore()
+  })
 })

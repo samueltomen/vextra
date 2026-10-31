@@ -51,12 +51,38 @@ function DueProgress({
   )
 }
 
+function ActivityStrip({
+  values,
+}: Readonly<{ values: readonly number[] | undefined }>) {
+  const peak = Math.max(1, ...(values ?? []))
+
+  return (
+    <div
+      aria-hidden="true"
+      className="hidden h-6 items-end gap-px lg:flex"
+      title="Heartbeats reçus par jour sur 14 jours"
+    >
+      {(values ?? Array.from({ length: 14 }, () => 0)).map((value, index) => (
+        <span
+          className={`w-1 rounded-[1px] ${value > 0 ? 'bg-healthy-solid' : 'bg-line'}`}
+          key={index}
+          style={{
+            height: `${value > 0 ? Math.max(25, (value / peak) * 100) : 12}%`,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 export function MonitorListItem({
+  activity,
   index,
   monitor,
   nowMs,
   view,
 }: Readonly<{
+  activity?: readonly number[] | undefined
   index: number
   monitor: MonitorView
   nowMs: number
@@ -116,7 +142,7 @@ export function MonitorListItem({
   return (
     <Link
       aria-label={label}
-      className={`group grid gap-3 px-4 py-2.5 transition-colors hover:bg-canvas lg:grid-cols-[minmax(0,1.5fr)_minmax(10rem,1fr)_8.5rem_9.5rem_1rem] lg:items-center lg:gap-4 ${
+      className={`group grid gap-3 px-4 py-2.5 transition-colors hover:bg-canvas lg:grid-cols-[minmax(0,1.5fr)_minmax(10rem,1fr)_8.5rem_7.5rem_9.5rem_1rem] lg:items-center lg:gap-4 ${
         index > 0 ? 'border-t border-line' : ''
       }`}
       params={{ monitorId: monitor.id }}
@@ -125,6 +151,7 @@ export function MonitorListItem({
       {title}
       <DueProgress monitor={monitor} nowMs={nowMs} />
       <StatusBadge status={monitor.status} />
+      <ActivityStrip values={activity} />
       <p className="font-mono text-xs text-muted lg:text-right">
         <span className="text-ink tabular-nums">
           {formatRelativeTime(monitor.lastHeartbeatAtMs)}

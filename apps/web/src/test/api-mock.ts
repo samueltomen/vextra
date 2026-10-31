@@ -147,6 +147,21 @@ export function installApiMock(options: ApiMockOptions = {}) {
       const url = new URL(String(input), window.location.origin)
       const method = init?.method ?? 'GET'
 
+      if (url.pathname === '/api/monitors/activity' && method === 'GET') {
+        return jsonResponse({
+          data: {
+            monitors: [
+              {
+                days: [
+                  { day: new Date().toISOString().slice(0, 10), pings: 3 },
+                ],
+                monitorId: '20000000-0000-4000-8000-000000000001',
+              },
+            ],
+          },
+        })
+      }
+
       if (url.pathname === '/api/folders' && method === 'GET') {
         return jsonResponse({ data: { folders } })
       }
