@@ -530,6 +530,16 @@ describe('monitor details', () => {
     ).toBeInTheDocument()
   })
 
+  it('marks muted monitors in the dashboard list', async () => {
+    const monitor = monitorsWithFolder()[0]!
+
+    await renderApp('/', {
+      monitors: [{ ...monitor, alertsEnabled: false }],
+    })
+
+    expect(await screen.findByText('Alertes désactivées')).toBeInTheDocument()
+  })
+
   it('does not warn when alerts are on or the monitor is healthy', async () => {
     await renderApp(`/monitors/${MONITOR_ID}`, {
       monitors: monitorsWithFolder(),
