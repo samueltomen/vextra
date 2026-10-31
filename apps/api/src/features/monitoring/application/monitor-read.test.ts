@@ -9,6 +9,7 @@ import {
 const MONITOR: MonitorStateRecord = {
   alertAtMs: Date.parse('2026-10-24T12:05:30.000Z'),
   createdAtMs: Date.parse('2026-10-24T12:00:00.000Z'),
+  folderId: null,
   graceSeconds: 30,
   id: '20000000-0000-4000-8000-000000000001',
   incidentOpenedAtMs: null,
@@ -17,6 +18,7 @@ const MONITOR: MonitorStateRecord = {
   pausedAtMs: null,
   status: 'pending',
   tenantId: '10000000-0000-4000-8000-000000000001',
+  totalPings: 0,
 }
 
 function createPort(

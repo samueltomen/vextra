@@ -8,6 +8,7 @@ import {
 const ROW = {
   alert_at: '2026-10-24T12:05:30.000Z',
   created_at: '2026-10-24T12:00:00.000Z',
+  folder_id: null,
   grace_seconds: 30,
   id: '20000000-0000-4000-8000-000000000001',
   incident_opened_at: null,
@@ -16,6 +17,7 @@ const ROW = {
   paused_at: null,
   status: 'pending',
   tenant_id: '10000000-0000-4000-8000-000000000001',
+  total_pings: 0,
 }
 
 describe('SupabaseMonitorQueryRepository', () => {
@@ -32,6 +34,7 @@ describe('SupabaseMonitorQueryRepository', () => {
       {
         alertAtMs: Date.parse(ROW.alert_at),
         createdAtMs: Date.parse(ROW.created_at),
+        folderId: null,
         graceSeconds: 30,
         id: ROW.id,
         incidentOpenedAtMs: null,
@@ -40,12 +43,13 @@ describe('SupabaseMonitorQueryRepository', () => {
         pausedAtMs: null,
         status: 'pending',
         tenantId: ROW.tenant_id,
+        totalPings: 0,
       },
     ])
 
     expect(from).toHaveBeenCalledWith('monitors')
     expect(select).toHaveBeenCalledWith(
-      'id, tenant_id, interval_seconds, grace_seconds, status, last_heartbeat_at, alert_at, incident_opened_at, paused_at, created_at',
+      'id, tenant_id, interval_seconds, grace_seconds, status, last_heartbeat_at, alert_at, incident_opened_at, paused_at, created_at, folder_id, total_pings',
     )
     expect(eq).toHaveBeenCalledWith('tenant_id', ROW.tenant_id)
   })

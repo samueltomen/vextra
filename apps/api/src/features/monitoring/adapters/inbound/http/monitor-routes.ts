@@ -7,6 +7,7 @@ import { Hono, type Context } from 'hono'
 
 import type { CreateMonitor } from '../../../application/create-monitor.ts'
 import type { MonitorIncidents } from '../../../application/monitor-incidents.ts'
+import type { MonitorMetricsService } from '../../../application/monitor-metrics.ts'
 import type { MonitorLifecycle } from '../../../application/monitor-lifecycle.ts'
 import type {
   MonitorReadService,
@@ -24,6 +25,7 @@ export type AuthenticatedMonitorScope = Readonly<{
   createMonitor: Pick<CreateMonitor, 'execute'>
   monitorIncidents: Pick<MonitorIncidents, 'list'>
   monitorLifecycle: Pick<MonitorLifecycle, 'delete' | 'pause' | 'resume'>
+  monitorMetrics: Pick<MonitorMetricsService, 'get'>
   monitorRead: Pick<MonitorReadService, 'get' | 'list'>
   monitorSchedule: Pick<UpdateMonitorSchedule, 'execute'>
   principal: AuthenticatedPrincipal
@@ -166,6 +168,33 @@ export function createMonitorRoutes(
           incidents: incidents.map(toIncidentResponse),
         },
       })
+    } catch {
+      return internalError(context)
+    }
+  })
+
+  routes.get('/api/monitors/:monitorId/metrics', async (context) => {
+    const scope = await dependencies.authenticate(context)
+
+    if (!scope) {
+      return unauthorized(context)
+    }
+
+    const parsedId = monitorIdSchema.safeParse(context.req.param('monitorId'))
+
+    if (!parsedId.success) {
+      return monitorNotFound(context)
+    }
+
+    try {
+      const metrics = await scope.monitorMetrics.get(
+        scope.principal.tenantId,
+        parsedId.data,
+      )
+
+      return metrics
+        ? context.json({ data: metrics })
+        : monitorNotFound(context)
     } catch {
       return internalError(context)
     }
@@ -374,6 +403,7 @@ function toMonitorResponse(monitor: MonitorStateRecord) {
   return {
     alertAt: new Date(monitor.alertAtMs).toISOString(),
     createdAt: new Date(monitor.createdAtMs).toISOString(),
+    folderId: monitor.folderId,
     graceSeconds: monitor.graceSeconds,
     id: monitor.id,
     incidentOpenedAt:
@@ -390,6 +420,7 @@ function toMonitorResponse(monitor: MonitorStateRecord) {
         ? null
         : new Date(monitor.pausedAtMs).toISOString(),
     status: monitor.status,
+    totalPings: monitor.totalPings,
   }
 }
 

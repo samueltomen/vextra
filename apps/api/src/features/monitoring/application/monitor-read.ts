@@ -3,6 +3,7 @@ import type { MonitorStatus } from '@cronping/domain'
 export type MonitorStateRecord = Readonly<{
   alertAtMs: number
   createdAtMs: number
+  folderId: string | null
   graceSeconds: number
   id: string
   incidentOpenedAtMs: number | null
@@ -11,6 +12,7 @@ export type MonitorStateRecord = Readonly<{
   pausedAtMs: number | null
   status: MonitorStatus
   tenantId: string
+  totalPings: number
 }>
 
 export interface MonitorQueryPort {

@@ -6,11 +6,12 @@ import type {
 } from '../../application/monitor-read.ts'
 
 const MONITOR_STATE_COLUMNS =
-  'id, tenant_id, interval_seconds, grace_seconds, status, last_heartbeat_at, alert_at, incident_opened_at, paused_at, created_at'
+  'id, tenant_id, interval_seconds, grace_seconds, status, last_heartbeat_at, alert_at, incident_opened_at, paused_at, created_at, folder_id, total_pings'
 
 type MonitorStateRow = Readonly<{
   alert_at: string
   created_at: string
+  folder_id: string | null
   grace_seconds: number
   id: string
   incident_opened_at: string | null
@@ -19,6 +20,7 @@ type MonitorStateRow = Readonly<{
   paused_at: string | null
   status: MonitorStatus
   tenant_id: string
+  total_pings: number
 }>
 
 type QueryError = Readonly<{ message: string }>
@@ -64,6 +66,7 @@ function toRecord(row: MonitorStateRow): MonitorStateRecord {
   return {
     alertAtMs: toTimestamp(row.alert_at),
     createdAtMs: toTimestamp(row.created_at),
+    folderId: row.folder_id,
     graceSeconds: row.grace_seconds,
     id: row.id,
     incidentOpenedAtMs: toNullableTimestamp(row.incident_opened_at),
@@ -72,6 +75,7 @@ function toRecord(row: MonitorStateRow): MonitorStateRecord {
     pausedAtMs: toNullableTimestamp(row.paused_at),
     status: row.status,
     tenantId: row.tenant_id,
+    totalPings: Number(row.total_pings),
   }
 }
 

@@ -11,6 +11,7 @@ export const notificationDeliveryStatusSchema = z.enum([
   'sent',
   'failed',
   'dead',
+  'skipped',
 ])
 
 export const notificationDeliverySchema = z.strictObject({

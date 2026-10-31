@@ -7,6 +7,7 @@ export const monitorIdSchema = z.uuid()
 export const monitorStateSchema = z.strictObject({
   alertAt: z.iso.datetime(),
   createdAt: z.iso.datetime(),
+  folderId: z.uuid().nullable(),
   graceSeconds: z.number().int().nonnegative(),
   id: z.uuid(),
   incidentOpenedAt: z.iso.datetime().nullable(),
@@ -14,6 +15,7 @@ export const monitorStateSchema = z.strictObject({
   lastHeartbeatAt: z.iso.datetime().nullable(),
   pausedAt: z.iso.datetime().nullable(),
   status: monitorStatusSchema,
+  totalPings: z.number().int().nonnegative(),
 })
 
 export const listMonitorsResponseSchema = z.strictObject({
