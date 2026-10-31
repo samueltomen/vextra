@@ -27,6 +27,8 @@ import {
 } from '../features/accounts/query/use-current-account.ts'
 import { listMonitors } from '../features/monitoring/api/monitoring-api.ts'
 import { summarizeMonitors } from '../features/monitoring/model/monitor.ts'
+import { withEffectiveStatus } from '../features/monitoring/model/monitor-timing.ts'
+import { useNow } from '../lib/use-now.ts'
 import { isDemoModeEnabled } from '../demo/demo-mode.ts'
 import { usePreferences } from '../features/workspace/query/use-preferences.ts'
 import { CommandPalette } from './command-palette.tsx'
@@ -54,7 +56,15 @@ function useMonitorSummary() {
     refetchInterval: MONITORS_REFRESH_MS,
   })
 
-  return monitorsQuery.data ? summarizeMonitors(monitorsQuery.data) : null
+  const nowMs = useNow()
+
+  return monitorsQuery.data
+    ? summarizeMonitors(
+        monitorsQuery.data.map((monitor) =>
+          withEffectiveStatus(monitor, nowMs),
+        ),
+      )
+    : null
 }
 
 function NavLink({

@@ -2,12 +2,33 @@ import { describe, expect, it } from 'vitest'
 
 import {
   folderNameRequestSchema,
+  monitorActivityResponseSchema,
   monitorMetricsResponseSchema,
   setMonitorFolderRequestSchema,
   updatePreferencesRequestSchema,
 } from './workspace.ts'
 
 describe('workspace contracts', () => {
+  it('describes per-monitor daily activity', () => {
+    expect(
+      monitorActivityResponseSchema.safeParse({
+        data: {
+          monitors: [
+            {
+              days: [{ day: '2026-10-31', pings: 3 }],
+              monitorId: '20000000-0000-4000-8000-000000000001',
+            },
+          ],
+        },
+      }).success,
+    ).toBe(true)
+    expect(
+      monitorActivityResponseSchema.safeParse({
+        data: { monitors: [{ days: [], monitorId: 'x' }] },
+      }).success,
+    ).toBe(false)
+  })
+
   it('trims folder names and rejects empty or oversized ones', () => {
     expect(folderNameRequestSchema.parse({ name: '  Prod ' })).toEqual({
       name: 'Prod',

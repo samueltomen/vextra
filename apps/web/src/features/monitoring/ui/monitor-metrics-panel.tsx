@@ -1,12 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
 import { Activity } from 'lucide-react'
 
+import { TimeSeriesChart } from '../../../components/time-series-chart.tsx'
 import { getMonitorMetrics } from '../../workspace/api/workspace-api.ts'
 import {
   formatSeconds,
   summarizeMetrics,
   type MetricsSummary,
 } from '../model/metrics-summary.ts'
+
+function formatDayLabel(day: string): string {
+  const [, month, date] = day.split('-')
+
+  return `${date}/${month}`
+}
 
 function Stat({
   hint,
@@ -88,6 +95,7 @@ function MetricsBody({
   query: NonNullable<Awaited<ReturnType<typeof getMonitorMetrics>>>
 }>) {
   const summary = summarizeMetrics(query.days, intervalMinutes * 60, nowMs)
+  const labels = summary.bars.map((bar) => formatDayLabel(bar.day))
 
   return (
     <>
@@ -106,31 +114,46 @@ function MetricsBody({
         />
       </div>
 
-      <div
-        aria-label="Heartbeats reçus par jour sur 30 jours"
-        className="mt-4 flex h-20 items-end gap-1"
-        role="img"
-      >
-        {summary.bars.map((bar) => (
-          <span
-            className={`min-h-0.5 flex-1 rounded-sm ${
-              bar.pings > 0 ? 'bg-action' : 'bg-line'
-            }`}
-            key={bar.day}
-            style={{
-              height: `${
-                bar.pings > 0
-                  ? Math.max(8, (bar.pings / summary.peakPings) * 100)
-                  : 3
-              }%`,
-            }}
-            title={`${bar.day} : ${bar.pings} heartbeat${bar.pings > 1 ? 's' : ''}`}
+      <div className="mt-5 grid gap-6 lg:grid-cols-2">
+        <div>
+          <h3 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+            Heartbeats par jour
+          </h3>
+          <TimeSeriesChart
+            ariaLabel="Heartbeats reçus par jour sur 30 jours"
+            formatValue={(value) => String(Math.round(value))}
+            integerTicks
+            labels={labels}
+            series={[
+              {
+                color: 'var(--cp-color-action)',
+                name: 'Heartbeats',
+                values: summary.bars.map((bar) => bar.pings),
+              },
+            ]}
           />
-        ))}
-      </div>
-      <div className="mt-1.5 flex justify-between font-mono text-[11px] text-muted">
-        <span>il y a 30 j</span>
-        <span>aujourd’hui (UTC)</span>
+        </div>
+        <div>
+          <h3 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+            Intervalle moyen par jour
+          </h3>
+          <TimeSeriesChart
+            ariaLabel="Intervalle moyen entre heartbeats sur 30 jours"
+            formatValue={(value) => formatSeconds(value)}
+            labels={labels}
+            reference={{
+              label: `attendu ${formatSeconds(intervalMinutes * 60)}`,
+              value: intervalMinutes * 60,
+            }}
+            series={[
+              {
+                color: 'var(--cp-color-healthy-solid)',
+                name: 'Intervalle',
+                values: summary.dailyAvgIntervalSeconds,
+              },
+            ]}
+          />
+        </div>
       </div>
       <p className="mt-3 text-xs text-muted">
         Compteurs uniquement : ni contenu, ni IP, ni journal du script.

@@ -22,13 +22,18 @@ import {
   type MonitorView,
   type StatusFilter,
 } from '../model/monitor.ts'
-import { sortMonitors, type MonitorSort } from '../model/monitor-timing.ts'
+import {
+  sortMonitors,
+  withEffectiveStatus,
+  type MonitorSort,
+} from '../model/monitor-timing.ts'
 import { HealthBanner } from './health-banner.tsx'
 import {
   matchesFolder,
   useFolders,
   type FolderFilter,
 } from '../../workspace/query/use-folders.ts'
+import { getMonitorsActivity } from '../../workspace/api/workspace-api.ts'
 import { FolderBar } from '../../workspace/ui/folder-bar.tsx'
 import { MonitorListItem } from './monitor-list-item.tsx'
 import { StatusSummary } from './status-summary.tsx'
@@ -146,6 +151,11 @@ export function DashboardPage() {
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [folderFilter, setFolderFilter] = useState<FolderFilter>('all')
   const foldersQuery = useFolders()
+  const activityQuery = useQuery({
+    queryFn: getMonitorsActivity,
+    queryKey: ['monitors-activity'],
+    refetchInterval: 60_000,
+  })
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<MonitorSort>('priority')
   const [view, setView] = useState<DashboardView>(readStoredView)
@@ -171,7 +181,9 @@ export function DashboardPage() {
     retry: previewState === 'error' ? false : 1,
   })
 
-  const monitors = monitorsQuery.data ?? []
+  const monitors = (monitorsQuery.data ?? []).map((monitor) =>
+    withEffectiveStatus(monitor, nowMs),
+  )
   const normalizedSearch = query.trim().toLowerCase()
   const visibleMonitors = sortMonitors(
     monitors.filter(
@@ -398,16 +410,18 @@ export function DashboardPage() {
           <div className="overflow-hidden rounded-lg border border-line bg-surface">
             <div
               aria-hidden="true"
-              className="hidden border-b border-line bg-canvas/60 px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-muted lg:grid lg:grid-cols-[minmax(0,1.5fr)_minmax(10rem,1fr)_8.5rem_9.5rem_1rem] lg:gap-4"
+              className="hidden border-b border-line bg-canvas/60 px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-muted lg:grid lg:grid-cols-[minmax(0,1.5fr)_minmax(10rem,1fr)_8.5rem_7.5rem_9.5rem_1rem] lg:gap-4"
             >
               <span>Moniteur</span>
               <span>Échéance</span>
               <span>Statut</span>
+              <span>Activité 14 j</span>
               <span className="text-right">Dernier signal</span>
               <span />
             </div>
             {visibleMonitors.map((monitor, index) => (
               <MonitorListItem
+                activity={activityQuery.data?.get(monitor.id)}
                 index={index}
                 key={monitor.id}
                 monitor={monitor}

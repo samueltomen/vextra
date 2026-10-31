@@ -2,17 +2,24 @@ import type { Preferences, UpdatePreferencesRequest } from '@cronping/contracts'
 
 import { apiRequest } from '../../../api/client.ts'
 import { isDemoModeEnabled } from '../../../demo/demo-mode.ts'
-import { setDemoMonitorFolder } from '../../../demo/demo-monitoring-store.ts'
+import {
+  listDemoMonitors,
+  setDemoMonitorFolder,
+} from '../../../demo/demo-monitoring-store.ts'
 import {
   createDemoFolder,
   deleteDemoFolder,
+  getDemoActivity,
   getDemoMetrics,
   getDemoPreferences,
   listDemoFolders,
   renameDemoFolder,
   updateDemoPreferences,
 } from '../../../demo/demo-workspace-store.ts'
-import type { MonitorMetricsView } from '../../monitoring/model/metrics-summary.ts'
+import {
+  denseActivity,
+  type MonitorMetricsView,
+} from '../../monitoring/model/metrics-summary.ts'
 
 export type FolderView = Readonly<{ id: string; name: string }>
 
@@ -125,4 +132,38 @@ export async function getMonitorMetrics(
   )
 
   return response.data
+}
+
+/** Heartbeats per day over 14 days for each monitor (oldest first). */
+export type MonitorActivity = ReadonlyMap<string, readonly number[]>
+
+export async function getMonitorsActivity(): Promise<MonitorActivity> {
+  const nowMs = Date.now()
+
+  if (isDemoModeEnabled()) {
+    const ids = (await listDemoMonitors()).map((monitor) => monitor.id)
+
+    return new Map(
+      [...getDemoActivity(ids)].map(([id, days]) => [
+        id,
+        denseActivity(days, nowMs),
+      ]),
+    )
+  }
+
+  const response = await apiRequest<{
+    data: {
+      monitors: {
+        days: { day: string; pings: number }[]
+        monitorId: string
+      }[]
+    }
+  }>('/api/monitors/activity')
+
+  return new Map(
+    response.data.monitors.map((entry) => [
+      entry.monitorId,
+      denseActivity(entry.days, nowMs),
+    ]),
+  )
 }

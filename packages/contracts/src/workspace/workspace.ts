@@ -71,6 +71,22 @@ export const monitorMetricsResponseSchema = z.strictObject({
   }),
 })
 
+export const monitorActivityResponseSchema = z.strictObject({
+  data: z.strictObject({
+    monitors: z.array(
+      z.strictObject({
+        days: z.array(
+          z.strictObject({
+            day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u),
+            pings: z.number().int().nonnegative(),
+          }),
+        ),
+        monitorId: z.uuid(),
+      }),
+    ),
+  }),
+})
+
 function isSupportedTimeZone(value: string): boolean {
   try {
     new Intl.DateTimeFormat('fr-FR', { timeZone: value })

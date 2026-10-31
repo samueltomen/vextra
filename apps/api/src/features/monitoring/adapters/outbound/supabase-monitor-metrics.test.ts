@@ -92,12 +92,44 @@ describe('SupabaseMonitorMetrics', () => {
   })
 })
 
+describe('SupabaseMonitorMetrics activity', () => {
+  it('reads daily pings of every monitor of the tenant', async () => {
+    const { filters, supabase } = client(
+      { data: null },
+      { data: [{ day: '2026-10-31', monitor_id: 'm1', pings: '4' }] },
+    )
+
+    await expect(
+      new SupabaseMonitorMetrics(supabase).activity('tenant-a', '2026-10-18'),
+    ).resolves.toEqual([{ day: '2026-10-31', monitorId: 'm1', pings: 4 }])
+    expect(filters).toContainEqual(['eq', ['tenant_id', 'tenant-a']])
+    expect(filters).toContainEqual(['gte', ['day', '2026-10-18']])
+    await expect(
+      new SupabaseMonitorMetrics(
+        client({ data: null }, { error: { code: 'x' } }).supabase,
+      ).activity('t', '2026-10-18'),
+    ).rejects.toThrow('activity query failed')
+  })
+})
+
 describe('MonitorMetricsService', () => {
+  it('asks for the last 14 UTC days of activity', async () => {
+    const activity = vi.fn(async () => [])
+    const service = new MonitorMetricsService({
+      nowMs: () => Date.parse('2026-10-31T12:00:00.000Z'),
+      port: { activity, find: vi.fn(async () => null) },
+    })
+
+    await service.activity('t')
+
+    expect(activity).toHaveBeenCalledWith('t', '2026-10-18')
+  })
+
   it('asks for the last 30 UTC days including today', async () => {
     const find = vi.fn(async () => null)
     const service = new MonitorMetricsService({
       nowMs: () => Date.parse('2026-10-31T12:00:00.000Z'),
-      port: { find },
+      port: { activity: vi.fn(async () => []), find },
     })
 
     await service.get('t', 'm')

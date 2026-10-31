@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type {
+  ActivityRecord,
   MonitorMetricsPort,
   MonitorMetricsRecord,
 } from '../../application/monitor-metrics.ts'
@@ -15,6 +16,34 @@ type DayRow = Readonly<{
 
 export class SupabaseMonitorMetrics implements MonitorMetricsPort {
   constructor(private readonly client: SupabaseClient) {}
+
+  async activity(
+    tenantId: string,
+    sinceDay: string,
+  ): Promise<readonly ActivityRecord[]> {
+    const { data, error } = await this.client
+      .from('monitor_daily_stats')
+      .select('monitor_id, day, pings')
+      .eq('tenant_id', tenantId)
+      .gte('day', sinceDay)
+      .order('day', { ascending: true })
+
+    if (error) {
+      throw new Error('activity query failed')
+    }
+
+    return (
+      (data ?? []) as readonly Readonly<{
+        day: string
+        monitor_id: string
+        pings: number
+      }>[]
+    ).map((row) => ({
+      day: row.day,
+      monitorId: row.monitor_id,
+      pings: Number(row.pings),
+    }))
+  }
 
   async find(
     tenantId: string,
