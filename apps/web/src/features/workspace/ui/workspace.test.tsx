@@ -182,6 +182,135 @@ describe('run history', () => {
   })
 })
 
+describe('alert channels', () => {
+  async function openSettings() {
+    await renderApp('/settings')
+
+    return screen.findByRole('region', { name: 'Canaux d’alerte' })
+  }
+
+  async function addChannel(card: HTMLElement, name: string, target: string) {
+    fireEvent.change(within(card).getByLabelText('Nom du canal'), {
+      target: { value: name },
+    })
+    fireEvent.change(
+      within(card).getByLabelText('URL du webhook entrant Slack'),
+      {
+        target: { value: target },
+      },
+    )
+    fireEvent.click(
+      within(card).getByRole('button', { name: 'Ajouter le canal' }),
+    )
+  }
+
+  it('adds a channel, tests it, disables it and removes it', async () => {
+    const card = await openSettings()
+
+    expect(
+      await within(card).findByText('Aucun canal configuré.'),
+    ).toBeVisible()
+
+    await addChannel(
+      card,
+      'Équipe ops',
+      'https://hooks.slack.com/services/T/B/x',
+    )
+    expect(await within(card).findByText('Équipe ops')).toBeVisible()
+    expect(within(card).getByText(/example\.com\/…hook/)).toBeVisible()
+    expect(
+      (
+        within(card).getByLabelText(
+          'URL du webhook entrant Slack',
+        ) as HTMLInputElement
+      ).value,
+    ).toBe('')
+
+    fireEvent.click(
+      within(card).getByRole('button', {
+        name: 'Envoyer un test au canal Équipe ops',
+      }),
+    )
+    expect(
+      await within(card).findByText('Message de test envoyé.'),
+    ).toBeVisible()
+
+    const toggle = within(card).getByLabelText('Activer le canal Équipe ops')
+
+    fireEvent.click(toggle)
+    await waitFor(() => expect(toggle).not.toBeChecked())
+
+    fireEvent.click(
+      within(card).getByRole('button', {
+        name: 'Supprimer le canal Équipe ops',
+      }),
+    )
+    expect(
+      await within(card).findByText('Aucun canal configuré.'),
+    ).toBeVisible()
+  })
+
+  it('explains invalid destinations, duplicate names and failed tests', async () => {
+    const card = await openSettings()
+
+    await addChannel(card, 'Ops', 'http://insecure.example.com')
+    expect(await within(card).findByRole('alert')).toHaveTextContent(
+      'pas valide',
+    )
+
+    await addChannel(card, 'Cassé', 'https://hooks.slack.com/services/T/B/x')
+    await within(card).findByText('Cassé')
+    await addChannel(card, 'Cassé', 'https://hooks.slack.com/services/T/B/y')
+    await waitFor(() =>
+      expect(within(card).getByRole('alert')).toHaveTextContent('déjà utilisé'),
+    )
+
+    fireEvent.click(
+      within(card).getByRole('button', {
+        name: 'Envoyer un test au canal Cassé',
+      }),
+    )
+    expect(await within(card).findByText(/n’a pas accepté/)).toBeVisible()
+  })
+
+  it('never displays the secret destination of a channel', async () => {
+    const card = await openSettings()
+
+    await addChannel(
+      card,
+      'Ops',
+      'https://hooks.slack.com/services/T/B/SECRETVALUE',
+    )
+    await within(card).findByText('Ops')
+
+    expect(card.textContent).not.toContain('SECRETVALUE')
+  })
+})
+
+describe('incident reminders', () => {
+  it('saves the reminder interval', async () => {
+    const { fetchMock } = await renderAppWithMock()
+
+    fireEvent.change(
+      await screen.findByLabelText('Rappel tant qu’un incident reste ouvert'),
+      { target: { value: '360' } },
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Enregistrer les préférences' }),
+    )
+    expect(await screen.findByText('Préférences enregistrées.')).toBeVisible()
+
+    const patch = fetchMock.mock.calls.find(
+      ([input, init]) =>
+        String(input).endsWith('/api/preferences') && init?.method === 'PATCH',
+    )
+
+    expect(JSON.parse(String(patch?.[1]?.body))).toMatchObject({
+      reminderIntervalMinutes: 360,
+    })
+  })
+})
+
 describe('preferences', () => {
   it('saves display name, time zone and alert preferences', async () => {
     const { fetchMock } = await renderAppWithMock()

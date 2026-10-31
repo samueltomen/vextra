@@ -203,8 +203,15 @@ en `GET`, `HEAD` ou `POST`). La page d'un moniteur affiche l'historique des
 exécutions (90 jours), les durées et les échecs, sans jamais conserver de
 contenu ([ADR 0008](docs/adr/0008-evenements-d-execution.md)).
 
-Ces fonctions s'appuient sur cinq migrations (`20261031100000`,
-`20261031110000`, `20261031120000`, `20261031130000`, `20261031140000`) à appliquer avec `supabase db push` avant de
+Les alertes peuvent aussi partir vers **Slack, Discord, Telegram, Microsoft
+Teams, PagerDuty ou un webhook** (Réglages, « Canaux d'alerte », avec un bouton
+de test). La destination est un secret : l'API ne la renvoie jamais. Un
+**rappel** périodique peut être activé tant qu'un incident reste ouvert
+([ADR 0009](docs/adr/0009-canaux-d-alerte-et-rappels.md)).
+
+Ces fonctions s'appuient sur six migrations (`20261031100000`,
+`20261031110000`, `20261031120000`, `20261031130000`, `20261031140000`,
+`20261031150000`) à appliquer avec `supabase db push` avant de
 déployer l'API.
 
 ## Commandes

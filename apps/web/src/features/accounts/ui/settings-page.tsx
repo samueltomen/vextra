@@ -5,6 +5,7 @@ import { Bell, Mail, ShieldAlert, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { deleteAccount } from '../api/account-api.ts'
+import { ChannelsCard } from '../../workspace/ui/channels-card.tsx'
 import { PreferencesCard } from '../../workspace/ui/preferences-card.tsx'
 import { useCurrentAccount } from '../query/use-current-account.ts'
 
@@ -36,6 +37,8 @@ export function SettingsPage() {
       </header>
 
       <PreferencesCard />
+
+      <ChannelsCard />
 
       <section className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border border-line bg-surface p-4 sm:p-5">

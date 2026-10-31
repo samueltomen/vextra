@@ -1,5 +1,9 @@
 import type { Preferences } from '@cronping/contracts'
 
+import type {
+  ChannelKind,
+  ChannelView,
+} from '../features/workspace/api/workspace-api.ts'
 import type { MonitorMetricsView } from '../features/monitoring/model/metrics-summary.ts'
 
 export type DemoFolder = Readonly<{ id: string; name: string }>
@@ -19,6 +23,7 @@ let preferences: Preferences = {
   displayName: null,
   notifyOnOpen: true,
   notifyOnResolve: true,
+  reminderIntervalMinutes: null,
   timeFormat: '24h',
   timezone: 'Europe/Paris',
 }
@@ -137,4 +142,40 @@ export function getDemoRuns(intervalMinutes: number): readonly {
       overlapped: index === 7,
     }
   })
+}
+
+let channels: ChannelView[] = []
+
+export function listDemoChannels(): readonly ChannelView[] {
+  return channels.map((channel) => ({ ...channel }))
+}
+
+export function createDemoChannel(
+  input: Readonly<{ kind: ChannelKind; name: string; target: string }>,
+): ChannelView {
+  const channel: ChannelView = {
+    createdAtMs: Date.now(),
+    enabled: true,
+    id: crypto.randomUUID(),
+    kind: input.kind,
+    name: input.name,
+    targetHint: `…${input.target.slice(-4)}`,
+  }
+
+  channels = [...channels, channel]
+
+  return channel
+}
+
+export function setDemoChannelEnabled(
+  channelId: string,
+  enabled: boolean,
+): void {
+  channels = channels.map((channel) =>
+    channel.id === channelId ? { ...channel, enabled } : channel,
+  )
+}
+
+export function deleteDemoChannel(channelId: string): void {
+  channels = channels.filter((channel) => channel.id !== channelId)
 }

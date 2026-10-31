@@ -8,13 +8,17 @@ import {
 } from '../../../demo/demo-monitoring-store.ts'
 import {
   createDemoFolder,
+  createDemoChannel,
+  deleteDemoChannel,
   deleteDemoFolder,
   getDemoActivity,
   getDemoMetrics,
   getDemoRuns,
   getDemoPreferences,
+  listDemoChannels,
   listDemoFolders,
   renameDemoFolder,
+  setDemoChannelEnabled,
   updateDemoPreferences,
 } from '../../../demo/demo-workspace-store.ts'
 import {
@@ -203,4 +207,101 @@ export async function getMonitorRuns(
     kind: run.kind,
     overlapped: run.overlapped,
   }))
+}
+
+export type ChannelKind =
+  'discord' | 'pagerduty' | 'slack' | 'teams' | 'telegram' | 'webhook'
+
+export type ChannelView = Readonly<{
+  createdAtMs: number
+  enabled: boolean
+  id: string
+  kind: ChannelKind
+  name: string
+  targetHint: string
+}>
+
+type ChannelResponse = {
+  createdAt: string
+  enabled: boolean
+  id: string
+  kind: ChannelKind
+  name: string
+  targetHint: string
+}
+
+function toChannelView(channel: ChannelResponse): ChannelView {
+  return {
+    createdAtMs: Date.parse(channel.createdAt),
+    enabled: channel.enabled,
+    id: channel.id,
+    kind: channel.kind,
+    name: channel.name,
+    targetHint: channel.targetHint,
+  }
+}
+
+export async function listChannels(): Promise<readonly ChannelView[]> {
+  if (isDemoModeEnabled()) {
+    return listDemoChannels()
+  }
+
+  const response = await apiRequest<{ data: { channels: ChannelResponse[] } }>(
+    '/api/channels',
+  )
+
+  return response.data.channels.map(toChannelView)
+}
+
+export async function createChannel(
+  input: Readonly<{ kind: ChannelKind; name: string; target: string }>,
+): Promise<ChannelView> {
+  if (isDemoModeEnabled()) {
+    return createDemoChannel(input)
+  }
+
+  const response = await apiRequest<{ data: { channel: ChannelResponse } }>(
+    '/api/channels',
+    { body: JSON.stringify(input), method: 'POST' },
+  )
+
+  return toChannelView(response.data.channel)
+}
+
+export async function setChannelEnabled(
+  channelId: string,
+  enabled: boolean,
+): Promise<void> {
+  if (isDemoModeEnabled()) {
+    setDemoChannelEnabled(channelId, enabled)
+
+    return
+  }
+
+  await apiRequest(`/api/channels/${encodeURIComponent(channelId)}`, {
+    body: JSON.stringify({ enabled }),
+    method: 'PATCH',
+  })
+}
+
+export async function deleteChannel(channelId: string): Promise<void> {
+  if (isDemoModeEnabled()) {
+    deleteDemoChannel(channelId)
+
+    return
+  }
+
+  await apiRequest(`/api/channels/${encodeURIComponent(channelId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function testChannel(channelId: string): Promise<void> {
+  if (isDemoModeEnabled()) {
+    return
+  }
+
+  await apiRequest(`/api/channels/${encodeURIComponent(channelId)}/test`, {
+    method: 'POST',
+  })
 }
