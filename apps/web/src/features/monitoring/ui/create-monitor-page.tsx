@@ -292,7 +292,7 @@ function CreateMonitorForm({
               validators={{
                 onChange: ({ value }) =>
                   value.trim().length === 0
-                    ? 'Donnez un libellé à ce moniteur.'
+                    ? 'Donnez un nom à ce moniteur.'
                     : undefined,
               }}
             >
@@ -305,7 +305,7 @@ function CreateMonitorForm({
                       className="mb-2 block text-sm font-medium"
                       htmlFor={field.name}
                     >
-                      Libellé local
+                      Nom
                     </label>
                     <Input
                       aria-describedby={`${field.name}-help${
@@ -324,8 +324,7 @@ function CreateMonitorForm({
                       className="mt-2 text-xs leading-5 text-muted"
                       id={`${field.name}-help`}
                     >
-                      Stocké localement dans ce prototype ; jamais envoyé au
-                      serveur.
+                      Affiché dans le tableau de bord et dans les alertes.
                     </p>
                     {error ? (
                       <p

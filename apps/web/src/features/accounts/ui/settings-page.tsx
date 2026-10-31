@@ -2,7 +2,7 @@ import { Button, Input } from '@heroui/react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Bell, Mail, ShieldAlert, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import { deleteAccount } from '../api/account-api.ts'
 import { TeamCard } from '../../team/ui/team-card.tsx'
@@ -12,6 +12,27 @@ import { StatusPageCard } from '../../status/ui/status-page-card.tsx'
 import { ChannelsCard } from '../../workspace/ui/channels-card.tsx'
 import { PreferencesCard } from '../../workspace/ui/preferences-card.tsx'
 import { useCurrentAccount } from '../query/use-current-account.ts'
+
+const SECTIONS = [
+  { id: 'preferences', label: 'Préférences' },
+  { id: 'canaux', label: 'Canaux' },
+  { id: 'equipe', label: 'Équipe' },
+  { id: 'maintenance', label: 'Maintenance' },
+  { id: 'statut', label: 'Page de statut' },
+  { id: 'api', label: 'Clés d’API' },
+  { id: 'compte', label: 'Compte' },
+] as const
+
+function Anchor({
+  children,
+  id,
+}: Readonly<{ children: ReactNode; id: string }>) {
+  return (
+    <div className="scroll-mt-6" id={id}>
+      {children}
+    </div>
+  )
+}
 
 export function SettingsPage() {
   const [confirmation, setConfirmation] = useState('')
@@ -40,19 +61,46 @@ export function SettingsPage() {
         </p>
       </header>
 
-      <PreferencesCard />
+      <nav
+        aria-label="Sections des réglages"
+        className="-mt-4 flex flex-wrap gap-2"
+      >
+        {SECTIONS.map((section) => (
+          <a
+            className="rounded-full border border-line px-3 py-1.5 text-xs text-muted transition-colors hover:border-border-strong hover:text-ink"
+            href={`#${section.id}`}
+            key={section.id}
+          >
+            {section.label}
+          </a>
+        ))}
+      </nav>
 
-      <ChannelsCard />
+      <Anchor id="preferences">
+        <PreferencesCard />
+      </Anchor>
 
-      <TeamCard />
+      <Anchor id="canaux">
+        <ChannelsCard />
+      </Anchor>
 
-      <MaintenanceCard />
+      <Anchor id="equipe">
+        <TeamCard />
+      </Anchor>
 
-      <StatusPageCard />
+      <Anchor id="maintenance">
+        <MaintenanceCard />
+      </Anchor>
 
-      <ApiKeysCard />
+      <Anchor id="statut">
+        <StatusPageCard />
+      </Anchor>
 
-      <section className="grid gap-4 md:grid-cols-2">
+      <Anchor id="api">
+        <ApiKeysCard />
+      </Anchor>
+
+      <section className="grid gap-4 scroll-mt-6 md:grid-cols-2" id="compte">
         <div className="rounded-xl border border-line bg-surface p-4 sm:p-5">
           <div className="flex items-center gap-2 text-action">
             <Mail aria-hidden="true" size={18} />
