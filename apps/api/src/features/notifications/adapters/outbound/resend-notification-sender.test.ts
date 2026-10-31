@@ -21,6 +21,7 @@ describe('ResendNotificationSender', () => {
     vi.stubGlobal('fetch', fetchMock)
     const sender = new ResendNotificationSender({
       apiKey: 're_test',
+      appOrigin: 'https://cronping.example.test',
       from: 'CronPing <alerts@example.test>',
     })
 
@@ -39,6 +40,8 @@ describe('ResendNotificationSender', () => {
     expect(body.subject).toContain('heartbeat')
     expect(body.text).toContain(INPUT.monitorId)
     expect(body.text).not.toContain('owner@example.test')
+    expect(body.html).toContain('<!doctype html>')
+    expect(body.html).not.toContain('owner@example.test')
   })
 
   it('rejects provider failures without exposing the recipient', async () => {
@@ -53,6 +56,7 @@ describe('ResendNotificationSender', () => {
     )
     const sender = new ResendNotificationSender({
       apiKey: 're_test',
+      appOrigin: 'https://cronping.example.test',
       from: 'CronPing <alerts@example.test>',
     })
 
@@ -76,6 +80,7 @@ describe('ResendNotificationSender', () => {
     )
     const sender = new ResendNotificationSender({
       apiKey: 're_test',
+      appOrigin: 'https://cronping.example.test',
       from: 'CronPing <alerts@example.test>',
     })
 

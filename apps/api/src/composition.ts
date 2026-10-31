@@ -317,6 +317,7 @@ export async function runNotificationDelivery(
     ),
     sender: new ResendNotificationSender({
       apiKey: environment.RESEND_API_KEY,
+      appOrigin: environment.APP_ORIGIN,
       from: environment.RESEND_FROM_EMAIL,
     }),
   })
