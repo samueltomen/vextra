@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@cronping/contracts": "workspace:*",
+    "@cronping/domain": "workspace:*",
     "@fontsource-variable/inter": "5.3.0",
     "@fontsource-variable/jetbrains-mono": "5.3.0",
     "@heroui/react": "2.8.5",

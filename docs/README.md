@@ -23,3 +23,4 @@ Décisions d'architecture (`docs/adr/`) :
 - [ADR 0009 — Canaux d'alerte et rappels](adr/0009-canaux-d-alerte-et-rappels.md)
 - [ADR 0010 — Rapport hebdomadaire](adr/0010-rapport-hebdomadaire.md)
 - [ADR 0011 — Auto-hébergement](adr/0011-auto-hebergement.md)
+- [ADR 0012 — Planification par expression cron](adr/0012-planification-par-expression-cron.md)

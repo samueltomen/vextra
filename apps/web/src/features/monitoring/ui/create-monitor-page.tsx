@@ -25,7 +25,14 @@ import {
 } from '../api/monitoring-api.ts'
 import { formatDuration } from '../model/availability.ts'
 import { buildIntegrationSnippets } from '../model/integration-snippets.ts'
+import { validateCronSchedule } from '../model/cron-schedule.ts'
 import { formatFrequency } from '../model/monitor-format.ts'
+import { getDisplayTimeZone } from '../../../lib/display-time.ts'
+import {
+  CronScheduleFields,
+  ScheduleKindToggle,
+  type ScheduleKind,
+} from './cron-schedule-fields.tsx'
 import { DurationPicker } from './duration-picker.tsx'
 import {
   GRACE_PRESETS,
@@ -85,6 +92,7 @@ function SuccessState({
   const navigate = useNavigate()
   const pingUrl = new URL('/api/ping', window.location.origin).toString()
   const snippets = buildIntegrationSnippets({
+    cronExpression: created.monitor.cronExpression,
     intervalMinutes: created.monitor.intervalMinutes,
     pingUrl,
     token: created.heartbeatToken,
@@ -189,12 +197,38 @@ function CreateMonitorForm({
       localLabel: initialLabel,
       intervalMinutes: initialInterval,
       graceMinutes: initialGrace,
+      scheduleKind: 'interval' as ScheduleKind,
+      cronExpression: '0 3 * * *',
+      cronTimezone: getDisplayTimeZone() ?? 'UTC',
     },
     onSubmit: async ({ value }) => {
       setSubmitError(null)
 
+      const isCron = value.scheduleKind === 'cron'
+
+      if (
+        isCron &&
+        validateCronSchedule(value.cronExpression, value.cronTimezone)
+      ) {
+        setSubmitError('Corrigez l’expression cron avant de continuer.')
+
+        return
+      }
+
       try {
-        const result = await mutation.mutateAsync(value)
+        const result = await mutation.mutateAsync({
+          graceMinutes: value.graceMinutes,
+          intervalMinutes: value.intervalMinutes,
+          localLabel: value.localLabel,
+          ...(isCron
+            ? {
+                cron: {
+                  expression: value.cronExpression,
+                  timezone: value.cronTimezone,
+                },
+              }
+            : {}),
+        })
 
         if (defaultFolderId) {
           await setMonitorFolder(result.monitor.id, defaultFolderId).catch(
@@ -307,21 +341,51 @@ function CreateMonitorForm({
               }}
             </form.Field>
 
-            <form.Field
-              name="intervalMinutes"
-              validators={{
-                onChange: ({ value }) => validateInterval(value),
-              }}
-            >
-              {(field) => (
-                <DurationPicker
-                  description="Le rythme auquel votre tâche doit envoyer un signal."
-                  error={readFieldError(field.state.meta.errors)}
-                  label="Fréquence attendue"
-                  onChange={field.handleChange}
-                  presets={INTERVAL_PRESETS}
-                  value={field.state.value}
-                />
+            <form.Field name="scheduleKind">
+              {(kind) => (
+                <div className="space-y-5">
+                  <ScheduleKindToggle
+                    onChange={kind.handleChange}
+                    value={kind.state.value}
+                  />
+                  {kind.state.value === 'interval' ? (
+                    <form.Field
+                      name="intervalMinutes"
+                      validators={{
+                        onChange: ({ value }) => validateInterval(value),
+                      }}
+                    >
+                      {(field) => (
+                        <DurationPicker
+                          description="Le rythme auquel votre tâche doit envoyer un signal."
+                          error={readFieldError(field.state.meta.errors)}
+                          label="Fréquence attendue"
+                          onChange={field.handleChange}
+                          presets={INTERVAL_PRESETS}
+                          value={field.state.value}
+                        />
+                      )}
+                    </form.Field>
+                  ) : (
+                    <form.Subscribe selector={(state) => state.values}>
+                      {(values) => (
+                        <CronScheduleFields
+                          onChange={(next) => {
+                            form.setFieldValue(
+                              'cronExpression',
+                              next.expression,
+                            )
+                            form.setFieldValue('cronTimezone', next.timezone)
+                          }}
+                          value={{
+                            expression: values.cronExpression,
+                            timezone: values.cronTimezone,
+                          }}
+                        />
+                      )}
+                    </form.Subscribe>
+                  )}
+                </div>
               )}
             </form.Field>
 
@@ -388,15 +452,20 @@ function CreateMonitorForm({
                   <div className="flex justify-between gap-3">
                     <dt className="text-muted">Signal attendu</dt>
                     <dd className="text-right font-medium">
-                      {formatFrequency(values.intervalMinutes)}
+                      {values.scheduleKind === 'cron'
+                        ? `${values.cronExpression} (${values.cronTimezone})`
+                        : formatFrequency(values.intervalMinutes)}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3">
                     <dt className="text-muted">Alerte après</dt>
                     <dd className="text-right font-medium">
-                      {formatDuration(
-                        (values.intervalMinutes + values.graceMinutes) * 60_000,
-                      )}
+                      {values.scheduleKind === 'cron'
+                        ? `${values.graceMinutes} min après l’échéance`
+                        : formatDuration(
+                            (values.intervalMinutes + values.graceMinutes) *
+                              60_000,
+                          )}
                     </dd>
                   </div>
                 </dl>

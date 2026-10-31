@@ -17,6 +17,7 @@ export type IntegrationSnippet = Readonly<{
 }>
 
 type SnippetParams = Readonly<{
+  cronExpression?: string | null | undefined
   intervalMinutes?: number | undefined
   pingUrl: string
   /** Token affiché une seule fois ; `null` référence la variable d'environnement. */
@@ -52,6 +53,7 @@ export function toCronExpression(intervalMinutes: number | undefined): string {
 }
 
 export function buildIntegrationSnippets({
+  cronExpression,
   intervalMinutes,
   pingUrl,
   token,
@@ -94,7 +96,7 @@ curl -fsS -m 10 --retry 3 "${pingUrl}/${shellToken}"
     {
       code: `# crontab -e
 CRONPING_TOKEN=${literalToken}
-${toCronExpression(intervalMinutes)} /chemin/vers/job.sh && curl -fsS -m 10 --retry 3 -X POST -H "Authorization: Bearer $CRONPING_TOKEN" "${pingUrl}" > /dev/null`,
+${cronExpression ?? toCronExpression(intervalMinutes)} /chemin/vers/job.sh && curl -fsS -m 10 --retry 3 -X POST -H "Authorization: Bearer $CRONPING_TOKEN" "${pingUrl}" > /dev/null`,
       hint: 'Le ping ne part que si le job se termine avec succès (&&).',
       id: 'crontab',
       label: 'crontab',

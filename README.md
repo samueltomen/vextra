@@ -21,6 +21,9 @@ Guide complet, avec Supabase, HTTPS, e-mails et sauvegardes :
 [docs/self-hosting.md](docs/self-hosting.md)
 ([ADR 0011](docs/adr/0011-auto-hebergement.md)).
 
+Les moniteurs peuvent suivre un intervalle ou une expression cron avec fuseau
+horaire ([ADR 0012](docs/adr/0012-planification-par-expression-cron.md)).
+
 ## État actuel
 
 Le dépôt contient le socle de la V1 :

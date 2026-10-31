@@ -7,6 +7,8 @@ function monitor(status: MonitorView['status']): MonitorView {
     alertAtMs: 0,
     alertsEnabled: true,
     createdAtMs: 0,
+    cronExpression: null,
+    cronTimezone: null,
     description: null,
     folderId: null,
     graceMinutes: 2,

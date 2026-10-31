@@ -14,6 +14,8 @@ function monitor(overrides: Partial<MonitorView>): MonitorView {
     alertAtMs: NOW_MS + 600_000,
     alertsEnabled: true,
     createdAtMs: NOW_MS - 600_000,
+    cronExpression: null,
+    cronTimezone: null,
     description: null,
     folderId: null,
     graceMinutes: 5,
