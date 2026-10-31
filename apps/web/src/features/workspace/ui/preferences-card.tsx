@@ -91,6 +91,7 @@ function PreferencesForm({ initial }: Readonly<{ initial: Preferences }>) {
         displayName: draft.displayName,
         notifyOnOpen: draft.notifyOnOpen,
         notifyOnResolve: draft.notifyOnResolve,
+        reminderIntervalMinutes: draft.reminderIntervalMinutes,
         timeFormat: draft.timeFormat,
         timezone: draft.timezone,
       }),
@@ -253,6 +254,31 @@ function PreferencesForm({ initial }: Readonly<{ initial: Preferences }>) {
           description="Un e-mail quand le moniteur reçoit de nouveau un heartbeat."
           label="Incident résolu"
           onChange={(notifyOnResolve) => change({ notifyOnResolve })}
+        />
+        <SelectField
+          label="Rappel tant qu’un incident reste ouvert"
+          onChange={(reminder) =>
+            change({
+              reminderIntervalMinutes:
+                reminder === ''
+                  ? null
+                  : (Number(
+                      reminder,
+                    ) as Preferences['reminderIntervalMinutes']),
+            })
+          }
+          options={[
+            ['', 'Aucun rappel'],
+            ['60', 'Toutes les heures'],
+            ['360', 'Toutes les 6 heures'],
+            ['1440', 'Tous les jours'],
+            ['10080', 'Toutes les semaines'],
+          ]}
+          value={
+            draft.reminderIntervalMinutes === null
+              ? ''
+              : String(draft.reminderIntervalMinutes)
+          }
         />
       </fieldset>
 

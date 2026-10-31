@@ -19,3 +19,4 @@ Décisions d'architecture (`docs/adr/`) :
 - [ADR 0006 — Mises à jour en direct](adr/0006-mises-a-jour-en-direct.md)
 - [ADR 0007 — Personnalisation de la configuration](adr/0007-personnalisation-de-la-configuration.md)
 - [ADR 0008 — Événements d'exécution, ping par URL et historique](adr/0008-evenements-d-execution.md)
+- [ADR 0009 — Canaux d'alerte et rappels](adr/0009-canaux-d-alerte-et-rappels.md)

@@ -151,6 +151,14 @@ export type ApiMockOptions = Readonly<{
 
 export function installApiMock(options: ApiMockOptions = {}) {
   let authenticated = options.authenticated ?? true
+  const channels: {
+    createdAt: string
+    enabled: boolean
+    id: string
+    kind: string
+    name: string
+    targetHint: string
+  }[] = []
   const folders = [
     ...(options.folders ?? [{ id: TEST_FOLDER_ID, name: 'Production' }]),
   ]
@@ -164,6 +172,7 @@ export function installApiMock(options: ApiMockOptions = {}) {
     displayName: null as string | null,
     notifyOnOpen: true,
     notifyOnResolve: true,
+    reminderIntervalMinutes: null as number | null,
     timeFormat: '24h',
     timezone: 'Europe/Paris',
   }
@@ -212,6 +221,68 @@ export function installApiMock(options: ApiMockOptions = {}) {
             ],
           },
         })
+      }
+
+      if (url.pathname === '/api/channels' && method === 'GET') {
+        return jsonResponse({ data: { channels } })
+      }
+
+      if (url.pathname === '/api/channels' && method === 'POST') {
+        const body = JSON.parse(String(init?.body)) as {
+          kind: string
+          name: string
+          target: string
+        }
+
+        if (!body.target.startsWith('https://')) {
+          return errorResponse(422, 'invalid_channel_target')
+        }
+
+        if (channels.some((channel) => channel.name === body.name)) {
+          return errorResponse(409, 'channel_name_taken')
+        }
+
+        const channel = {
+          createdAt: new Date().toISOString(),
+          enabled: true,
+          id: crypto.randomUUID(),
+          kind: body.kind,
+          name: body.name,
+          targetHint: 'example.com/…hook',
+        }
+
+        channels.push(channel)
+
+        return jsonResponse({ data: { channel } }, 201)
+      }
+
+      if (url.pathname.startsWith('/api/channels/')) {
+        const parts = url.pathname.split('/')
+        const channel = channels.find((candidate) => candidate.id === parts[3])
+
+        if (!channel) {
+          return errorResponse(404, 'channel_not_found')
+        }
+
+        if (method === 'POST' && parts[4] === 'test') {
+          return channel.name === 'Cassé'
+            ? errorResponse(502, 'channel_test_failed')
+            : new Response(null, { status: 204 })
+        }
+
+        if (method === 'PATCH') {
+          channel.enabled = (
+            JSON.parse(String(init?.body)) as { enabled: boolean }
+          ).enabled
+
+          return new Response(null, { status: 204 })
+        }
+
+        if (method === 'DELETE') {
+          channels.splice(channels.indexOf(channel), 1)
+
+          return new Response(null, { status: 204 })
+        }
       }
 
       if (url.pathname === '/api/folders' && method === 'GET') {
