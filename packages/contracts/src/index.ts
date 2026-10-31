@@ -132,3 +132,16 @@ export type {
   SaveStatusPageRequest,
   StatusPageResponse,
 } from './status/status-page.ts'
+
+export {
+  MAX_MAINTENANCE_DAYS,
+  createMaintenanceRequestSchema,
+  listMaintenanceResponseSchema,
+  maintenanceWindowSchema,
+} from './maintenance/maintenance.ts'
+
+export type {
+  CreateMaintenanceRequest,
+  ListMaintenanceResponse,
+  MaintenanceWindow,
+} from './maintenance/maintenance.ts'

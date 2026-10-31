@@ -166,6 +166,13 @@ export type ApiMockOptions = Readonly<{
 
 export function installApiMock(options: ApiMockOptions = {}) {
   let authenticated = options.authenticated ?? true
+  let maintenanceWindows: {
+    endsAt: string
+    id: string
+    monitorId: string | null
+    name: string
+    startsAt: string
+  }[] = []
   let statusPage: {
     monitorIds: string[]
     page: Record<string, unknown> | null
@@ -303,6 +310,39 @@ export function installApiMock(options: ApiMockOptions = {}) {
 
           return new Response(null, { status: 204 })
         }
+      }
+
+      if (url.pathname === '/api/maintenance' && method === 'GET') {
+        return jsonResponse({ data: { windows: maintenanceWindows } })
+      }
+
+      if (url.pathname === '/api/maintenance' && method === 'POST') {
+        const body = JSON.parse(String(init?.body)) as {
+          endsAt: string
+          monitorId: string | null
+          name: string
+          startsAt: string
+        }
+
+        if (body.name === 'limite') {
+          return errorResponse(409, 'limit_reached')
+        }
+
+        const created = { ...body, id: crypto.randomUUID() }
+
+        maintenanceWindows.push(created)
+
+        return jsonResponse({ data: created }, 201)
+      }
+
+      if (url.pathname.startsWith('/api/maintenance/') && method === 'DELETE') {
+        const id = url.pathname.split('/').at(-1)
+
+        maintenanceWindows = maintenanceWindows.filter(
+          (window) => window.id !== id,
+        )
+
+        return new Response(null, { status: 204 })
       }
 
       if (url.pathname === '/api/status-page' && method === 'GET') {

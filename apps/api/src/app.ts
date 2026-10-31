@@ -16,6 +16,7 @@ export type ApiApplicationDependencies = Readonly<{
   notificationRoutes: Hono
   pingRoutes: Hono
   statusPageRoutes: Hono
+  maintenanceRoutes: Hono
   workspaceRoutes: Hono
   /** Header carrying the client IP (default: Cloudflare's). */
   clientIpHeader?: string
@@ -97,6 +98,8 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
   app.use('/api/folders/*', originGuard)
   app.use('/api/preferences', originGuard)
   app.use('/api/status-page', originGuard)
+  app.use('/api/maintenance', originGuard)
+  app.use('/api/maintenance/*', originGuard)
   app.route('/', createHealthRoutes())
   app.route('/', dependencies.accountRoutes)
   app.route('/', dependencies.authRoutes)
@@ -107,6 +110,7 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
   app.route('/', dependencies.liveRoutes)
   app.route('/', dependencies.pingRoutes)
   app.route('/', dependencies.statusPageRoutes)
+  app.route('/', dependencies.maintenanceRoutes)
 
   return app
 }
