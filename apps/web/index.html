@@ -13,12 +13,13 @@
       try {
         var stored = window.localStorage.getItem('cronping.theme')
         var dark =
+          stored === null ||
           stored === 'dark' ||
-          ((stored === null || stored === 'system') &&
+          (stored === 'system' &&
             window.matchMedia('(prefers-color-scheme: dark)').matches)
         document.documentElement.classList.toggle('dark', dark)
       } catch (error) {
-        /* thème clair par défaut */
+        /* thème sombre par défaut */
       }
     </script>
   </head>

@@ -31,7 +31,7 @@ function DueProgress({
     <div>
       <div
         aria-hidden="true"
-        className="h-1.5 overflow-hidden rounded-full bg-line"
+        className="h-1 overflow-hidden rounded-full bg-line"
       >
         <div
           className={`h-full rounded-full transition-[width] ${
@@ -40,7 +40,7 @@ function DueProgress({
           style={{ width: `${Math.round(progress.fraction * 100)}%` }}
         />
       </div>
-      <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted">
+      <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
         <Clock3 aria-hidden="true" size={13} />
         <span className="tabular-nums">
           {progress.overdue ? 'Échéance dépassée ' : 'Échéance '}
@@ -66,15 +66,15 @@ export function MonitorListItem({
   const dot = (
     <span
       aria-hidden="true"
-      className={`mt-1.5 size-2.5 shrink-0 rounded-full ${DOT_CLASS[monitor.status]}`}
+      className={`mt-1.5 size-2 shrink-0 rounded-full ${DOT_CLASS[monitor.status]}`}
     />
   )
   const title = (
     <div className="flex min-w-0 gap-3">
       {dot}
       <div className="min-w-0">
-        <p className="truncate font-semibold">{monitor.localLabel}</p>
-        <p className="mt-1 text-xs text-muted">
+        <p className="truncate text-sm font-medium">{monitor.localLabel}</p>
+        <p className="mt-0.5 text-xs text-muted">
           {formatFrequency(monitor.intervalMinutes)}
           <span className="mx-1.5">·</span>
           <span className="font-mono">{monitor.id.slice(0, 8)}</span>
@@ -87,7 +87,7 @@ export function MonitorListItem({
     return (
       <Link
         aria-label={label}
-        className="group flex flex-col gap-5 rounded-2xl border border-line bg-surface p-5 shadow-card transition-all hover:-translate-y-0.5 hover:border-border-strong hover:shadow-raised"
+        className="group flex flex-col gap-5 rounded-lg border border-line bg-surface p-4 transition-colors hover:border-border-strong"
         params={{ monitorId: monitor.id }}
         to="/monitors/$monitorId"
       >
@@ -116,7 +116,7 @@ export function MonitorListItem({
   return (
     <Link
       aria-label={label}
-      className={`group grid gap-4 px-4 py-4 transition-colors hover:bg-canvas sm:px-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(10rem,1fr)_auto_auto_auto] lg:items-center ${
+      className={`group grid gap-3 px-4 py-2.5 transition-colors hover:bg-canvas lg:grid-cols-[minmax(0,1.5fr)_minmax(10rem,1fr)_8.5rem_9.5rem_1rem] lg:items-center lg:gap-4 ${
         index > 0 ? 'border-t border-line' : ''
       }`}
       params={{ monitorId: monitor.id }}
@@ -125,16 +125,15 @@ export function MonitorListItem({
       {title}
       <DueProgress monitor={monitor} nowMs={nowMs} />
       <StatusBadge status={monitor.status} />
-      <p className="text-xs text-muted lg:w-28 lg:text-right">
-        Dernier signal
-        <span className="block text-sm font-medium text-ink tabular-nums">
+      <p className="font-mono text-xs text-muted lg:text-right">
+        <span className="text-ink tabular-nums">
           {formatRelativeTime(monitor.lastHeartbeatAtMs)}
         </span>
       </p>
       <ArrowRight
         aria-hidden="true"
         className="hidden text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-ink lg:block"
-        size={18}
+        size={14}
       />
     </Link>
   )

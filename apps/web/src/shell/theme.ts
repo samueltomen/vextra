@@ -13,9 +13,9 @@ export function readThemePreference(): ThemePreference {
   try {
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY)
 
-    return isThemePreference(stored) ? stored : 'system'
+    return isThemePreference(stored) ? stored : 'dark'
   } catch {
-    return 'system'
+    return 'dark'
   }
 }
 
@@ -78,6 +78,6 @@ export function useThemePreference(): ThemePreference {
   return useSyncExternalStore(
     subscribe,
     () => currentPreference,
-    () => 'system',
+    () => 'dark',
   )
 }

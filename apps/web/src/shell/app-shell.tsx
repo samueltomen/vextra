@@ -105,7 +105,7 @@ function FullPageStatus({
       className="grid min-h-dvh place-items-center bg-canvas px-4"
       role="status"
     >
-      <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-8 text-center shadow-card">
+      <div className="w-full max-w-md rounded-xl border border-line bg-surface p-8 text-center shadow-card">
         <div className="mx-auto w-fit">
           <BrandMark size="lg" />
         </div>
@@ -129,8 +129,8 @@ function SystemStatus() {
     <div
       className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-xs font-medium ${
         hasIncident
-          ? 'border-[#6b4e0f] bg-[#2d2208] text-[#fbbf24]'
-          : 'border-[#1d5a37] bg-[#0f2a1c] text-[#4ade80]'
+          ? 'border-warning-border bg-warning-bg text-warning'
+          : 'border-healthy-border bg-healthy-bg text-healthy'
       }`}
       role="status"
     >
@@ -437,7 +437,7 @@ export function AppShell() {
   if (accountQuery.isError) {
     return (
       <main className="grid min-h-dvh place-items-center bg-canvas px-4">
-        <div className="w-full max-w-md rounded-2xl border border-danger-border bg-danger-bg p-8 text-center text-danger">
+        <div className="w-full max-w-md rounded-xl border border-danger-border bg-danger-bg p-8 text-center text-danger">
           <h1 className="text-xl font-semibold">Session indisponible</h1>
           <p className="mt-2 text-sm leading-6">
             Le serveur n’a pas pu vérifier votre session.

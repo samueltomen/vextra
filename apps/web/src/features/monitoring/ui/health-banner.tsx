@@ -23,35 +23,27 @@ export function HealthBanner({
   return (
     <section
       aria-label="État global"
-      className={`overflow-hidden rounded-2xl border p-5 shadow-card sm:p-6 ${
+      className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border px-4 py-2.5 ${
         hasIncident
           ? 'border-warning-border bg-warning-bg text-warning'
           : 'border-healthy-border bg-healthy-bg text-healthy'
       }`}
     >
-      <div className="flex items-center gap-4">
-        <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-surface/70">
-          <Icon aria-hidden="true" size={24} />
-        </span>
-        <div className="min-w-0">
-          <p className="text-lg font-semibold leading-tight">
-            {hasIncident
-              ? `${summary.late} moniteur${summary.late > 1 ? 's' : ''} nécessite${
-                  summary.late > 1 ? 'nt' : ''
-                } votre attention`
-              : 'Tous vos jobs sont dans les temps'}
-          </p>
-          <p className="mt-1 text-sm opacity-85">
-            {summary.healthy} sur {active} moniteur{active > 1 ? 's' : ''} actif
-            {active > 1 ? 's' : ''} {summary.healthy > 1 ? 'sont' : 'est'}{' '}
-            opérationnel{summary.healthy > 1 ? 's' : ''}.
-          </p>
-        </div>
-      </div>
-
+      <Icon aria-hidden="true" className="shrink-0" size={18} />
+      <p className="text-sm font-semibold">
+        {hasIncident
+          ? `${summary.late} moniteur${summary.late > 1 ? 's' : ''} nécessite${
+              summary.late > 1 ? 'nt' : ''
+            } votre attention`
+          : 'Tous vos jobs sont dans les temps'}
+      </p>
+      <p className="font-mono text-xs opacity-80">
+        {summary.healthy}/{active} actif{active > 1 ? 's' : ''} opérationnel
+        {summary.healthy > 1 ? 's' : ''}
+      </p>
       <div
         aria-hidden="true"
-        className="mt-4 flex h-2 overflow-hidden rounded-full bg-surface/60"
+        className="ml-auto flex h-1.5 w-full overflow-hidden rounded-full bg-surface/60 sm:w-48"
       >
         {SEGMENTS.map((segment) =>
           summary[segment.key] > 0 ? (

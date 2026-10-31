@@ -4,16 +4,16 @@ export default heroui({
   themes: {
     dark: {
       colors: {
-        background: '#0b1211',
-        content1: '#121b1a',
-        content2: '#17221f',
+        background: '#0b0c0f',
+        content1: '#111318',
+        content2: '#16181f',
         danger: {
           DEFAULT: '#f87171',
           foreground: '#2d1010',
         },
-        divider: '#243431',
+        divider: '#23262e',
         focus: '#5eead4',
-        foreground: '#e8f0ee',
+        foreground: '#e6e8ec',
         primary: {
           DEFAULT: '#2dd4bf',
           foreground: '#04211e',
@@ -30,14 +30,14 @@ export default heroui({
     },
     light: {
       colors: {
-        background: '#f4f7f6',
+        background: '#f6f7f9',
         danger: {
           DEFAULT: '#a12822',
           foreground: '#ffffff',
         },
-        divider: '#d8e1de',
+        divider: '#e3e6eb',
         focus: '#0f766e',
-        foreground: '#10201e',
+        foreground: '#14171f',
         primary: {
           DEFAULT: '#0f766e',
           foreground: '#ffffff',
