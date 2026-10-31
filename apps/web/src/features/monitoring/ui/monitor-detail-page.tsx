@@ -53,6 +53,7 @@ import { useFolders } from '../../workspace/query/use-folders.ts'
 import { AvailabilityBar } from './availability-bar.tsx'
 import { MonitorDetailsCard } from './monitor-details-card.tsx'
 import { MonitorMetricsPanel } from './monitor-metrics-panel.tsx'
+import { MonitorRunsPanel } from './monitor-runs-panel.tsx'
 import { DurationPicker } from './duration-picker.tsx'
 import {
   GRACE_PRESETS,
@@ -304,6 +305,11 @@ export function MonitorDetailPage({
                   {monitor.localLabel}
                 </h1>
                 <StatusBadge status={monitor.status} />
+                {monitor.runningSinceMs === null ? null : (
+                  <span className="rounded-full border border-action/30 bg-action-soft px-2 py-0.5 text-xs font-medium text-action">
+                    En cours d’exécution
+                  </span>
+                )}
                 <button
                   aria-label="Renommer le moniteur"
                   className="grid size-9 place-items-center rounded-lg text-muted hover:bg-canvas hover:text-ink"
@@ -441,6 +447,8 @@ export function MonitorDetailPage({
         />
       </section>
 
+      <MonitorRunsPanel monitorId={monitor.id} />
+
       <MonitorDetailsCard key={monitor.id} monitor={monitor} />
 
       <MonitorMetricsPanel
@@ -532,7 +540,9 @@ export function MonitorDetailPage({
                       />
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-sm font-medium">
-                          Heartbeat manquant
+                          {incident.reason === 'run_failed'
+                            ? 'Exécution en échec'
+                            : 'Heartbeat manquant'}
                         </p>
                         <p
                           className={`text-xs font-medium ${

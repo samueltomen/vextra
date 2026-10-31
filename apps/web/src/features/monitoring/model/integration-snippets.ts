@@ -1,5 +1,13 @@
 export type IntegrationSnippetId =
-  'bash' | 'crontab' | 'curl' | 'github' | 'node' | 'powershell' | 'python'
+  | 'bash'
+  | 'crontab'
+  | 'curl'
+  | 'github'
+  | 'node'
+  | 'powershell'
+  | 'python'
+  | 'run'
+  | 'url'
 
 export type IntegrationSnippet = Readonly<{
   code: string
@@ -60,6 +68,28 @@ export function buildIntegrationSnippets({
       hint: 'Une commande à placer à la fin de n’importe quel script.',
       id: 'curl',
       label: 'curl',
+    },
+    {
+      code: `# Mesure la durée du job et signale un échec immédiatement
+curl -fsS -m 10 -X POST -H "Authorization: Bearer ${shellToken}" "${pingUrl}/start"
+if /chemin/vers/job.sh; then
+  curl -fsS -m 10 --retry 3 -X POST -H "Authorization: Bearer ${shellToken}" "${pingUrl}"
+else
+  curl -fsS -m 10 --retry 3 -X POST -H "Authorization: Bearer ${shellToken}" "${pingUrl}/fail"
+fi`,
+      hint: 'start puis success donne la durée ; fail ouvre un incident tout de suite.',
+      id: 'run',
+      label: 'Durée et échec',
+    },
+    {
+      code: `# Sans en-tête : le token est dans l'URL (GET, HEAD ou POST)
+curl -fsS -m 10 --retry 3 "${pingUrl}/${shellToken}"
+
+# Variante : le code de sortie du job décide (0 = succès, 1-255 = échec)
+/chemin/vers/job.sh; curl -fsS -m 10 "${pingUrl}/${shellToken}/$?"`,
+      hint: 'Pratique avec wget ou sans en-têtes ; l’URL contient le secret, évitez de la journaliser.',
+      id: 'url',
+      label: 'Par URL',
     },
     {
       code: `# crontab -e

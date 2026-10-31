@@ -11,6 +11,7 @@ import {
   deleteDemoFolder,
   getDemoActivity,
   getDemoMetrics,
+  getDemoRuns,
   getDemoPreferences,
   listDemoFolders,
   renameDemoFolder,
@@ -166,4 +167,40 @@ export async function getMonitorsActivity(): Promise<MonitorActivity> {
       denseActivity(entry.days, nowMs),
     ]),
   )
+}
+
+export type RunView = Readonly<{
+  createdAtMs: number
+  durationMs: number | null
+  id: string
+  kind: 'fail' | 'start' | 'success' | 'warn'
+  overlapped: boolean
+}>
+
+export async function getMonitorRuns(
+  monitorId: string,
+): Promise<readonly RunView[]> {
+  if (isDemoModeEnabled()) {
+    return getDemoRuns(60)
+  }
+
+  const response = await apiRequest<{
+    data: {
+      runs: {
+        createdAt: string
+        durationMs: number | null
+        id: string
+        kind: RunView['kind']
+        overlapped: boolean
+      }[]
+    }
+  }>(`/api/monitors/${encodeURIComponent(monitorId)}/runs`)
+
+  return response.data.runs.map((run) => ({
+    createdAtMs: Date.parse(run.createdAt),
+    durationMs: run.durationMs,
+    id: run.id,
+    kind: run.kind,
+    overlapped: run.overlapped,
+  }))
 }

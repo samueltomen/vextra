@@ -22,6 +22,7 @@ type MonitorRow = {
   name: string | null
   notes: string | null
   pausedAt: string | null
+  runningSince: string | null
   status: 'healthy' | 'late' | 'paused' | 'pending'
   totalPings: number
 }
@@ -51,6 +52,7 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       name: null,
       notes: null,
       pausedAt: null,
+      runningSince: null,
       status: 'healthy',
       totalPings: 0,
     },
@@ -68,6 +70,7 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       name: null,
       notes: null,
       pausedAt: null,
+      runningSince: null,
       status: 'late',
       totalPings: 0,
     },
@@ -85,6 +88,7 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       name: null,
       notes: null,
       pausedAt: new Date(nowMs - 86_400_000).toISOString(),
+      runningSince: null,
       status: 'paused',
       totalPings: 0,
     },
@@ -102,6 +106,7 @@ function createMonitorRows(nowMs = Date.now()): MonitorRow[] {
       name: null,
       notes: null,
       pausedAt: null,
+      runningSince: null,
       status: 'pending',
       totalPings: 0,
     },
@@ -112,6 +117,10 @@ const DEFAULT_METRICS = {
   days: [
     {
       day: new Date().toISOString().slice(0, 10),
+      durationCount: 2,
+      durationMaxMs: 3_000,
+      durationSumMs: 4_000,
+      fails: 1,
       gapCount: 2,
       gapMaxSeconds: 3_700,
       gapSumSeconds: 7_200,
@@ -280,6 +289,29 @@ export function installApiMock(options: ApiMockOptions = {}) {
         return jsonResponse({ data: { preferences } })
       }
 
+      if (url.pathname.endsWith('/runs') && method === 'GET') {
+        return jsonResponse({
+          data: {
+            runs: [
+              {
+                createdAt: new Date().toISOString(),
+                durationMs: 2_000,
+                id: '40000000-0000-4000-8000-000000000001',
+                kind: 'success',
+                overlapped: false,
+              },
+              {
+                createdAt: new Date().toISOString(),
+                durationMs: null,
+                id: '40000000-0000-4000-8000-000000000002',
+                kind: 'start',
+                overlapped: true,
+              },
+            ],
+          },
+        })
+      }
+
       if (url.pathname.endsWith('/metrics') && method === 'GET') {
         return jsonResponse({ data: options.metrics ?? DEFAULT_METRICS })
       }
@@ -378,6 +410,7 @@ export function installApiMock(options: ApiMockOptions = {}) {
           name: null,
           notes: null,
           pausedAt: null,
+          runningSince: null,
           status: 'pending',
           totalPings: 0,
         }

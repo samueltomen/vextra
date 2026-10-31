@@ -23,6 +23,7 @@ function monitor(overrides: Partial<MonitorView>): MonitorView {
     lastHeartbeatAtMs: NOW_MS - 600_000,
     localLabel: 'Monitor',
     notes: null,
+    runningSinceMs: null,
     serverName: null,
     status: 'healthy',
     totalPings: 0,

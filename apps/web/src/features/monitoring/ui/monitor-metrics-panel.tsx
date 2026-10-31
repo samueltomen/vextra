@@ -4,6 +4,7 @@ import { Activity } from 'lucide-react'
 import { TimeSeriesChart } from '../../../components/time-series-chart.tsx'
 import { getMonitorMetrics } from '../../workspace/api/workspace-api.ts'
 import {
+  formatMilliseconds,
   formatSeconds,
   summarizeMetrics,
   type MetricsSummary,
@@ -99,7 +100,7 @@ function MetricsBody({
 
   return (
     <>
-      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Total reçus" value={String(query.totalPings)} />
         <Stat label="30 derniers jours" value={String(summary.pings30d)} />
         <Stat label="Aujourd’hui" value={String(summary.pingsToday)} />
@@ -112,9 +113,23 @@ function MetricsBody({
           label="Plus long intervalle"
           value={formatSeconds(summary.maxGapSeconds)}
         />
+        <Stat
+          hint={
+            summary.maxDurationMs === null
+              ? 'Utilisez les pings start et success'
+              : `maximum ${formatMilliseconds(summary.maxDurationMs)}`
+          }
+          label="Durée moyenne"
+          value={formatMilliseconds(summary.avgDurationMs)}
+        />
+        <Stat label="Échecs (30 j)" value={String(summary.fails30d)} />
       </div>
 
-      <div className="mt-5 grid gap-6 lg:grid-cols-2">
+      <div
+        className={`mt-5 grid gap-6 ${
+          summary.avgDurationMs === null ? 'lg:grid-cols-2' : 'lg:grid-cols-3'
+        }`}
+      >
         <div>
           <h3 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-muted">
             Heartbeats par jour
@@ -133,6 +148,25 @@ function MetricsBody({
             ]}
           />
         </div>
+        {summary.avgDurationMs === null ? null : (
+          <div>
+            <h3 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+              Durée d’exécution par jour
+            </h3>
+            <TimeSeriesChart
+              ariaLabel="Durée d’exécution moyenne sur 30 jours"
+              formatValue={(value) => formatMilliseconds(value)}
+              labels={labels}
+              series={[
+                {
+                  color: 'var(--cp-color-warning-solid)',
+                  name: 'Durée',
+                  values: summary.dailyAvgDurationMs,
+                },
+              ]}
+            />
+          </div>
+        )}
         <div>
           <h3 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-muted">
             Intervalle moyen par jour

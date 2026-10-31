@@ -56,7 +56,9 @@ function DeliveryRow({
         <p className="mt-1 text-sm text-muted">
           {delivery.kind === 'incident_opened'
             ? 'Incident ouvert'
-            : 'Incident résolu'}
+            : delivery.kind === 'run_failed'
+              ? 'Exécution en échec'
+              : 'Incident résolu'}
         </p>
         <p className="mt-1 font-mono text-xs text-muted">
           {delivery.monitorId.slice(0, 8)}

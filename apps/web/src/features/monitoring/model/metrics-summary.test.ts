@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   denseActivity,
+  formatMilliseconds,
   formatSeconds,
   summarizeMetrics,
 } from './metrics-summary.ts'
@@ -19,6 +20,9 @@ describe('summarizeMetrics', () => {
     expect(summary.avgIntervalSeconds).toBeNull()
     expect(summary.maxGapSeconds).toBeNull()
     expect(summary.regularity).toBeNull()
+    expect(summary.avgDurationMs).toBeNull()
+    expect(summary.maxDurationMs).toBeNull()
+    expect(summary.fails30d).toBe(0)
   })
 
   it('aggregates pings, gaps and regularity', () => {
@@ -26,6 +30,10 @@ describe('summarizeMetrics', () => {
       [
         {
           day: '2026-10-30',
+          durationCount: 2,
+          durationMaxMs: 2_000,
+          durationSumMs: 3_000,
+          fails: 1,
           gapCount: 2,
           gapMaxSeconds: 4_000,
           gapSumSeconds: 7_000,
@@ -33,6 +41,10 @@ describe('summarizeMetrics', () => {
         },
         {
           day: '2026-10-31',
+          durationCount: 2,
+          durationMaxMs: 4_000,
+          durationSumMs: 5_000,
+          fails: 2,
           gapCount: 2,
           gapMaxSeconds: 3_800,
           gapSumSeconds: 7_400,
@@ -40,6 +52,10 @@ describe('summarizeMetrics', () => {
         },
         {
           day: '2026-08-01',
+          durationCount: 9,
+          durationMaxMs: 99_999,
+          durationSumMs: 99_999,
+          fails: 9,
           gapCount: 9,
           gapMaxSeconds: 99_999,
           gapSumSeconds: 99_999,
@@ -59,6 +75,11 @@ describe('summarizeMetrics', () => {
     expect(summary.dailyAvgIntervalSeconds.at(-1)).toBe(3_700)
     expect(summary.dailyAvgIntervalSeconds.at(-2)).toBe(3_500)
     expect(summary.dailyAvgIntervalSeconds[0]).toBeNull()
+    expect(summary.fails30d).toBe(3)
+    expect(summary.avgDurationMs).toBe(2_000)
+    expect(summary.maxDurationMs).toBe(4_000)
+    expect(summary.dailyAvgDurationMs.at(-1)).toBe(2_500)
+    expect(summary.dailyAvgDurationMs[0]).toBeNull()
   })
 })
 
@@ -88,5 +109,15 @@ describe('denseActivity', () => {
     expect(activity.at(-2)).toBe(0)
     expect(activity.at(-3)).toBe(2)
     expect(activity.reduce((sum, value) => sum + value, 0)).toBe(6)
+  })
+})
+
+describe('formatMilliseconds', () => {
+  it('formats run durations compactly', () => {
+    expect(formatMilliseconds(null)).toBe('—')
+    expect(formatMilliseconds(420)).toBe('420 ms')
+    expect(formatMilliseconds(2_500)).toBe('2,5 s')
+    expect(formatMilliseconds(45_000)).toBe('45 s')
+    expect(formatMilliseconds(600_000)).toBe('10 min')
   })
 })

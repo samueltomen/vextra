@@ -196,8 +196,15 @@ la vue et le tri par défaut, ainsi que la fréquence, la marge et le dossier
 proposés à la création
 ([ADR 0007](docs/adr/0007-personnalisation-de-la-configuration.md)).
 
-Ces fonctions s'appuient sur quatre migrations (`20261031100000`,
-`20261031110000`, `20261031120000`, `20261031130000`) à appliquer avec `supabase db push` avant de
+Les jobs peuvent aussi signaler leur cycle de vie : `start` (mesure la durée),
+`success`, `fail` (ouvre un incident immédiatement) et `warn`, par en-tête
+`Authorization` (recommandé) ou par URL (`/api/ping/<token>[/start|fail|warn|<code>]`
+en `GET`, `HEAD` ou `POST`). La page d'un moniteur affiche l'historique des
+exécutions (90 jours), les durées et les échecs, sans jamais conserver de
+contenu ([ADR 0008](docs/adr/0008-evenements-d-execution.md)).
+
+Ces fonctions s'appuient sur cinq migrations (`20261031100000`,
+`20261031110000`, `20261031120000`, `20261031130000`, `20261031140000`) à appliquer avec `supabase db push` avant de
 déployer l'API.
 
 ## Commandes

@@ -24,6 +24,7 @@ function monitorsWithFolder() {
       name: null,
       notes: null,
       pausedAt: null,
+      runningSince: null,
       status: 'healthy' as const,
       totalPings: 5,
     },
@@ -41,6 +42,7 @@ function monitorsWithFolder() {
       name: null,
       notes: null,
       pausedAt: null,
+      runningSince: null,
       status: 'pending' as const,
       totalPings: 0,
     },
@@ -141,6 +143,42 @@ describe('monitor metrics', () => {
         name: 'Intervalle moyen entre heartbeats sur 30 jours',
       }),
     ).toBeInTheDocument()
+    expect(
+      within(panel).getByRole('img', {
+        name: 'Durée d’exécution moyenne sur 30 jours',
+      }),
+    ).toBeInTheDocument()
+    expect(within(panel).getByText('Échecs (30 j)')).toBeInTheDocument()
+  })
+})
+
+describe('run history', () => {
+  it('lists recent runs with their kind, duration and overlaps', async () => {
+    await renderApp(`/monitors/${MONITOR_ID}`, {
+      monitors: monitorsWithFolder(),
+    })
+
+    const panel = await screen.findByRole('region', {
+      name: 'Historique des exécutions',
+    })
+
+    expect(await within(panel).findByText('Succès')).toBeInTheDocument()
+    expect(within(panel).getByText('Début')).toBeInTheDocument()
+    expect(within(panel).getByText('Chevauchement')).toBeInTheDocument()
+    expect(within(panel).getByText('2,0 s')).toBeInTheDocument()
+  })
+
+  it('shows when a run is in progress', async () => {
+    const [monitor, ...others] = monitorsWithFolder()
+
+    await renderApp(`/monitors/${MONITOR_ID}`, {
+      monitors: [
+        { ...monitor!, runningSince: new Date().toISOString() },
+        ...others,
+      ],
+    })
+
+    expect(await screen.findByText('En cours d’exécution')).toBeInTheDocument()
   })
 })
 

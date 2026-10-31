@@ -16,6 +16,7 @@ function monitor(status: MonitorView['status']): MonitorView {
     localLabel: status,
     lastHeartbeatAtMs: null,
     notes: null,
+    runningSinceMs: null,
     serverName: null,
     status,
     totalPings: 0,

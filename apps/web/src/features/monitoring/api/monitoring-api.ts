@@ -41,6 +41,7 @@ export type CreatedMonitor = Readonly<{
 
 export type MonitorIncidentView = Readonly<{
   id: string
+  reason: 'heartbeat_missed' | 'run_failed'
   openedAtMs: number
   resolutionReason: 'heartbeat_received' | 'manual' | null
   resolvedAtMs: number | null
@@ -69,6 +70,8 @@ function toMonitorView(
         : Date.parse(monitor.lastHeartbeatAt),
     localLabel: monitor.name ?? localLabel,
     notes: monitor.notes,
+    runningSinceMs:
+      monitor.runningSince === null ? null : Date.parse(monitor.runningSince),
     serverName: monitor.name,
     status: monitor.status,
     totalPings: monitor.totalPings,
@@ -157,6 +160,7 @@ export async function createMonitor(
       lastHeartbeatAtMs: null,
       localLabel: draft.localLabel.trim(),
       notes: null,
+      runningSinceMs: null,
       serverName: draft.localLabel.trim() || null,
       status: response.data.status,
       totalPings: 0,
@@ -268,6 +272,7 @@ export async function listMonitorIncidents(
   return response.data.incidents.map((incident) => ({
     id: incident.id,
     openedAtMs: Date.parse(incident.openedAt),
+    reason: incident.reason,
     resolutionReason: incident.resolutionReason,
     resolvedAtMs:
       incident.resolvedAt === null ? null : Date.parse(incident.resolvedAt),
