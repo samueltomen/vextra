@@ -1,6 +1,8 @@
 export {
   authUserSchema,
   authenticatedSessionResponseSchema,
+  membershipRoleSchema,
+  switchTenantRequestSchema,
   signInRequestSchema,
   signUpRequestSchema,
   signUpResponseSchema,
@@ -159,3 +161,21 @@ export type {
   CreateApiKeyResponse,
   ListApiKeysResponse,
 } from './apikeys/api-key.ts'
+
+export {
+  INVITATION_TOKEN_PATTERN,
+  acceptInvitationRequestSchema,
+  changeMemberRoleRequestSchema,
+  invitableRoleSchema,
+  invitationSchema,
+  inviteMemberRequestSchema,
+  spaceSchema,
+  teamMemberSchema,
+} from './team/team.ts'
+
+export type {
+  Invitation,
+  InviteMemberRequest,
+  Space,
+  TeamMember,
+} from './team/team.ts'

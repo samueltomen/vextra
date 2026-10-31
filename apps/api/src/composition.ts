@@ -78,6 +78,10 @@ import {
   SupabaseApiKeyAuthenticator,
   SupabaseApiKeyStore,
 } from './features/apikeys/adapters/outbound/supabase-api-keys.ts'
+import { ManageTeam } from './features/team/application/team.ts'
+import { createTeamRoutes } from './features/team/adapters/inbound/http/team-routes.ts'
+import { CryptoInvitationToken } from './features/team/adapters/outbound/crypto-invitation-token.ts'
+import { SupabaseTeamStore } from './features/team/adapters/outbound/supabase-team.ts'
 import { MonitorReadService } from './features/monitoring/application/monitor-read.ts'
 import {
   RecordHeartbeat,
@@ -234,7 +238,24 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     recorder: new SupabaseRunEventRecorder(supabase),
   })
 
-  const resolveSession = async (context: Context) => {
+  // One resolution per request: refreshing a session twice would reuse a
+  // rotated refresh token, and the write guard and the route both need it.
+  const sessions = new WeakMap<Request, ReturnType<typeof resolveSessionOnce>>()
+  const resolveSession = (context: Context) => {
+    const cached = sessions.get(context.req.raw)
+
+    if (cached) {
+      return cached
+    }
+
+    const pending = resolveSessionOnce(context)
+
+    sessions.set(context.req.raw, pending)
+
+    return pending
+  }
+
+  async function resolveSessionOnce(context: Context) {
     const tokens = await readSessionCookie(context, codec)
 
     if (!tokens) {
@@ -255,6 +276,34 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     const client = userClient(account.tokens.accessToken)
 
     return { account, client }
+  }
+
+  const invitationTokens = new CryptoInvitationToken(
+    environment.PING_TOKEN_PEPPER,
+  )
+  const authenticateTeam = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    return {
+      role: session.account.role,
+      team: new ManageTeam({
+        store: new SupabaseTeamStore(session.client),
+        tokens: invitationTokens,
+      }),
+      tenantId: session.account.tenantId,
+      userId: session.account.user.id,
+    }
+  }
+
+  /** Viewers are read-only: refuse unsafe methods before any handler runs. */
+  const canWrite = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    return session === null || session.account.role !== 'viewer'
   }
 
   const authenticateMonitor = async (
@@ -477,6 +526,8 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
   }
 
   return createApiApp({
+    canWrite,
+    teamRoutes: createTeamRoutes({ authenticate: authenticateTeam }),
     accountRoutes: createAccountRoutes({
       authenticate: authenticateAccount,
     }),
