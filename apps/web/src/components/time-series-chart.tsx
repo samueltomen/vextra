@@ -49,7 +49,10 @@ export function TimeSeriesChart({
   const values = series.flatMap((entry) =>
     entry.values.filter((value): value is number => value !== null),
   )
-  const max = niceCeiling(Math.max(...values, reference?.value ?? 0, 0) * 1.05)
+  const rawMax = Math.max(...values, reference?.value ?? 0, 0)
+  const max = integerTicks
+    ? Math.max(GRID_LINES, Math.ceil(rawMax / GRID_LINES) * GRID_LINES)
+    : niceCeiling(rawMax * 1.05)
   const count = Math.max(labels.length, 2)
   const x = (index: number) => PAD.left + (index / (count - 1)) * plotWidth
   const y = (value: number) => PAD.top + plotHeight - (value / max) * plotHeight
