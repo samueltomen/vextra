@@ -17,6 +17,7 @@ export type ApiApplicationDependencies = Readonly<{
   pingRoutes: Hono
   statusPageRoutes: Hono
   maintenanceRoutes: Hono
+  apiKeyRoutes: Hono
   workspaceRoutes: Hono
   /** Header carrying the client IP (default: Cloudflare's). */
   clientIpHeader?: string
@@ -64,6 +65,17 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
     app.use('/api/auth/login', authLimit)
     app.use('/api/auth/signup', authLimit)
     app.use(
+      '/api/v1/*',
+      createRateLimitGuard({
+        ...(dependencies.clientIpHeader
+          ? { clientIpHeader: dependencies.clientIpHeader }
+          : {}),
+        limiter: dependencies.rateLimiters.ping,
+        methods: ['GET', 'HEAD'],
+        scope: 'v1',
+      }),
+    )
+    app.use(
       '/api/status/*',
       createRateLimitGuard({
         ...(dependencies.clientIpHeader
@@ -98,6 +110,8 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
   app.use('/api/folders/*', originGuard)
   app.use('/api/preferences', originGuard)
   app.use('/api/status-page', originGuard)
+  app.use('/api/api-keys', originGuard)
+  app.use('/api/api-keys/*', originGuard)
   app.use('/api/maintenance', originGuard)
   app.use('/api/maintenance/*', originGuard)
   app.route('/', createHealthRoutes())
@@ -111,6 +125,7 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
   app.route('/', dependencies.pingRoutes)
   app.route('/', dependencies.statusPageRoutes)
   app.route('/', dependencies.maintenanceRoutes)
+  app.route('/', dependencies.apiKeyRoutes)
 
   return app
 }

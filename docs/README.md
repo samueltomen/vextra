@@ -27,3 +27,4 @@ Décisions d'architecture (`docs/adr/`) :
 - [ADR 0013 — Page de statut publique](adr/0013-page-de-statut-publique.md)
 - [ADR 0014 — Tags de moniteurs](adr/0014-tags-de-moniteurs.md)
 - [ADR 0015 — Fenêtres de maintenance](adr/0015-fenetres-de-maintenance.md)
+- [ADR 0016 — Clés d'API en lecture seule](adr/0016-cles-d-api-en-lecture-seule.md)

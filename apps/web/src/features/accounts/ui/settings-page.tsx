@@ -6,6 +6,7 @@ import { useState } from 'react'
 
 import { deleteAccount } from '../api/account-api.ts'
 import { MaintenanceCard } from '../../maintenance/ui/maintenance-card.tsx'
+import { ApiKeysCard } from '../../apikeys/ui/api-keys-card.tsx'
 import { StatusPageCard } from '../../status/ui/status-page-card.tsx'
 import { ChannelsCard } from '../../workspace/ui/channels-card.tsx'
 import { PreferencesCard } from '../../workspace/ui/preferences-card.tsx'
@@ -45,6 +46,8 @@ export function SettingsPage() {
       <MaintenanceCard />
 
       <StatusPageCard />
+
+      <ApiKeysCard />
 
       <section className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border border-line bg-surface p-4 sm:p-5">

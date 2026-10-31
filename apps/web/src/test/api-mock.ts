@@ -166,6 +166,14 @@ export type ApiMockOptions = Readonly<{
 
 export function installApiMock(options: ApiMockOptions = {}) {
   let authenticated = options.authenticated ?? true
+  const apiKeys: {
+    createdAt: string
+    id: string
+    lastUsedAt: string | null
+    name: string
+    prefix: string
+    revokedAt: string | null
+  }[] = []
   let maintenanceWindows: {
     endsAt: string
     id: string
@@ -310,6 +318,46 @@ export function installApiMock(options: ApiMockOptions = {}) {
 
           return new Response(null, { status: 204 })
         }
+      }
+
+      if (url.pathname === '/api/api-keys' && method === 'GET') {
+        return jsonResponse({ data: { keys: apiKeys } })
+      }
+
+      if (url.pathname === '/api/api-keys' && method === 'POST') {
+        const body = JSON.parse(String(init?.body)) as { name: string }
+
+        if (body.name === 'limite') {
+          return errorResponse(409, 'limit_reached')
+        }
+
+        const apiKey = {
+          createdAt: new Date().toISOString(),
+          id: crypto.randomUUID(),
+          lastUsedAt: null,
+          name: body.name,
+          prefix: 'vx_test-sec',
+          revokedAt: null as string | null,
+        }
+
+        apiKeys.unshift(apiKey)
+
+        return jsonResponse(
+          { data: { apiKey, key: `vx_test-secret-${'x'.repeat(30)}` } },
+          201,
+        )
+      }
+
+      if (url.pathname.startsWith('/api/api-keys/') && method === 'DELETE') {
+        const key = apiKeys.find(
+          (candidate) => candidate.id === url.pathname.split('/').at(-1),
+        )
+
+        if (key) {
+          key.revokedAt = new Date().toISOString()
+        }
+
+        return new Response(null, { status: 204 })
       }
 
       if (url.pathname === '/api/maintenance' && method === 'GET') {

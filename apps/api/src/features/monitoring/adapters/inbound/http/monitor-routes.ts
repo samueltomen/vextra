@@ -506,7 +506,7 @@ async function lifecycleAction(
   }
 }
 
-function toMonitorResponse(monitor: MonitorStateRecord) {
+export function toMonitorResponse(monitor: MonitorStateRecord) {
   return {
     alertAt: new Date(monitor.alertAtMs).toISOString(),
     alertsEnabled: monitor.alertsEnabled,

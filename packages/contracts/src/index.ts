@@ -145,3 +145,17 @@ export type {
   ListMaintenanceResponse,
   MaintenanceWindow,
 } from './maintenance/maintenance.ts'
+
+export {
+  apiKeyViewSchema,
+  createApiKeyRequestSchema,
+  createApiKeyResponseSchema,
+  listApiKeysResponseSchema,
+} from './apikeys/api-key.ts'
+
+export type {
+  ApiKeyView,
+  CreateApiKeyRequest,
+  CreateApiKeyResponse,
+  ListApiKeysResponse,
+} from './apikeys/api-key.ts'

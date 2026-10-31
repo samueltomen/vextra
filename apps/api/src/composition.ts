@@ -68,6 +68,16 @@ import {
 import { ManageMaintenance } from './features/maintenance/application/maintenance.ts'
 import { createMaintenanceRoutes } from './features/maintenance/adapters/inbound/http/maintenance-routes.ts'
 import { SupabaseMaintenance } from './features/maintenance/adapters/outbound/supabase-maintenance.ts'
+import {
+  AuthenticateApiKey,
+  ManageApiKeys,
+} from './features/apikeys/application/api-keys.ts'
+import { createApiKeyRoutes } from './features/apikeys/adapters/inbound/http/api-key-routes.ts'
+import { CryptoApiKeyGenerator } from './features/apikeys/adapters/outbound/crypto-api-key-generator.ts'
+import {
+  SupabaseApiKeyAuthenticator,
+  SupabaseApiKeyStore,
+} from './features/apikeys/adapters/outbound/supabase-api-keys.ts'
 import { MonitorReadService } from './features/monitoring/application/monitor-read.ts'
 import {
   RecordHeartbeat,
@@ -380,6 +390,25 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     }
   }
 
+  const apiKeyGenerator = new CryptoApiKeyGenerator(
+    environment.PING_TOKEN_PEPPER,
+  )
+  const authenticateApiKeys = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    return {
+      keys: new ManageApiKeys({
+        generator: apiKeyGenerator,
+        store: new SupabaseApiKeyStore(session.client),
+      }),
+      tenantId: session.account.tenantId,
+    }
+  }
+
   const authenticateChannels = async (context: Context) => {
     const session = await resolveSession(context)
 
@@ -477,6 +506,24 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
       allowedOrigin: environment.APP_ORIGIN,
       authenticate: authenticateLive,
       connect: connectLive,
+    }),
+    apiKeyRoutes: createApiKeyRoutes({
+      authenticate: authenticateApiKeys,
+      authenticator: new AuthenticateApiKey({
+        authenticator: new SupabaseApiKeyAuthenticator(
+          createServiceSupabaseClient(environment),
+        ),
+        generator: apiKeyGenerator,
+      }),
+      // Service client + explicit tenant filter in the repository: the key
+      // grants read access to its own tenant only.
+      monitors: new MonitorReadService(
+        new SupabaseMonitorQueryRepository(
+          createServiceSupabaseClient(
+            environment,
+          ) as unknown as MonitorQueryClient,
+        ),
+      ),
     }),
     maintenanceRoutes: createMaintenanceRoutes({
       authenticate: authenticateMaintenance,

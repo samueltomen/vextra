@@ -31,6 +31,10 @@ choix à l'adresse `/status/<adresse>`
 Des fenêtres de maintenance suspendent incidents et alertes pendant une
 opération planifiée ([ADR 0015](docs/adr/0015-fenetres-de-maintenance.md)).
 
+Des clés d'API en lecture seule permettent d'interroger les moniteurs depuis un
+script : `curl -H "Authorization: Bearer vx_…" <origine>/api/v1/monitors`
+([ADR 0016](docs/adr/0016-cles-d-api-en-lecture-seule.md)).
+
 ## État actuel
 
 Le dépôt contient le socle de la V1 :
