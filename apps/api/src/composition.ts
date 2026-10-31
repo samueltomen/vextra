@@ -57,6 +57,17 @@ import { RotateMonitorToken } from './features/monitoring/application/rotate-mon
 import { DeliverNotifications } from './features/notifications/application/deliver-notifications.ts'
 import { NotificationHistory } from './features/notifications/application/notification-history.ts'
 import { createNotificationRoutes } from './features/notifications/adapters/inbound/http/notification-routes.ts'
+import { MonitorMetricsService } from './features/monitoring/application/monitor-metrics.ts'
+import { SupabaseMonitorMetrics } from './features/monitoring/adapters/outbound/supabase-monitor-metrics.ts'
+import { createWorkspaceRoutes } from './features/workspace/adapters/inbound/http/workspace-routes.ts'
+import {
+  SupabaseFolderRepository,
+  SupabasePreferencesRepository,
+} from './features/workspace/adapters/outbound/supabase-workspace.ts'
+import {
+  AccountPreferencesService,
+  ManageFolders,
+} from './features/workspace/application/workspace.ts'
 import { ResendNotificationSender } from './features/notifications/adapters/outbound/resend-notification-sender.ts'
 import {
   SupabaseNotificationDeliveryQueue,
@@ -211,6 +222,10 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
           client as unknown as MonitorLifecycleRpcClient,
         ),
       ),
+      monitorMetrics: new MonitorMetricsService({
+        nowMs: () => Date.now(),
+        port: new SupabaseMonitorMetrics(client),
+      }),
       monitorRead: new MonitorReadService(
         new SupabaseMonitorQueryRepository(
           client as unknown as MonitorQueryClient,
@@ -251,6 +266,22 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     }
   }
 
+  const authenticateWorkspace = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    if (!session) {
+      return null
+    }
+
+    return {
+      folders: new ManageFolders(new SupabaseFolderRepository(session.client)),
+      preferences: new AccountPreferencesService(
+        new SupabasePreferencesRepository(session.client),
+      ),
+      tenantId: session.account.tenantId,
+    }
+  }
+
   const authenticateAccount = async (context: Context) => {
     const session = await resolveSession(context)
 
@@ -278,6 +309,9 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     }),
     pingRoutes: createPingRoutes({
       execute: (token) => recordHeartbeat.execute(token),
+    }),
+    workspaceRoutes: createWorkspaceRoutes({
+      authenticate: authenticateWorkspace,
     }),
     ...(environment.AUTH_RATE_LIMITER && environment.PING_RATE_LIMITER
       ? {

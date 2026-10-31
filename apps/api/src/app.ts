@@ -13,6 +13,7 @@ export type ApiApplicationDependencies = Readonly<{
   monitorRoutes: Hono
   notificationRoutes: Hono
   pingRoutes: Hono
+  workspaceRoutes: Hono
   rateLimiters?: Readonly<{ auth: RateLimiter; ping: RateLimiter }>
 }>
 
@@ -67,11 +68,15 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
   app.use('/api/monitors', originGuard)
   app.use('/api/monitors/*', originGuard)
   app.use('/api/notifications', originGuard)
+  app.use('/api/folders', originGuard)
+  app.use('/api/folders/*', originGuard)
+  app.use('/api/preferences', originGuard)
   app.route('/', createHealthRoutes())
   app.route('/', dependencies.accountRoutes)
   app.route('/', dependencies.authRoutes)
   app.route('/', dependencies.monitorRoutes)
   app.route('/', dependencies.notificationRoutes)
+  app.route('/', dependencies.workspaceRoutes)
   app.route('/', dependencies.pingRoutes)
 
   return app

@@ -69,3 +69,26 @@ export type {
   ListNotificationsResponse,
   NotificationDelivery,
 } from './notifications/notification-delivery.ts'
+
+export {
+  MAX_DISPLAY_NAME_LENGTH,
+  MAX_FOLDER_NAME_LENGTH,
+  folderNameRequestSchema,
+  folderResponseSchema,
+  folderSchema,
+  listFoldersResponseSchema,
+  metricsDaySchema,
+  monitorMetricsResponseSchema,
+  preferencesResponseSchema,
+  preferencesSchema,
+  setMonitorFolderRequestSchema,
+  updatePreferencesRequestSchema,
+} from './workspace/workspace.ts'
+
+export type {
+  Folder,
+  MetricsDay,
+  MonitorMetricsResponse,
+  Preferences,
+  UpdatePreferencesRequest,
+} from './workspace/workspace.ts'

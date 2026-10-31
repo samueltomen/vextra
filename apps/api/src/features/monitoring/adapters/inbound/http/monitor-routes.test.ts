@@ -26,6 +26,7 @@ const RESULT: CreateMonitorResult = {
 const MONITOR_STATE: MonitorStateRecord = {
   alertAtMs: Date.parse('2026-01-01T00:05:30.000Z'),
   createdAtMs: Date.parse('2026-01-01T00:00:00.000Z'),
+  folderId: null,
   graceSeconds: 30,
   id: '20000000-0000-4000-8000-000000000001',
   incidentOpenedAtMs: null,
@@ -34,6 +35,7 @@ const MONITOR_STATE: MonitorStateRecord = {
   pausedAtMs: null,
   status: 'pending',
   tenantId: 'tenant-a',
+  totalPings: 0,
 }
 
 const MONITOR_INCIDENT: MonitorIncidentRecord = {
@@ -61,6 +63,7 @@ function createRoutes(principal: AuthenticatedPrincipal | null = null) {
         ? {
             createMonitor: { execute },
             monitorIncidents: { list: listIncidents },
+            monitorMetrics: { get: vi.fn(async () => null) },
             monitorLifecycle: { delete: remove, pause, resume },
             monitorRead: { get, list },
             monitorSchedule: { execute: updateSchedule },
@@ -205,6 +208,7 @@ describe('POST /api/monitors', () => {
           },
         },
         monitorIncidents: { list: vi.fn(async () => []) },
+        monitorMetrics: { get: vi.fn(async () => null) },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
           pause: vi.fn(async () => true),
@@ -244,6 +248,7 @@ describe('POST /api/monitors', () => {
           },
         },
         monitorIncidents: { list: vi.fn(async () => []) },
+        monitorMetrics: { get: vi.fn(async () => null) },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
           pause: vi.fn(async () => true),
@@ -304,6 +309,7 @@ describe('monitor read routes', () => {
           {
             alertAt: '2026-01-01T00:05:30.000Z',
             createdAt: '2026-01-01T00:00:00.000Z',
+            folderId: null,
             graceSeconds: 30,
             id: '20000000-0000-4000-8000-000000000001',
             incidentOpenedAt: null,
@@ -311,6 +317,7 @@ describe('monitor read routes', () => {
             lastHeartbeatAt: null,
             pausedAt: null,
             status: 'pending',
+            totalPings: 0,
           },
         ],
       },
@@ -347,6 +354,7 @@ describe('monitor read routes', () => {
       authenticate: async () => ({
         createMonitor: { execute: vi.fn() },
         monitorIncidents: { list: vi.fn(async () => []) },
+        monitorMetrics: { get: vi.fn(async () => null) },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
           pause: vi.fn(async () => true),
@@ -381,6 +389,7 @@ describe('monitor read routes', () => {
       authenticate: async () => ({
         createMonitor: { execute: vi.fn() },
         monitorIncidents: { list: vi.fn(async () => []) },
+        monitorMetrics: { get: vi.fn(async () => null) },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
           pause: vi.fn(async () => true),
@@ -607,6 +616,7 @@ describe('POST /api/monitors/:monitorId/rotate-token', () => {
       authenticate: async () => ({
         createMonitor: { execute: vi.fn() },
         monitorIncidents: { list: vi.fn(async () => []) },
+        monitorMetrics: { get: vi.fn(async () => null) },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
           pause: vi.fn(async () => true),
@@ -627,5 +637,56 @@ describe('POST /api/monitors/:monitorId/rotate-token', () => {
     )
 
     expect(response.status).toBe(404)
+  })
+})
+
+describe('GET /api/monitors/:monitorId/metrics', () => {
+  const ID = '20000000-0000-4000-8000-000000000001'
+
+  function metricsApp(get: () => Promise<unknown>) {
+    return createMonitorRoutes({
+      authenticate: async () =>
+        ({
+          monitorMetrics: { get },
+          principal: { tenantId: 'tenant-a', userId: 'u' },
+        }) as never,
+    })
+  }
+
+  it('returns daily counters for a monitor of the tenant', async () => {
+    const metrics = { days: [], totalPings: 7 }
+    const response = await metricsApp(async () => metrics).request(
+      `/api/monitors/${ID}/metrics`,
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ data: metrics })
+  })
+
+  it('answers 404 for unknown or malformed ids and 500 on failures', async () => {
+    expect(
+      (
+        await metricsApp(async () => null).request(
+          `/api/monitors/${ID}/metrics`,
+        )
+      ).status,
+    ).toBe(404)
+    expect(
+      (await metricsApp(async () => null).request('/api/monitors/x/metrics'))
+        .status,
+    ).toBe(404)
+    expect(
+      (
+        await metricsApp(async () => {
+          throw new Error('db')
+        }).request(`/api/monitors/${ID}/metrics`)
+      ).status,
+    ).toBe(500)
+  })
+
+  it('requires authentication', async () => {
+    const app = createMonitorRoutes({ authenticate: async () => null })
+
+    expect((await app.request(`/api/monitors/${ID}/metrics`)).status).toBe(401)
   })
 })

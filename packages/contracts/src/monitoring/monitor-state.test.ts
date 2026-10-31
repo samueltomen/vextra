@@ -8,6 +8,7 @@ import {
 const MONITOR = {
   alertAt: '2026-10-24T12:05:00.000Z',
   createdAt: '2026-10-24T12:00:00.000Z',
+  folderId: null,
   graceSeconds: 30,
   id: '20000000-0000-4000-8000-000000000001',
   incidentOpenedAt: null,
@@ -15,6 +16,7 @@ const MONITOR = {
   lastHeartbeatAt: null,
   pausedAt: null,
   status: 'pending' as const,
+  totalPings: 0,
 }
 
 describe('monitor read contracts', () => {
