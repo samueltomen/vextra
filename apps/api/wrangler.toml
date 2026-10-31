@@ -3,6 +3,10 @@ main = "src/worker.ts"
 compatibility_date = "2026-10-24"
 workers_dev = true
 
+# Journaux persistés (dont la ligne structurée `cron.tick` de chaque passe).
+[observability]
+enabled = true
+
 [triggers]
 crons = ["* * * * *"]
 
@@ -36,6 +40,9 @@ workers_dev = true
 directory = "../web/dist"
 not_found_handling = "single-page-application"
 run_worker_first = ["/api/*"]
+
+[env.production.observability]
+enabled = true
 
 [env.production.triggers]
 crons = ["* * * * *"]
