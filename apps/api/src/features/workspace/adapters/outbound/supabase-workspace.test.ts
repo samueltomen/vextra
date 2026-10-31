@@ -132,6 +132,7 @@ describe('SupabasePreferencesRepository', () => {
     display_name: 'Ada',
     notify_on_open: true,
     notify_on_resolve: false,
+    reminder_interval_minutes: null,
     time_format: '24h',
     timezone: 'Asia/Tokyo',
   }
@@ -151,6 +152,7 @@ describe('SupabasePreferencesRepository', () => {
       displayName: 'Ada',
       notifyOnOpen: true,
       notifyOnResolve: false,
+      reminderIntervalMinutes: null,
       timeFormat: '24h',
       timezone: 'Asia/Tokyo',
     })
@@ -185,6 +187,7 @@ describe('SupabasePreferencesRepository', () => {
       displayName: null,
       notifyOnOpen: true,
       notifyOnResolve: true,
+      reminderIntervalMinutes: 360,
       timeFormat: '12h',
       timezone: 'Europe/Paris',
     })
@@ -201,6 +204,7 @@ describe('SupabasePreferencesRepository', () => {
           display_name: null,
           notify_on_open: true,
           notify_on_resolve: true,
+          reminder_interval_minutes: 360,
           tenant_id: 't',
           time_format: '12h',
           timezone: 'Europe/Paris',
@@ -232,6 +236,7 @@ describe('SupabasePreferencesRepository', () => {
         displayName: null,
         notifyOnOpen: true,
         notifyOnResolve: true,
+        reminderIntervalMinutes: null,
         timeFormat: '24h',
         timezone: 'UTC',
       }),

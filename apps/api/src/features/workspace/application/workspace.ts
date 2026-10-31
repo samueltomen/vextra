@@ -71,6 +71,7 @@ export type PreferencesRecord = Readonly<{
   displayName: string | null
   notifyOnOpen: boolean
   notifyOnResolve: boolean
+  reminderIntervalMinutes: 60 | 360 | 1440 | 10080 | null
   timeFormat: '12h' | '24h'
   timezone: string
 }>
@@ -85,6 +86,7 @@ export const DEFAULT_PREFERENCES: PreferencesRecord = {
   displayName: null,
   notifyOnOpen: true,
   notifyOnResolve: true,
+  reminderIntervalMinutes: null,
   timeFormat: '24h',
   timezone: 'Europe/Paris',
 }

@@ -1,5 +1,7 @@
 import {
   createApiFromEnvironment,
+  runChannelDelivery,
+  runIncidentReminders,
   runNotificationDelivery,
   runScheduledCheck,
   type WorkerEnvironment,
@@ -35,9 +37,19 @@ export default {
     context.waitUntil(
       (async () => {
         const opened = await runScheduledCheck(environment)
+        const reminders = await runIncidentReminders(environment)
         const delivery = await runNotificationDelivery(environment)
+        const channels = await runChannelDelivery(environment)
 
-        console.info(JSON.stringify({ delivery, event: 'cron.tick', opened }))
+        console.info(
+          JSON.stringify({
+            channels,
+            delivery,
+            event: 'cron.tick',
+            opened,
+            reminders,
+          }),
+        )
       })(),
     )
   },

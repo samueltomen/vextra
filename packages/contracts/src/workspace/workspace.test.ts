@@ -1,15 +1,68 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  createChannelRequestSchema,
   folderNameRequestSchema,
   monitorActivityResponseSchema,
   monitorMetricsResponseSchema,
   monitorRunsResponseSchema,
   setMonitorFolderRequestSchema,
+  updateChannelRequestSchema,
   updatePreferencesRequestSchema,
 } from './workspace.ts'
 
 describe('workspace contracts', () => {
+  it('validates alert channel requests', () => {
+    expect(
+      createChannelRequestSchema.parse({
+        kind: 'slack',
+        name: '  Ops ',
+        target: ' https://hooks.slack.com/services/T/B/x ',
+      }),
+    ).toEqual({
+      kind: 'slack',
+      name: 'Ops',
+      target: 'https://hooks.slack.com/services/T/B/x',
+    })
+    expect(
+      createChannelRequestSchema.safeParse({
+        kind: 'sms',
+        name: 'Ops',
+        target: 'x',
+      }).success,
+    ).toBe(false)
+    expect(
+      createChannelRequestSchema.safeParse({
+        kind: 'webhook',
+        name: 'Ops',
+        target: 'x',
+        tenantId: 'y',
+      }).success,
+    ).toBe(false)
+    expect(
+      updateChannelRequestSchema.safeParse({ enabled: false }).success,
+    ).toBe(true)
+    expect(updateChannelRequestSchema.safeParse({ name: 'x' }).success).toBe(
+      false,
+    )
+  })
+
+  it('only accepts supported reminder intervals', () => {
+    expect(
+      updatePreferencesRequestSchema.safeParse({ reminderIntervalMinutes: 360 })
+        .success,
+    ).toBe(true)
+    expect(
+      updatePreferencesRequestSchema.safeParse({
+        reminderIntervalMinutes: null,
+      }).success,
+    ).toBe(true)
+    expect(
+      updatePreferencesRequestSchema.safeParse({ reminderIntervalMinutes: 7 })
+        .success,
+    ).toBe(false)
+  })
+
   it('describes the run history without output or payload', () => {
     expect(
       monitorRunsResponseSchema.safeParse({

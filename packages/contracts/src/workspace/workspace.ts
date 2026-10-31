@@ -26,6 +26,12 @@ export const setMonitorFolderRequestSchema = z.strictObject({
   folderId: z.uuid().nullable(),
 })
 
+export const reminderIntervalSchema = z.union([
+  z.literal(60),
+  z.literal(360),
+  z.literal(1440),
+  z.literal(10_080),
+])
 export const timeFormatSchema = z.enum(['12h', '24h'])
 export const densitySchema = z.enum(['compact', 'comfortable'])
 export const dashboardViewSchema = z.enum(['list', 'grid'])
@@ -46,6 +52,7 @@ export const preferencesSchema = z.strictObject({
   displayName: z.string().nullable(),
   notifyOnOpen: z.boolean(),
   notifyOnResolve: z.boolean(),
+  reminderIntervalMinutes: reminderIntervalSchema.nullable(),
   timeFormat: timeFormatSchema,
   timezone: z.string(),
 })
@@ -66,6 +73,7 @@ export const updatePreferencesRequestSchema = z
       .nullable(),
     notifyOnOpen: z.boolean(),
     notifyOnResolve: z.boolean(),
+    reminderIntervalMinutes: reminderIntervalSchema.nullable(),
     timeFormat: timeFormatSchema,
     timezone: z
       .string()
@@ -97,6 +105,44 @@ export const monitorMetricsResponseSchema = z.strictObject({
     days: z.array(metricsDaySchema),
     totalPings: z.number().int().nonnegative(),
   }),
+})
+
+export const CHANNEL_KINDS = [
+  'webhook',
+  'slack',
+  'discord',
+  'telegram',
+  'teams',
+  'pagerduty',
+] as const
+
+export const channelKindSchema = z.enum(CHANNEL_KINDS)
+
+export const channelSchema = z.strictObject({
+  createdAt: z.iso.datetime(),
+  enabled: z.boolean(),
+  id: z.uuid(),
+  kind: channelKindSchema,
+  name: z.string(),
+  targetHint: z.string(),
+})
+
+export const createChannelRequestSchema = z.strictObject({
+  kind: channelKindSchema,
+  name: z.string().trim().min(1).max(60),
+  target: z.string().trim().min(1).max(600),
+})
+
+export const updateChannelRequestSchema = z.strictObject({
+  enabled: z.boolean(),
+})
+
+export const listChannelsResponseSchema = z.strictObject({
+  data: z.strictObject({ channels: z.array(channelSchema) }),
+})
+
+export const channelResponseSchema = z.strictObject({
+  data: z.strictObject({ channel: channelSchema }),
 })
 
 export const monitorRunSchema = z.strictObject({
@@ -137,6 +183,8 @@ function isSupportedTimeZone(value: string): boolean {
   }
 }
 
+export type Channel = z.infer<typeof channelSchema>
+export type ChannelKind = z.infer<typeof channelKindSchema>
 export type Folder = z.infer<typeof folderSchema>
 export type Preferences = z.infer<typeof preferencesSchema>
 export type UpdatePreferencesRequest = z.infer<
