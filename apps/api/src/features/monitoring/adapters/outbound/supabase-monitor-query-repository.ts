@@ -6,12 +6,14 @@ import type {
 } from '../../application/monitor-read.ts'
 
 const MONITOR_STATE_COLUMNS =
-  'id, tenant_id, interval_seconds, grace_seconds, status, last_heartbeat_at, alert_at, incident_opened_at, paused_at, created_at, folder_id, total_pings, name, description, notes, alerts_enabled, running_since'
+  'id, tenant_id, interval_seconds, grace_seconds, status, last_heartbeat_at, alert_at, incident_opened_at, paused_at, created_at, folder_id, total_pings, name, description, notes, alerts_enabled, running_since, cron_expression, cron_timezone'
 
 type MonitorStateRow = Readonly<{
   alert_at: string
   alerts_enabled: boolean
   created_at: string
+  cron_expression: string | null
+  cron_timezone: string | null
   description: string | null
   folder_id: string | null
   grace_seconds: number
@@ -72,6 +74,8 @@ function toRecord(row: MonitorStateRow): MonitorStateRecord {
     alertAtMs: toTimestamp(row.alert_at),
     alertsEnabled: row.alerts_enabled,
     createdAtMs: toTimestamp(row.created_at),
+    cronExpression: row.cron_expression,
+    cronTimezone: row.cron_timezone,
     description: row.description,
     folderId: row.folder_id,
     graceSeconds: row.grace_seconds,

@@ -45,6 +45,38 @@ describe('createMonitorRequestSchema', () => {
   })
 })
 
+describe('cron schedules', () => {
+  it('accepts a cron schedule with a supported time zone', () => {
+    expect(
+      createMonitorRequestSchema.parse({
+        cron: ' 0 3 * * * ',
+        graceSeconds: 300,
+        timezone: 'Europe/Paris',
+      }),
+    ).toEqual({
+      cron: '0 3 * * *',
+      graceSeconds: 300,
+      timezone: 'Europe/Paris',
+    })
+  })
+
+  it('rejects mixed schedules, unknown time zones and empty expressions', () => {
+    for (const body of [
+      {
+        cron: '0 3 * * *',
+        graceSeconds: 1,
+        intervalSeconds: 60,
+        timezone: 'UTC',
+      },
+      { cron: '0 3 * * *', graceSeconds: 1, timezone: 'Mars/Olympus' },
+      { cron: '   ', graceSeconds: 1, timezone: 'UTC' },
+      { cron: '0 3 * * *', graceSeconds: 1 },
+    ]) {
+      expect(createMonitorRequestSchema.safeParse(body).success).toBe(false)
+    }
+  })
+})
+
 describe('createMonitorResponseSchema', () => {
   it('returns the monitor with its one-time heartbeat token', () => {
     expect(

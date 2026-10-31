@@ -1,3 +1,4 @@
+import { InvalidCronError } from '@cronping/domain'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { CreateMonitorResult } from '../../../application/create-monitor.ts'
@@ -27,6 +28,8 @@ const MONITOR_STATE: MonitorStateRecord = {
   alertAtMs: Date.parse('2026-01-01T00:05:30.000Z'),
   alertsEnabled: true,
   createdAtMs: Date.parse('2026-01-01T00:00:00.000Z'),
+  cronExpression: null,
+  cronTimezone: null,
   description: null,
   folderId: null,
   graceSeconds: 30,
@@ -146,6 +149,33 @@ describe('POST /api/monitors', () => {
       tenantId: 'tenant-a',
       intervalSeconds: 300,
       graceSeconds: 30,
+    })
+  })
+
+  it('creates a cron monitor and maps an invalid expression to 422', async () => {
+    const { app, execute } = createRoutes({
+      tenantId: 'tenant-a',
+      userId: 'user-a',
+    })
+    const cron = {
+      cron: '0 3 * * *',
+      graceSeconds: 60,
+      timezone: 'Europe/Paris',
+    }
+
+    expect((await app.request(createRequest(cron))).status).toBe(201)
+    expect(execute).toHaveBeenCalledWith({
+      cron: { expression: '0 3 * * *', timezone: 'Europe/Paris' },
+      graceSeconds: 60,
+      tenantId: 'tenant-a',
+    })
+
+    execute.mockRejectedValueOnce(new InvalidCronError('bad'))
+    const invalid = await app.request(createRequest(cron))
+
+    expect(invalid.status).toBe(422)
+    await expect(invalid.json()).resolves.toMatchObject({
+      error: { code: 'invalid_cron' },
     })
   })
 
@@ -327,6 +357,8 @@ describe('monitor read routes', () => {
             alertAt: '2026-01-01T00:05:30.000Z',
             alertsEnabled: true,
             createdAt: '2026-01-01T00:00:00.000Z',
+            cronExpression: null,
+            cronTimezone: null,
             description: null,
             folderId: null,
             graceSeconds: 30,
@@ -549,6 +581,30 @@ describe('PATCH /api/monitors/:monitorId', () => {
     )
     await expect(response.json()).resolves.toMatchObject({
       data: { monitor: { id: MONITOR_STATE.id, status: 'pending' } },
+    })
+  })
+
+  it('switches a monitor to a cron schedule and maps invalid expressions to 422', async () => {
+    const { app, updateSchedule } = createRoutes(principal)
+    const body = {
+      cron: '*/5 * * * *',
+      graceSeconds: 60,
+      timezone: 'UTC',
+    }
+
+    expect((await patch(app, body)).status).toBe(200)
+    expect(updateSchedule).toHaveBeenCalledWith({
+      cron: { expression: '*/5 * * * *', timezone: 'UTC' },
+      graceSeconds: 60,
+      monitorId: '20000000-0000-4000-8000-000000000001',
+    })
+
+    updateSchedule.mockRejectedValueOnce(new InvalidCronError('bad'))
+    const invalid = await patch(app, body)
+
+    expect(invalid.status).toBe(422)
+    await expect(invalid.json()).resolves.toMatchObject({
+      error: { code: 'invalid_cron' },
     })
   })
 

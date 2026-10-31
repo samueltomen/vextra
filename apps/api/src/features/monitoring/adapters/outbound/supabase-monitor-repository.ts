@@ -16,6 +16,9 @@ type MonitorInsertRow = Readonly<{
   incident_opened_at: string | null
   paused_at: string | null
   enabled: boolean
+  cron_expression: string | null
+  cron_timezone: string | null
+  cron_deadline_stale: boolean
 }>
 
 type InsertResult = Readonly<{
@@ -46,6 +49,9 @@ function toInsertRow(record: NewMonitorRecord): MonitorInsertRow {
     incident_opened_at: toIsoString(record.monitor.incidentOpenedAtMs),
     paused_at: toIsoString(record.monitor.pausedAtMs),
     enabled: true,
+    cron_expression: record.cron?.expression ?? null,
+    cron_timezone: record.cron?.timezone ?? null,
+    cron_deadline_stale: record.cron !== undefined,
   }
 }
 

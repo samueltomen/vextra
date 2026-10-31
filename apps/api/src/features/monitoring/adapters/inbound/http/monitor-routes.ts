@@ -3,6 +3,7 @@ import {
   monitorIdSchema,
   updateMonitorScheduleRequestSchema,
 } from '@cronping/contracts'
+import { InvalidCronError } from '@cronping/domain'
 import { Hono, type Context } from 'hono'
 
 import type { CreateMonitor } from '../../../application/create-monitor.ts'
@@ -140,9 +141,16 @@ export function createMonitorRoutes(
 
     try {
       const result = await scope.createMonitor.execute({
-        tenantId: scope.principal.tenantId,
-        intervalSeconds: parsed.data.intervalSeconds,
+        ...('cron' in parsed.data
+          ? {
+              cron: {
+                expression: parsed.data.cron,
+                timezone: parsed.data.timezone,
+              },
+            }
+          : { intervalSeconds: parsed.data.intervalSeconds }),
         graceSeconds: parsed.data.graceSeconds,
+        tenantId: scope.principal.tenantId,
       })
 
       return context.json(
@@ -162,6 +170,18 @@ export function createMonitorRoutes(
         },
       )
     } catch (error) {
+      if (error instanceof InvalidCronError) {
+        return context.json(
+          {
+            error: {
+              code: 'invalid_cron',
+              message: 'The cron expression is not valid',
+            },
+          },
+          422,
+        )
+      }
+
       if (error instanceof RangeError) {
         return context.json(
           {
@@ -308,8 +328,15 @@ export function createMonitorRoutes(
 
     try {
       const updated = await scope.monitorSchedule.execute({
+        ...('cron' in parsed.data
+          ? {
+              cron: {
+                expression: parsed.data.cron,
+                timezone: parsed.data.timezone,
+              },
+            }
+          : { intervalSeconds: parsed.data.intervalSeconds }),
         graceSeconds: parsed.data.graceSeconds,
-        intervalSeconds: parsed.data.intervalSeconds,
         monitorId: parsedId.data,
       })
 
@@ -326,6 +353,18 @@ export function createMonitorRoutes(
         ? context.json({ data: { monitor: toMonitorResponse(monitor) } })
         : monitorNotFound(context)
     } catch (error) {
+      if (error instanceof InvalidCronError) {
+        return context.json(
+          {
+            error: {
+              code: 'invalid_cron',
+              message: 'The cron expression is not valid',
+            },
+          },
+          422,
+        )
+      }
+
       if (error instanceof RangeError) {
         return context.json(
           {
@@ -472,6 +511,8 @@ function toMonitorResponse(monitor: MonitorStateRecord) {
     alertAt: new Date(monitor.alertAtMs).toISOString(),
     alertsEnabled: monitor.alertsEnabled,
     createdAt: new Date(monitor.createdAtMs).toISOString(),
+    cronExpression: monitor.cronExpression,
+    cronTimezone: monitor.cronTimezone,
     description: monitor.description,
     folderId: monitor.folderId,
     graceSeconds: monitor.graceSeconds,
