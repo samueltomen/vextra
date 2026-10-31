@@ -5,3 +5,4 @@ pnpm-lock.yaml
 routeTree.gen.ts
 .wrangler/
 supabase/.temp
+dist-node/

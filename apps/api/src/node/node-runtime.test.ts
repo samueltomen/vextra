@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { Hono } from 'hono'
+
+import { createApiDelegate } from './api-delegate.ts'
 import { ConfigError, readNodeConfig } from './environment.ts'
 import {
   LiveRegistry,
@@ -318,5 +321,47 @@ describe('content security policy', () => {
     expect(policy).not.toContain("'unsafe-eval'")
     expect(policy).not.toMatch(/script-src[^;]*'unsafe-inline'/u)
     expect(policy).toContain("frame-ancestors 'none'")
+  })
+})
+
+describe('createApiDelegate', () => {
+  it('builds a fresh API for every request so no client outlives a request', async () => {
+    let built = 0
+    const createApi = () => {
+      built += 1
+      const instance = built
+
+      return new Hono().get('/api/who', (context) => context.json({ instance }))
+    }
+    const root = new Hono()
+
+    root.all('/api/*', createApiDelegate(createApi, {}))
+
+    const first = await root.request('/api/who')
+    const second = await root.request('/api/who')
+
+    expect(await first.json()).toEqual({ instance: 1 })
+    expect(await second.json()).toEqual({ instance: 2 })
+  })
+
+  it('answers unknown API routes in JSON and leaves other responses alone', async () => {
+    const root = new Hono()
+
+    root.all(
+      '/api/*',
+      createApiDelegate(
+        () =>
+          new Hono().get('/api/known', (context) => context.json({ ok: 1 })),
+        {},
+      ),
+    )
+
+    const unknown = await root.request('/api/nope')
+
+    expect(unknown.status).toBe(404)
+    await expect(unknown.json()).resolves.toEqual({
+      error: { code: 'not_found', message: 'Route not found' },
+    })
+    expect((await root.request('/api/known')).status).toBe(200)
   })
 })

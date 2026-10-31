@@ -16,6 +16,7 @@ import {
   type WorkerEnvironment,
 } from './composition.ts'
 import { SupabaseTenantSignature } from './features/live/adapters/outbound/tenant-live-hub.ts'
+import { createApiDelegate } from './node/api-delegate.ts'
 import { ConfigError, readNodeConfig } from './node/environment.ts'
 import { LiveRegistry } from './node/live-registry.ts'
 import { createMemoryRateLimitBinding } from './node/memory-rate-limit.ts'
@@ -104,12 +105,10 @@ async function main() {
       }
     }
   })
-  root.route('/', createApiFromEnvironment(environment))
-  root.all('/api/*', (context) =>
-    context.json(
-      { error: { code: 'not_found', message: 'Route not found' } },
-      404,
-    ),
+  // A fresh API (and fresh Supabase clients) for every request, like a Worker.
+  root.all(
+    '/api/*',
+    createApiDelegate(() => createApiFromEnvironment(environment), environment),
   )
 
   if (indexHtml) {
