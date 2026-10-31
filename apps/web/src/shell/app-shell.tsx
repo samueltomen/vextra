@@ -30,6 +30,7 @@ import { summarizeMonitors } from '../features/monitoring/model/monitor.ts'
 import { withEffectiveStatus } from '../features/monitoring/model/monitor-timing.ts'
 import { useNow } from '../lib/use-now.ts'
 import { isDemoModeEnabled } from '../demo/demo-mode.ts'
+import { useLiveUpdates, type LiveStatus } from '../lib/use-live-updates.ts'
 import { usePreferences } from '../features/workspace/query/use-preferences.ts'
 import { CommandPalette } from './command-palette.tsx'
 import { ThemeCycleButton, ThemeToggle } from './theme-toggle.tsx'
@@ -65,6 +66,35 @@ function useMonitorSummary() {
         ),
       )
     : null
+}
+
+function LiveIndicator({ status }: Readonly<{ status: LiveStatus }>) {
+  const label =
+    status === 'live'
+      ? 'En direct'
+      : status === 'connecting'
+        ? 'Connexion…'
+        : 'Hors ligne'
+
+  return (
+    <span
+      className="ml-auto flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-sidebar-muted"
+      role="status"
+      title="Mises à jour en temps réel"
+    >
+      <span
+        aria-hidden="true"
+        className={`size-1.5 rounded-full ${
+          status === 'live'
+            ? 'cp-pulse bg-healthy-solid text-healthy-solid'
+            : status === 'connecting'
+              ? 'bg-warning-solid'
+              : 'bg-neutral-solid'
+        }`}
+      />
+      {label}
+    </span>
+  )
 }
 
 function NavLink({
@@ -215,6 +245,7 @@ function AppFrame({
   const [paletteOpen, setPaletteOpen] = useState(false)
 
   usePreferences()
+  const liveStatus = useLiveUpdates(!demoMode)
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -242,6 +273,7 @@ function AppFrame({
         <Link className="mb-6 flex items-center gap-3 px-2" to="/">
           <BrandMark />
           <span className="text-lg font-semibold tracking-tight">CronPing</span>
+          <LiveIndicator status={liveStatus} />
         </Link>
 
         <button

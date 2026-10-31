@@ -183,6 +183,12 @@ workflow `deploy.yml` est manuel et exige les secrets GitHub
   ou à la résolution d'un incident
   ([ADR 0005](docs/adr/0005-preferences-de-compte.md)).
 
+L'interface se met à jour **en direct** (WebSocket par espace, indicateur « En
+direct » dans la barre latérale) : un heartbeat reçu ou un incident ouvert
+apparaît en quelques secondes sans recharger
+([ADR 0006](docs/adr/0006-mises-a-jour-en-direct.md)). Le premier déploiement
+après cette version crée le Durable Object `TenantLiveHub` (migration `v1`).
+
 Ces fonctions s'appuient sur trois migrations (`20261031100000`,
 `20261031110000`, `20261031120000`) à appliquer avec `supabase db push` avant de
 déployer l'API.

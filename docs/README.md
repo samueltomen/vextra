@@ -16,3 +16,4 @@ Décisions d'architecture (`docs/adr/`) :
 - [ADR 0003 — Dossiers de moniteurs](adr/0003-dossiers-de-moniteurs.md)
 - [ADR 0004 — Métriques de heartbeat agrégées](adr/0004-metriques-heartbeat-agregees.md)
 - [ADR 0005 — Préférences de compte](adr/0005-preferences-de-compte.md)
+- [ADR 0006 — Mises à jour en direct](adr/0006-mises-a-jour-en-direct.md)

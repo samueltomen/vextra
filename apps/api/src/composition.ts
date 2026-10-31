@@ -59,6 +59,7 @@ import { NotificationHistory } from './features/notifications/application/notifi
 import { createNotificationRoutes } from './features/notifications/adapters/inbound/http/notification-routes.ts'
 import { MonitorMetricsService } from './features/monitoring/application/monitor-metrics.ts'
 import { SupabaseMonitorMetrics } from './features/monitoring/adapters/outbound/supabase-monitor-metrics.ts'
+import { createLiveRoutes } from './features/live/adapters/inbound/http/live-routes.ts'
 import { createWorkspaceRoutes } from './features/workspace/adapters/inbound/http/workspace-routes.ts'
 import {
   SupabaseFolderRepository,
@@ -83,6 +84,13 @@ import {
   type RateLimitBinding,
 } from './rate-limit/rate-limit-guard.ts'
 
+export type TenantLiveHubNamespace = Readonly<{
+  get: (
+    id: unknown,
+  ) => Readonly<{ fetch: (request: Request) => Promise<Response> }>
+  idFromName: (name: string) => unknown
+}>
+
 export type WorkerEnvironment = Readonly<{
   APP_ORIGIN: string
   PING_TOKEN_PEPPER: string
@@ -93,6 +101,7 @@ export type WorkerEnvironment = Readonly<{
   SUPABASE_SERVICE_ROLE_KEY: string
   SUPABASE_URL: string
   AUTH_RATE_LIMITER?: RateLimitBinding
+  TENANT_LIVE_HUB?: TenantLiveHubNamespace
   PING_RATE_LIMITER?: RateLimitBinding
 }>
 
@@ -282,6 +291,38 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     }
   }
 
+  const authenticateLive = async (context: Context) => {
+    const session = await resolveSession(context)
+
+    return session ? { tenantId: session.account.tenantId } : null
+  }
+
+  const connectLive = async (tenantId: string, request: Request) => {
+    const namespace = environment.TENANT_LIVE_HUB
+
+    if (!namespace) {
+      return Response.json(
+        {
+          error: {
+            code: 'live_unavailable',
+            message: 'Live updates are not configured',
+          },
+        },
+        { status: 503 },
+      )
+    }
+
+    const headers = new Headers(request.headers)
+
+    // The hub trusts this header: only the Worker can reach it, and it is
+    // always overwritten with the tenant of the authenticated session.
+    headers.set('x-tenant-id', tenantId)
+
+    return namespace
+      .get(namespace.idFromName(tenantId))
+      .fetch(new Request(request.url, { headers, method: 'GET' }))
+  }
+
   const authenticateAccount = async (context: Context) => {
     const session = await resolveSession(context)
 
@@ -309,6 +350,11 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     }),
     pingRoutes: createPingRoutes({
       execute: (token) => recordHeartbeat.execute(token),
+    }),
+    liveRoutes: createLiveRoutes({
+      allowedOrigin: environment.APP_ORIGIN,
+      authenticate: authenticateLive,
+      connect: connectLive,
     }),
     workspaceRoutes: createWorkspaceRoutes({
       authenticate: authenticateWorkspace,
