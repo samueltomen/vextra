@@ -8,6 +8,8 @@ export const monitorStateSchema = z.strictObject({
   alertAt: z.iso.datetime(),
   alertsEnabled: z.boolean(),
   createdAt: z.iso.datetime(),
+  cronExpression: z.string().nullable(),
+  cronTimezone: z.string().nullable(),
   description: z.string().nullable(),
   folderId: z.uuid().nullable(),
   graceSeconds: z.number().int().nonnegative(),

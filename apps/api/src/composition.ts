@@ -49,6 +49,8 @@ import { CheckDueMonitors } from './features/monitoring/application/check-due-mo
 import { CreateMonitor } from './features/monitoring/application/create-monitor.ts'
 import { MonitorIncidents } from './features/monitoring/application/monitor-incidents.ts'
 import { MonitorLifecycle } from './features/monitoring/application/monitor-lifecycle.ts'
+import { SupabaseCronDeadlines } from './features/monitoring/adapters/outbound/supabase-cron-deadlines.ts'
+import { RefineCronDeadlines } from './features/monitoring/application/refine-cron-deadlines.ts'
 import { UpdateMonitorSchedule } from './features/monitoring/application/update-monitor-schedule.ts'
 import {
   SupabaseMonitorSchedule,
@@ -281,11 +283,12 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
           client as unknown as MonitorQueryClient,
         ),
       ),
-      monitorSchedule: new UpdateMonitorSchedule(
-        new SupabaseMonitorSchedule(
+      monitorSchedule: new UpdateMonitorSchedule({
+        nowMs: () => Date.now(),
+        port: new SupabaseMonitorSchedule(
           client as unknown as MonitorScheduleRpcClient,
         ),
-      ),
+      }),
       principal: {
         tenantId: account.tenantId,
         userId: account.user.id,
@@ -447,6 +450,15 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
   })
 }
 
+export async function runCronDeadlineRefinement(
+  environment: WorkerEnvironment,
+) {
+  return new RefineCronDeadlines({
+    nowMs: () => Date.now(),
+    port: new SupabaseCronDeadlines(createServiceSupabaseClient(environment)),
+  }).execute()
+}
+
 export async function runScheduledCheck(
   environment: WorkerEnvironment,
   batchSize = 100,
@@ -560,6 +572,8 @@ export async function runChannelDelivery(environment: WorkerEnvironment) {
  * trigger and the self-hosted scheduler.
  */
 export async function runScheduledTick(environment: WorkerEnvironment) {
+  // Exact cron deadlines first, so the check below never uses a provisional one.
+  const cron = await runCronDeadlineRefinement(environment)
   const opened = await runScheduledCheck(environment)
   const reminders = await runIncidentReminders(environment)
   const delivery = await runNotificationDelivery(environment)
@@ -569,6 +583,7 @@ export async function runScheduledTick(environment: WorkerEnvironment) {
   console.info(
     JSON.stringify({
       channels,
+      cron,
       delivery,
       event: 'cron.tick',
       opened,

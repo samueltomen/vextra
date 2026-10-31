@@ -9,6 +9,8 @@ const MONITOR = {
   alertAt: '2026-10-24T12:05:00.000Z',
   alertsEnabled: true,
   createdAt: '2026-10-24T12:00:00.000Z',
+  cronExpression: null,
+  cronTimezone: null,
   description: null,
   folderId: null,
   graceSeconds: 30,

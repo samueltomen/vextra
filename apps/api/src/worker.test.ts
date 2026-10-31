@@ -16,6 +16,7 @@ const ENVIRONMENT: WorkerEnvironment = {
 function mockSupabase(overrides: Record<string, unknown> = {}) {
   const responses: Record<string, unknown> = {
     claim_channel_deliveries: [],
+    claim_stale_cron_monitors: [],
     claim_notification_deliveries: [],
     claim_weekly_reports: [],
     enqueue_incident_reminders: 0,
@@ -123,6 +124,7 @@ describe('Cloudflare Worker entrypoint', () => {
     expect(info).toHaveBeenCalledWith(
       JSON.stringify({
         channels: { failed: 0, sent: 0 },
+        cron: { applied: 0, skipped: 0 },
         delivery: null,
         event: 'cron.tick',
         opened: 2,

@@ -10,6 +10,8 @@ const MONITOR: MonitorStateRecord = {
   alertAtMs: Date.parse('2026-10-24T12:05:30.000Z'),
   alertsEnabled: true,
   createdAtMs: Date.parse('2026-10-24T12:00:00.000Z'),
+  cronExpression: null,
+  cronTimezone: null,
   description: null,
   folderId: null,
   graceSeconds: 30,
