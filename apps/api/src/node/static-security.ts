@@ -30,6 +30,7 @@ export function buildContentSecurityPolicy(indexHtml: string): string {
     "base-uri 'none'",
     "form-action 'self'",
     "frame-ancestors 'none'",
+    "object-src 'none'",
   ].join('; ')
 }
 

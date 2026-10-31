@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(5);
+select plan(6);
 
 insert into auth.users (id, email)
 values (
@@ -56,14 +56,11 @@ select is(
   'a tenant member can rotate their monitor token'
 );
 
-select is(
-  (
-    select heartbeat_token_hash
-    from public.monitors
-    where id = '91000000-0000-4000-8000-000000000001'
-  ),
-  repeat('b', 64),
-  'the new hash replaces the old hash'
+select throws_ok(
+  $$select heartbeat_token_hash from public.monitors$$,
+  '42501',
+  null,
+  'clients can never read the token hash'
 );
 
 select is(
@@ -77,6 +74,16 @@ select is(
 );
 
 reset role;
+
+select is(
+  (
+    select heartbeat_token_hash
+    from public.monitors
+    where id = '91000000-0000-4000-8000-000000000001'
+  ),
+  repeat('b', 64),
+  'the new hash replaces the old hash'
+);
 
 select is(
   public.record_heartbeat(repeat('a', 64)),

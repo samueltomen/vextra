@@ -53,4 +53,15 @@ describe('ApiKeysCard', () => {
       await screen.findByText(/Limite de 10 clés actives atteinte/),
     ).toBeInTheDocument()
   })
+
+  it('keeps key management to the owner', async () => {
+    await renderApp('/settings', { role: 'member' })
+
+    expect(
+      await screen.findByText(/Seul le propriétaire de l’espace peut créer/),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Créer une clé' }),
+    ).not.toBeInTheDocument()
+  })
 })

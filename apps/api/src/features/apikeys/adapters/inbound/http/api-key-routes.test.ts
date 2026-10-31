@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { MonitorStateRecord } from '../../../../monitoring/application/monitor-read.ts'
-import { ApiKeyLimitError } from '../../../application/api-keys.ts'
+import {
+  ApiKeyForbiddenError,
+  ApiKeyLimitError,
+} from '../../../application/api-keys.ts'
 import { createApiKeyRoutes } from './api-key-routes.ts'
 
 const VIEW = {
@@ -106,6 +109,8 @@ describe('API key management routes', () => {
     expect((await post({ name: 'CI', tenantId: 'x' })).status).toBe(422)
     create.mockRejectedValueOnce(new ApiKeyLimitError())
     expect((await post({ name: 'CI' })).status).toBe(409)
+    create.mockRejectedValueOnce(new ApiKeyForbiddenError())
+    expect((await post({ name: 'CI' })).status).toBe(403)
     create.mockRejectedValueOnce(new Error('permission denied'))
     const failed = await post({ name: 'CI' })
 

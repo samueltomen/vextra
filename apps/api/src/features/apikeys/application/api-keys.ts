@@ -7,6 +7,13 @@ export class ApiKeyLimitError extends Error {
   }
 }
 
+export class ApiKeyForbiddenError extends Error {
+  constructor() {
+    super('only the owner can manage api keys')
+    this.name = 'ApiKeyForbiddenError'
+  }
+}
+
 export type GeneratedApiKey = Readonly<{
   hash: string
   key: string

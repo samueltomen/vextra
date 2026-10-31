@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(20);
+select plan(21);
 
 -- Three accounts: an owner, a future member (confirmed e-mail) and a stranger.
 insert into auth.users (id, email, email_confirmed_at)
@@ -215,6 +215,22 @@ select is(
      and user_id = 'ea000000-0000-4000-8000-000000000002'),
   'owner',
   'when the owner leaves, the remaining member inherits the space'
+);
+
+-- The same transfer holds when the owner deletes their whole account.
+insert into auth.users (id, email, email_confirmed_at)
+values ('ea000000-0000-4000-8000-000000000004', 'heir@example.test', now());
+insert into public.tenant_memberships (tenant_id, user_id, role)
+values (current_setting('test.tenant')::uuid,
+        'ea000000-0000-4000-8000-000000000004', 'member');
+delete from auth.users where id = 'ea000000-0000-4000-8000-000000000002';
+
+select is(
+  (select role from public.tenant_memberships
+   where tenant_id = current_setting('test.tenant')::uuid
+     and user_id = 'ea000000-0000-4000-8000-000000000004'),
+  'owner',
+  'deleting the owner account hands the space to the next member'
 );
 
 select * from finish();
