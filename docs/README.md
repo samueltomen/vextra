@@ -4,6 +4,7 @@
 
 - [Auto-héberger Vextra](self-hosting.md) : Docker, Supabase, HTTPS, e-mails,
   sauvegardes.
+- [Déployer sur Cloudflare](cloudflare.md) : Worker, secrets, Cron Trigger.
 - [Référence de l'API](api.md) : ping, cycle de vie d'un job, clés d'API, page de
   statut et badges.
 - [Design system](design/DESIGNSYSTEM.md) : tokens, composants et principes
