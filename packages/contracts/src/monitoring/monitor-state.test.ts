@@ -19,6 +19,7 @@ const MONITOR = {
   name: null,
   notes: null,
   pausedAt: null,
+  runningSince: null,
   status: 'pending' as const,
   totalPings: 0,
 }

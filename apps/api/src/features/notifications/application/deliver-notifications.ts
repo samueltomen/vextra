@@ -1,6 +1,7 @@
 const MAX_BATCH_SIZE = 50
 
-export type NotificationKind = 'incident_opened' | 'incident_resolved'
+export type NotificationKind =
+  'incident_opened' | 'incident_resolved' | 'run_failed'
 
 export type ClaimedNotification = Readonly<{
   attempts: number

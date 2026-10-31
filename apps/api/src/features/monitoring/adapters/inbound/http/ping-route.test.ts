@@ -5,9 +5,10 @@ import { createPingRoutes } from './ping-route.ts'
 const TOKEN = 'A'.repeat(43)
 
 function createApp(execute = vi.fn(async () => true)) {
-  const app = createPingRoutes({ execute })
+  const recordEvent = vi.fn(async () => true)
+  const app = createPingRoutes({ execute, recordEvent })
 
-  return { app, execute }
+  return { app, execute, recordEvent }
 }
 
 function createRequest(
@@ -112,5 +113,99 @@ describe('POST /api/ping', () => {
 
     expect(response.status).toBe(405)
     expect(response.headers.get('allow')).toBe('POST')
+  })
+})
+
+describe('ping by URL and run events', () => {
+  const url = (path: string, method = 'GET') =>
+    new Request(`https://api.cronping.test/api/ping/${path}`, { method })
+
+  it.each(['GET', 'HEAD', 'POST'])(
+    'accepts a success ping with the token in the path (%s)',
+    async (method) => {
+      const { app, execute } = createApp()
+      const response = await app.request(url(TOKEN, method))
+
+      expect(response.status).toBe(204)
+      expect(execute).toHaveBeenCalledWith(TOKEN)
+    },
+  )
+
+  it.each(['start', 'fail', 'warn'])(
+    'records a %s event from the path or the bearer header',
+    async (kind) => {
+      const { app, recordEvent } = createApp()
+
+      expect((await app.request(url(`${TOKEN}/${kind}`))).status).toBe(204)
+      expect(recordEvent).toHaveBeenLastCalledWith(TOKEN, kind)
+
+      const bearer = await app.request(
+        new Request(`https://api.cronping.test/api/ping/${kind}`, {
+          headers: { Authorization: `Bearer ${TOKEN}` },
+          method: 'POST',
+        }),
+      )
+
+      expect(bearer.status).toBe(204)
+      expect(recordEvent).toHaveBeenLastCalledWith(TOKEN, kind)
+    },
+  )
+
+  it('maps an exit status to success or failure', async () => {
+    const { app, execute, recordEvent } = createApp()
+
+    expect((await app.request(url(`${TOKEN}/0`))).status).toBe(204)
+    expect(execute).toHaveBeenCalledWith(TOKEN)
+
+    expect((await app.request(url(`${TOKEN}/137`))).status).toBe(204)
+    expect(recordEvent).toHaveBeenLastCalledWith(TOKEN, 'fail')
+
+    expect((await app.request(url(`${TOKEN}/256`))).status).toBe(400)
+  })
+
+  it('rejects data, malformed tokens and unknown tokens', async () => {
+    const { app } = createApp()
+
+    expect((await app.request(url(`${TOKEN}?msg=hi`))).status).toBe(400)
+    expect(
+      (
+        await app.request(
+          new Request(`https://api.cronping.test/api/ping/${TOKEN}`, {
+            body: 'output',
+            headers: { 'content-type': 'text/plain' },
+            method: 'POST',
+          }),
+        )
+      ).status,
+    ).toBe(400)
+    expect((await app.request(url('short'))).status).toBe(404)
+    expect(
+      (
+        await app.request(
+          new Request('https://api.cronping.test/api/ping/start', {
+            method: 'POST',
+          }),
+        )
+      ).status,
+    ).toBe(401)
+
+    const unknown = createPingRoutes({
+      execute: async () => false,
+      recordEvent: async () => false,
+    })
+
+    expect((await unknown.request(url(TOKEN))).status).toBe(401)
+    expect((await unknown.request(url(`${TOKEN}/fail`))).status).toBe(401)
+  })
+
+  it('answers 503 when storage fails for an event', async () => {
+    const failing = createPingRoutes({
+      execute: async () => true,
+      recordEvent: async () => {
+        throw new Error('db')
+      },
+    })
+
+    expect((await failing.request(url(`${TOKEN}/start`))).status).toBe(503)
   })
 })

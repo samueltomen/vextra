@@ -4,11 +4,46 @@ import {
   folderNameRequestSchema,
   monitorActivityResponseSchema,
   monitorMetricsResponseSchema,
+  monitorRunsResponseSchema,
   setMonitorFolderRequestSchema,
   updatePreferencesRequestSchema,
 } from './workspace.ts'
 
 describe('workspace contracts', () => {
+  it('describes the run history without output or payload', () => {
+    expect(
+      monitorRunsResponseSchema.safeParse({
+        data: {
+          runs: [
+            {
+              createdAt: '2026-10-31T12:00:00.000Z',
+              durationMs: 1200,
+              id: '20000000-0000-4000-8000-000000000001',
+              kind: 'success',
+              overlapped: false,
+            },
+          ],
+        },
+      }).success,
+    ).toBe(true)
+    expect(
+      monitorRunsResponseSchema.safeParse({
+        data: {
+          runs: [
+            {
+              createdAt: '2026-10-31T12:00:00.000Z',
+              durationMs: null,
+              id: '20000000-0000-4000-8000-000000000001',
+              kind: 'crash',
+              output: 'secret',
+              overlapped: false,
+            },
+          ],
+        },
+      }).success,
+    ).toBe(false)
+  })
+
   it('describes per-monitor daily activity', () => {
     expect(
       monitorActivityResponseSchema.safeParse({
@@ -85,6 +120,10 @@ describe('workspace contracts', () => {
         days: [
           {
             day: '2026-10-31',
+            durationCount: 1,
+            durationMaxMs: 1200,
+            durationSumMs: 1200,
+            fails: 0,
             gapCount: 1,
             gapMaxSeconds: 60,
             gapSumSeconds: 60,

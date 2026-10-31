@@ -1,5 +1,9 @@
 export type MetricsDayRecord = Readonly<{
   day: string
+  durationCount: number
+  durationMaxMs: number
+  durationSumMs: number
+  fails: number
   gapCount: number
   gapMaxSeconds: number
   gapSumSeconds: number
@@ -17,7 +21,22 @@ export type ActivityRecord = Readonly<{
   pings: number
 }>
 
+export type RunRecord = Readonly<{
+  createdAtMs: number
+  durationMs: number | null
+  id: string
+  kind: 'fail' | 'start' | 'success' | 'warn'
+  overlapped: boolean
+}>
+
+export const RUNS_PAGE_SIZE = 50
+
 export interface MonitorMetricsPort {
+  runs(
+    tenantId: string,
+    monitorId: string,
+    limit: number,
+  ): Promise<readonly RunRecord[] | null>
   activity(
     tenantId: string,
     sinceDay: string,
@@ -48,6 +67,13 @@ export class MonitorMetricsService {
       .slice(0, 10)
 
     return this.dependencies.port.activity(tenantId, since)
+  }
+
+  runs(
+    tenantId: string,
+    monitorId: string,
+  ): Promise<readonly RunRecord[] | null> {
+    return this.dependencies.port.runs(tenantId, monitorId, RUNS_PAGE_SIZE)
   }
 
   get(

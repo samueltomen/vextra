@@ -89,6 +89,8 @@ export {
   metricsDaySchema,
   monitorActivityResponseSchema,
   monitorMetricsResponseSchema,
+  monitorRunSchema,
+  monitorRunsResponseSchema,
   preferencesResponseSchema,
   preferencesSchema,
   setMonitorFolderRequestSchema,

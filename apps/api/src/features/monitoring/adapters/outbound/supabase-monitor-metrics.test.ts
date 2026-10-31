@@ -13,7 +13,7 @@ function client(
     const resolved = { data: result.data ?? null, error: result.error ?? null }
     const chain: Record<string, unknown> = {}
 
-    for (const method of ['select', 'eq', 'gte', 'order']) {
+    for (const method of ['select', 'eq', 'gte', 'order', 'limit']) {
       chain[method] = vi.fn((...args: unknown[]) => {
         filters.push([method, args])
 
@@ -44,6 +44,10 @@ describe('SupabaseMonitorMetrics', () => {
         data: [
           {
             day: '2026-10-31',
+            duration_count: 2,
+            duration_max_ms: 3000,
+            duration_sum_ms: '4000',
+            fails: 1,
             gap_count: 2,
             gap_max_seconds: 90,
             gap_sum_seconds: '150',
@@ -59,6 +63,10 @@ describe('SupabaseMonitorMetrics', () => {
       days: [
         {
           day: '2026-10-31',
+          durationCount: 2,
+          durationMaxMs: 3000,
+          durationSumMs: 4000,
+          fails: 1,
           gapCount: 2,
           gapMaxSeconds: 90,
           gapSumSeconds: 150,
@@ -117,7 +125,11 @@ describe('MonitorMetricsService', () => {
     const activity = vi.fn(async () => [])
     const service = new MonitorMetricsService({
       nowMs: () => Date.parse('2026-10-31T12:00:00.000Z'),
-      port: { activity, find: vi.fn(async () => null) },
+      port: {
+        activity,
+        find: vi.fn(async () => null),
+        runs: vi.fn(async () => null),
+      },
     })
 
     await service.activity('t')
@@ -129,11 +141,80 @@ describe('MonitorMetricsService', () => {
     const find = vi.fn(async () => null)
     const service = new MonitorMetricsService({
       nowMs: () => Date.parse('2026-10-31T12:00:00.000Z'),
-      port: { activity: vi.fn(async () => []), find },
+      port: {
+        activity: vi.fn(async () => []),
+        find,
+        runs: vi.fn(async () => null),
+      },
     })
 
     await service.get('t', 'm')
 
     expect(find).toHaveBeenCalledWith('t', 'm', '2026-10-02')
+  })
+})
+
+describe('SupabaseMonitorMetrics runs', () => {
+  it('returns the latest runs of a monitor of the tenant, newest first', async () => {
+    const { filters, supabase } = client(
+      { data: { id: 'm1' } },
+      {
+        data: [
+          {
+            created_at: '2026-10-31T12:00:00.000Z',
+            duration_ms: 1500,
+            id: 'r1',
+            kind: 'success',
+            overlapped: false,
+          },
+        ],
+      },
+    )
+
+    await expect(
+      new SupabaseMonitorMetrics(supabase).runs('tenant-a', 'm1', 50),
+    ).resolves.toEqual([
+      {
+        createdAtMs: Date.parse('2026-10-31T12:00:00.000Z'),
+        durationMs: 1500,
+        id: 'r1',
+        kind: 'success',
+        overlapped: false,
+      },
+    ])
+    expect(filters).toContainEqual(['eq', ['tenant_id', 'tenant-a']])
+    expect(filters).toContainEqual(['limit', [50]])
+  })
+
+  it('returns null for an unknown monitor and fails closed on errors', async () => {
+    await expect(
+      new SupabaseMonitorMetrics(client({ data: null }).supabase).runs(
+        't',
+        'm',
+        50,
+      ),
+    ).resolves.toBeNull()
+    await expect(
+      new SupabaseMonitorMetrics(
+        client({ data: null, error: { code: 'x' } }).supabase,
+      ).runs('t', 'm', 50),
+    ).rejects.toThrow('runs query failed')
+    await expect(
+      new SupabaseMonitorMetrics(
+        client({ data: { id: 'm' } }, { error: { code: 'x' } }).supabase,
+      ).runs('t', 'm', 50),
+    ).rejects.toThrow('runs query failed')
+  })
+
+  it('asks the port for one page of runs', async () => {
+    const runs = vi.fn(async () => [])
+    const service = new MonitorMetricsService({
+      nowMs: () => 0,
+      port: { activity: vi.fn(), find: vi.fn(), runs },
+    })
+
+    await service.runs('t', 'm')
+
+    expect(runs).toHaveBeenCalledWith('t', 'm', 50)
   })
 })

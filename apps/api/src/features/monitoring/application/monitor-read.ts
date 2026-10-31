@@ -14,6 +14,7 @@ export type MonitorStateRecord = Readonly<{
   name: string | null
   notes: string | null
   pausedAtMs: number | null
+  runningSinceMs: number | null
   status: MonitorStatus
   tenantId: string
   totalPings: number

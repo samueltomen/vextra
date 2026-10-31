@@ -37,6 +37,7 @@ const MONITOR_STATE: MonitorStateRecord = {
   name: null,
   notes: null,
   pausedAtMs: null,
+  runningSinceMs: null,
   status: 'pending',
   tenantId: 'tenant-a',
   totalPings: 0,
@@ -70,6 +71,7 @@ function createRoutes(principal: AuthenticatedPrincipal | null = null) {
             monitorMetrics: {
               activity: vi.fn(async () => []),
               get: vi.fn(async () => null),
+              runs: vi.fn(async () => null),
             },
             monitorLifecycle: { delete: remove, pause, resume },
             monitorRead: { get, list },
@@ -218,6 +220,7 @@ describe('POST /api/monitors', () => {
         monitorMetrics: {
           activity: vi.fn(async () => []),
           get: vi.fn(async () => null),
+          runs: vi.fn(async () => null),
         },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
@@ -261,6 +264,7 @@ describe('POST /api/monitors', () => {
         monitorMetrics: {
           activity: vi.fn(async () => []),
           get: vi.fn(async () => null),
+          runs: vi.fn(async () => null),
         },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
@@ -333,6 +337,7 @@ describe('monitor read routes', () => {
             name: null,
             notes: null,
             pausedAt: null,
+            runningSince: null,
             status: 'pending',
             totalPings: 0,
           },
@@ -374,6 +379,7 @@ describe('monitor read routes', () => {
         monitorMetrics: {
           activity: vi.fn(async () => []),
           get: vi.fn(async () => null),
+          runs: vi.fn(async () => null),
         },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
@@ -412,6 +418,7 @@ describe('monitor read routes', () => {
         monitorMetrics: {
           activity: vi.fn(async () => []),
           get: vi.fn(async () => null),
+          runs: vi.fn(async () => null),
         },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
@@ -642,6 +649,7 @@ describe('POST /api/monitors/:monitorId/rotate-token', () => {
         monitorMetrics: {
           activity: vi.fn(async () => []),
           get: vi.fn(async () => null),
+          runs: vi.fn(async () => null),
         },
         monitorLifecycle: {
           delete: vi.fn(async () => true),
@@ -676,7 +684,7 @@ describe('GET /api/monitors/activity', () => {
     const app = createMonitorRoutes({
       authenticate: async () =>
         ({
-          monitorMetrics: { activity, get: vi.fn() },
+          monitorMetrics: { activity, get: vi.fn(), runs: vi.fn() },
           principal: { tenantId: 'tenant-a', userId: 'u' },
         }) as never,
     })
@@ -732,7 +740,11 @@ describe('GET /api/monitors/:monitorId/metrics', () => {
     return createMonitorRoutes({
       authenticate: async () =>
         ({
-          monitorMetrics: { activity: vi.fn(async () => []), get },
+          monitorMetrics: {
+            activity: vi.fn(async () => []),
+            get,
+            runs: vi.fn(async () => null),
+          },
           principal: { tenantId: 'tenant-a', userId: 'u' },
         }) as never,
     })
@@ -773,5 +785,70 @@ describe('GET /api/monitors/:monitorId/metrics', () => {
     const app = createMonitorRoutes({ authenticate: async () => null })
 
     expect((await app.request(`/api/monitors/${ID}/metrics`)).status).toBe(401)
+  })
+})
+
+describe('GET /api/monitors/:monitorId/runs', () => {
+  const ID = '20000000-0000-4000-8000-000000000001'
+
+  function runsApp(runs: () => Promise<unknown>) {
+    return createMonitorRoutes({
+      authenticate: async () =>
+        ({
+          monitorMetrics: { runs },
+          principal: { tenantId: 'tenant-a', userId: 'u' },
+        }) as never,
+    })
+  }
+
+  it('returns the run history without any output', async () => {
+    const response = await runsApp(async () => [
+      {
+        createdAtMs: Date.parse('2026-10-31T12:00:00.000Z'),
+        durationMs: 1200,
+        id: '30000000-0000-4000-8000-000000000001',
+        kind: 'success',
+        overlapped: false,
+      },
+    ]).request(`/api/monitors/${ID}/runs`)
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      data: {
+        runs: [
+          {
+            createdAt: '2026-10-31T12:00:00.000Z',
+            durationMs: 1200,
+            id: '30000000-0000-4000-8000-000000000001',
+            kind: 'success',
+            overlapped: false,
+          },
+        ],
+      },
+    })
+  })
+
+  it('answers 404, 401 and 500 safely', async () => {
+    expect(
+      (await runsApp(async () => null).request(`/api/monitors/${ID}/runs`))
+        .status,
+    ).toBe(404)
+    expect(
+      (await runsApp(async () => null).request('/api/monitors/x/runs')).status,
+    ).toBe(404)
+    expect(
+      (
+        await runsApp(async () => {
+          throw new Error('db')
+        }).request(`/api/monitors/${ID}/runs`)
+      ).status,
+    ).toBe(500)
+    expect(
+      (
+        await createMonitorRoutes({ authenticate: async () => null }).request(
+          `/api/monitors/${ID}/runs`,
+        )
+      ).status,
+    ).toBe(401)
   })
 })

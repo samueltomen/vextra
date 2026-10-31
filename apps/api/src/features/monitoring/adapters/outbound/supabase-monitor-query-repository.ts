@@ -6,7 +6,7 @@ import type {
 } from '../../application/monitor-read.ts'
 
 const MONITOR_STATE_COLUMNS =
-  'id, tenant_id, interval_seconds, grace_seconds, status, last_heartbeat_at, alert_at, incident_opened_at, paused_at, created_at, folder_id, total_pings, name, description, notes, alerts_enabled'
+  'id, tenant_id, interval_seconds, grace_seconds, status, last_heartbeat_at, alert_at, incident_opened_at, paused_at, created_at, folder_id, total_pings, name, description, notes, alerts_enabled, running_since'
 
 type MonitorStateRow = Readonly<{
   alert_at: string
@@ -22,6 +22,7 @@ type MonitorStateRow = Readonly<{
   name: string | null
   notes: string | null
   paused_at: string | null
+  running_since: string | null
   status: MonitorStatus
   tenant_id: string
   total_pings: number
@@ -81,6 +82,7 @@ function toRecord(row: MonitorStateRow): MonitorStateRecord {
     name: row.name,
     notes: row.notes,
     pausedAtMs: toNullableTimestamp(row.paused_at),
+    runningSinceMs: toNullableTimestamp(row.running_since),
     status: row.status,
     tenantId: row.tenant_id,
     totalPings: Number(row.total_pings),

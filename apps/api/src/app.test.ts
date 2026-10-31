@@ -50,13 +50,22 @@ describe('rate limiting wiring', () => {
       liveRoutes: new Hono(),
       monitorRoutes: new Hono(),
       notificationRoutes: new Hono(),
-      pingRoutes: new Hono().post('/api/ping', (context) =>
-        context.json({ ok: 1 }),
-      ),
+      pingRoutes: new Hono()
+        .post('/api/ping', (context) => context.json({ ok: 1 }))
+        .get('/api/ping/:token', (context) => context.json({ ok: 1 })),
       workspaceRoutes: new Hono(),
       rateLimiters: { auth: { allow }, ping: { allow } },
     })
   }
+
+  it('limits pings sent by URL with GET as well', async () => {
+    const app = createLimitedApp(async () => false)
+    const response = await app.request(`/api/ping/${'A'.repeat(43)}`, {
+      method: 'GET',
+    })
+
+    expect(response.status).toBe(429)
+  })
 
   it.each(['/api/auth/login', '/api/auth/signup', '/api/ping'])(
     'limits %s',

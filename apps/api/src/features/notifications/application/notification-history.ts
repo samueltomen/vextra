@@ -2,9 +2,9 @@ export type NotificationHistoryRecord = Readonly<{
   attempts: number
   createdAtMs: number
   id: string
-  kind: 'incident_opened' | 'incident_resolved'
+  kind: 'incident_opened' | 'incident_resolved' | 'run_failed'
   monitorId: string
-  status: 'pending' | 'processing' | 'sent' | 'failed' | 'dead'
+  status: 'pending' | 'processing' | 'sent' | 'failed' | 'dead' | 'skipped'
   updatedAtMs: number
 }>
 

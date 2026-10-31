@@ -19,6 +19,7 @@ const ROW = {
   name: null,
   notes: null,
   paused_at: null,
+  running_since: null,
   status: 'pending',
   tenant_id: '10000000-0000-4000-8000-000000000001',
   total_pings: 0,
@@ -49,6 +50,7 @@ describe('SupabaseMonitorQueryRepository', () => {
         name: null,
         notes: null,
         pausedAtMs: null,
+        runningSinceMs: null,
         status: 'pending',
         tenantId: ROW.tenant_id,
         totalPings: 0,
@@ -57,7 +59,7 @@ describe('SupabaseMonitorQueryRepository', () => {
 
     expect(from).toHaveBeenCalledWith('monitors')
     expect(select).toHaveBeenCalledWith(
-      'id, tenant_id, interval_seconds, grace_seconds, status, last_heartbeat_at, alert_at, incident_opened_at, paused_at, created_at, folder_id, total_pings, name, description, notes, alerts_enabled',
+      'id, tenant_id, interval_seconds, grace_seconds, status, last_heartbeat_at, alert_at, incident_opened_at, paused_at, created_at, folder_id, total_pings, name, description, notes, alerts_enabled, running_since',
     )
     expect(eq).toHaveBeenCalledWith('tenant_id', ROW.tenant_id)
   })

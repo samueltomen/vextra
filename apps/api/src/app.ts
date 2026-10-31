@@ -56,9 +56,10 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
     app.use('/api/auth/login', authLimit)
     app.use('/api/auth/signup', authLimit)
     app.use(
-      '/api/ping',
+      '/api/ping/*',
       createRateLimitGuard({
         limiter: dependencies.rateLimiters.ping,
+        methods: ['GET', 'HEAD', 'POST'],
         scope: 'ping',
       }),
     )

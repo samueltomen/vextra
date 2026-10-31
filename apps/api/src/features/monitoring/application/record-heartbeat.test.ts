@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { RecordHeartbeat, type HeartbeatRecorder } from './record-heartbeat.ts'
+import {
+  RecordHeartbeat,
+  RecordRunEvent,
+  type HeartbeatRecorder,
+} from './record-heartbeat.ts'
 
 function createRecorder(
   overrides: Partial<HeartbeatRecorder> = {},
@@ -39,5 +43,18 @@ describe('RecordHeartbeat', () => {
     await expect(heartbeat.execute('B'.repeat(43))).rejects.toThrow(
       'database unavailable',
     )
+  })
+})
+
+describe('RecordRunEvent', () => {
+  it('hashes the token before recording the event kind', async () => {
+    const record = vi.fn(async () => true)
+    const useCase = new RecordRunEvent({
+      hashToken: async (token) => `hash:${token}`,
+      recorder: { record },
+    })
+
+    await expect(useCase.execute('secret', 'start')).resolves.toBe(true)
+    expect(record).toHaveBeenCalledWith('hash:secret', 'start')
   })
 })

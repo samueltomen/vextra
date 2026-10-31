@@ -24,7 +24,10 @@ import {
   hashMonitorToken,
 } from './features/monitoring/adapters/outbound/crypto-monitor-token.ts'
 import { SupabaseDueMonitorClaimer } from './features/monitoring/adapters/outbound/supabase-due-monitor-claimer.ts'
-import { SupabaseHeartbeatRecorder } from './features/monitoring/adapters/outbound/supabase-heartbeat-recorder.ts'
+import {
+  SupabaseHeartbeatRecorder,
+  SupabaseRunEventRecorder,
+} from './features/monitoring/adapters/outbound/supabase-heartbeat-recorder.ts'
 import {
   SupabaseMonitorIncidentRepository,
   type MonitorIncidentQueryClient,
@@ -52,7 +55,10 @@ import {
   type MonitorScheduleRpcClient,
 } from './features/monitoring/adapters/outbound/supabase-monitor-schedule.ts'
 import { MonitorReadService } from './features/monitoring/application/monitor-read.ts'
-import { RecordHeartbeat } from './features/monitoring/application/record-heartbeat.ts'
+import {
+  RecordHeartbeat,
+  RecordRunEvent,
+} from './features/monitoring/application/record-heartbeat.ts'
 import { RotateMonitorToken } from './features/monitoring/application/rotate-monitor-token.ts'
 import { DeliverNotifications } from './features/notifications/application/deliver-notifications.ts'
 import { NotificationHistory } from './features/notifications/application/notification-history.ts'
@@ -169,6 +175,12 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     hashToken: (token) =>
       hashMonitorToken(token, environment.PING_TOKEN_PEPPER),
     recorder: new SupabaseHeartbeatRecorder(supabase),
+  })
+
+  const recordRunEvent = new RecordRunEvent({
+    hashToken: (token) =>
+      hashMonitorToken(token, environment.PING_TOKEN_PEPPER),
+    recorder: new SupabaseRunEventRecorder(supabase),
   })
 
   const resolveSession = async (context: Context) => {
@@ -355,6 +367,7 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     }),
     pingRoutes: createPingRoutes({
       execute: (token) => recordHeartbeat.execute(token),
+      recordEvent: (token, kind) => recordRunEvent.execute(token, kind),
     }),
     liveRoutes: createLiveRoutes({
       allowedOrigin: environment.APP_ORIGIN,

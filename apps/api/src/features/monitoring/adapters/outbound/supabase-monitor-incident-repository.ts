@@ -10,7 +10,7 @@ type IncidentRow = Readonly<{
   id: string
   monitor_id: string
   opened_at: string
-  reason: 'heartbeat_missed'
+  reason: 'heartbeat_missed' | 'run_failed'
   resolution_reason: 'heartbeat_received' | 'manual' | null
   resolved_at: string | null
 }>

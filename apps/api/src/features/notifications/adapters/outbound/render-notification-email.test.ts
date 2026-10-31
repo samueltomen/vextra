@@ -81,4 +81,17 @@ describe('renderNotificationEmail', () => {
 
     expect(email.text).not.toContain('Nom :')
   })
+
+  it('renders a failed run with the failure color and subject', () => {
+    const email = renderNotificationEmail({
+      appOrigin: APP_ORIGIN,
+      kind: 'run_failed',
+      monitorId: MONITOR_ID,
+    })
+
+    expect(email.subject).toBe('CronPing · exécution en échec')
+    expect(email.html).toContain('Exécution en échec')
+    expect(email.html).toContain('#d6403a')
+    expect(email.text).toContain('échec')
+  })
 })
