@@ -468,9 +468,7 @@ describe('display preferences and new-monitor defaults', () => {
   it('pre-fills the new monitor form from a clone link', async () => {
     await renderApp('/monitors/new?interval=30&grace=3&name=Sync%20(copie)')
 
-    expect(await screen.findByLabelText('Libellé local')).toHaveValue(
-      'Sync (copie)',
-    )
+    expect(await screen.findByLabelText('Nom')).toHaveValue('Sync (copie)')
   })
 })
 
@@ -528,6 +526,21 @@ describe('monitor details', () => {
     expect(
       await screen.findByText(/en retard et ses alertes sont désactivées/u),
     ).toBeInTheDocument()
+  })
+
+  it('offers a section navigation on the settings page', async () => {
+    await renderApp('/settings')
+
+    const nav = await screen.findByRole('navigation', {
+      name: 'Sections des réglages',
+    })
+
+    expect(within(nav).getByRole('link', { name: 'Équipe' })).toHaveAttribute(
+      'href',
+      '#equipe',
+    )
+    expect(document.getElementById('equipe')).not.toBeNull()
+    expect(document.getElementById('api')).not.toBeNull()
   })
 
   it('marks muted monitors in the dashboard list', async () => {

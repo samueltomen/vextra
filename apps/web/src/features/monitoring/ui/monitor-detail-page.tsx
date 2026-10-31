@@ -290,7 +290,7 @@ export function MonitorDetailPage({
                 }}
               >
                 <Input
-                  aria-label="Libellé local"
+                  aria-label="Nom du moniteur"
                   autoFocus
                   className="w-72 max-w-full"
                   onValueChange={setLabelDraft}
@@ -337,7 +337,7 @@ export function MonitorDetailPage({
               </div>
             )}
             <p className="mt-2 font-mono text-xs text-muted">
-              {monitor.id.slice(0, 8)} · libellé local uniquement
+              {monitor.id.slice(0, 8)}
             </p>
           </div>
           <div className="text-sm lg:text-right">

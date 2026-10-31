@@ -12,7 +12,7 @@ describe('CreateMonitorPage', () => {
     })
     await renderApp('/monitors/new')
 
-    const labelInput = await screen.findByLabelText('Libellé local')
+    const labelInput = await screen.findByLabelText('Nom')
     fireEvent.change(labelInput, {
       target: { value: 'Sauvegarde test' },
     })
@@ -44,7 +44,7 @@ describe('CreateMonitorPage', () => {
     )
 
     expect(
-      await screen.findByText('Donnez un libellé à ce moniteur.'),
+      await screen.findByText('Donnez un nom à ce moniteur.'),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'Ajouter un heartbeat' }),
@@ -69,7 +69,7 @@ describe('CreateMonitorPage', () => {
   it('creates a monitor driven by a cron expression', async () => {
     await renderApp('/monitors/new')
 
-    fireEvent.change(await screen.findByLabelText('Libellé local'), {
+    fireEvent.change(await screen.findByLabelText('Nom'), {
       target: { value: 'Rapport nocturne' },
     })
     fireEvent.click(screen.getByRole('radio', { name: 'Expression cron' }))
@@ -90,7 +90,7 @@ describe('CreateMonitorPage', () => {
   it('blocks the submission while the cron expression is invalid', async () => {
     await renderApp('/monitors/new')
 
-    fireEvent.change(await screen.findByLabelText('Libellé local'), {
+    fireEvent.change(await screen.findByLabelText('Nom'), {
       target: { value: 'Rapport' },
     })
     fireEvent.click(screen.getByRole('radio', { name: 'Expression cron' }))
