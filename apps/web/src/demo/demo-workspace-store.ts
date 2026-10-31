@@ -70,6 +70,10 @@ export function getDemoMetrics(intervalMinutes: number): MonitorMetricsView {
 
     return {
       day,
+      durationCount: pings,
+      durationMaxMs: 4_000 + (index % 5) * 900,
+      durationSumMs: pings * (2_200 + (index % 4) * 350),
+      fails: index % 6 === 0 ? 1 : 0,
       gapCount: pings,
       gapMaxSeconds: intervalMinutes * 60 + (index % 3) * 45,
       gapSumSeconds: pings * intervalMinutes * 60,
@@ -102,4 +106,35 @@ export function getDemoActivity(
       })),
     ]),
   )
+}
+
+export function getDemoRuns(intervalMinutes: number): readonly {
+  createdAtMs: number
+  durationMs: number | null
+  id: string
+  kind: 'fail' | 'start' | 'success' | 'warn'
+  overlapped: boolean
+}[] {
+  const nowMs = Date.now()
+
+  return Array.from({ length: 12 }, (_, index) => {
+    const createdAtMs = nowMs - index * intervalMinutes * 30_000
+    const kind =
+      index === 3
+        ? 'fail'
+        : index === 5
+          ? 'warn'
+          : index % 2 === 0
+            ? 'success'
+            : 'start'
+
+    return {
+      createdAtMs,
+      durationMs:
+        kind === 'success' || kind === 'fail' ? 1_800 + index * 230 : null,
+      id: `40000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+      kind,
+      overlapped: index === 7,
+    }
+  })
 }

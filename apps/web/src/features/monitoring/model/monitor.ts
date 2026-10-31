@@ -15,6 +15,7 @@ export type MonitorView = Readonly<{
   localLabel: string
   lastHeartbeatAtMs: number | null
   notes: string | null
+  runningSinceMs: number | null
   /** Server-side name; `localLabel` is the name actually displayed. */
   serverName: string | null
   status: MonitorStatus

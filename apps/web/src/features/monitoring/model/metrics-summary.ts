@@ -1,5 +1,9 @@
 export type MetricsDayView = Readonly<{
   day: string
+  durationCount: number
+  durationMaxMs: number
+  durationSumMs: number
+  fails: number
   gapCount: number
   gapMaxSeconds: number
   gapSumSeconds: number
@@ -12,10 +16,14 @@ export type MonitorMetricsView = Readonly<{
 }>
 
 export type MetricsSummary = Readonly<{
+  avgDurationMs: number | null
   avgIntervalSeconds: number | null
   bars: readonly Readonly<{ day: string; pings: number }>[]
   /** Average gap per day in seconds, `null` when the day had no gap. */
+  dailyAvgDurationMs: readonly (number | null)[]
   dailyAvgIntervalSeconds: readonly (number | null)[]
+  fails30d: number
+  maxDurationMs: number | null
   maxGapSeconds: number | null
   peakPings: number
   pings30d: number
@@ -46,10 +54,31 @@ export function summarizeMetrics(
   const gapCount = inWindow.reduce((sum, entry) => sum + entry.gapCount, 0)
   const gapSum = inWindow.reduce((sum, entry) => sum + entry.gapSumSeconds, 0)
   const avgIntervalSeconds = gapCount > 0 ? gapSum / gapCount : null
+  const durationCount = inWindow.reduce(
+    (sum, entry) => sum + entry.durationCount,
+    0,
+  )
+  const durationSum = inWindow.reduce(
+    (sum, entry) => sum + entry.durationSumMs,
+    0,
+  )
 
   return {
+    avgDurationMs: durationCount > 0 ? durationSum / durationCount : null,
     avgIntervalSeconds,
     bars,
+    dailyAvgDurationMs: bars.map((bar) => {
+      const entry = byDay.get(bar.day)
+
+      return entry && entry.durationCount > 0
+        ? entry.durationSumMs / entry.durationCount
+        : null
+    }),
+    fails30d: inWindow.reduce((sum, entry) => sum + entry.fails, 0),
+    maxDurationMs:
+      durationCount > 0
+        ? Math.max(...inWindow.map((entry) => entry.durationMaxMs))
+        : null,
     dailyAvgIntervalSeconds: bars.map((bar) => {
       const entry = byDay.get(bar.day)
 
@@ -108,4 +137,22 @@ export function denseActivity(
 
     return byDay.get(day) ?? 0
   })
+}
+
+export function formatMilliseconds(milliseconds: number | null): string {
+  if (milliseconds === null) {
+    return '—'
+  }
+
+  if (milliseconds < 1_000) {
+    return `${Math.round(milliseconds)} ms`
+  }
+
+  const seconds = milliseconds / 1_000
+
+  if (seconds < 90) {
+    return `${seconds.toFixed(seconds < 10 ? 1 : 0).replace('.', ',')} s`
+  }
+
+  return formatSeconds(seconds)
 }
