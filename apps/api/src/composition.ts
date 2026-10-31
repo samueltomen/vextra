@@ -67,6 +67,11 @@ import {
   type NotificationHistoryQueryClient,
 } from './features/notifications/adapters/outbound/supabase-notification-history.ts'
 
+import {
+  createCloudflareRateLimiter,
+  type RateLimitBinding,
+} from './rate-limit/rate-limit-guard.ts'
+
 export type WorkerEnvironment = Readonly<{
   APP_ORIGIN: string
   PING_TOKEN_PEPPER: string
@@ -76,6 +81,8 @@ export type WorkerEnvironment = Readonly<{
   SUPABASE_PUBLISHABLE_KEY: string
   SUPABASE_SERVICE_ROLE_KEY: string
   SUPABASE_URL: string
+  AUTH_RATE_LIMITER?: RateLimitBinding
+  PING_RATE_LIMITER?: RateLimitBinding
 }>
 
 function createSupabaseClient(
@@ -272,6 +279,14 @@ export function createApiFromEnvironment(environment: WorkerEnvironment) {
     pingRoutes: createPingRoutes({
       execute: (token) => recordHeartbeat.execute(token),
     }),
+    ...(environment.AUTH_RATE_LIMITER && environment.PING_RATE_LIMITER
+      ? {
+          rateLimiters: {
+            auth: createCloudflareRateLimiter(environment.AUTH_RATE_LIMITER),
+            ping: createCloudflareRateLimiter(environment.PING_RATE_LIMITER),
+          },
+        }
+      : {}),
   })
 }
 

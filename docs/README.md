@@ -12,3 +12,4 @@ Ce dossier regroupe les documents de référence du projet :
 Décisions d'architecture (`docs/adr/`) :
 
 - [ADR 0001 — Déploiement sur une même origine](adr/0001-deploiement-meme-origine.md)
+- [ADR 0002 — Limitation de débit](adr/0002-limitation-de-debit.md)

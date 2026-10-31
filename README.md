@@ -142,6 +142,13 @@ La session est chiffrée avec AES-GCM et transmise uniquement via
 du dashboard exigent l'origine exacte configurée dans `APP_ORIGIN` ; le futur
 heartbeat serveur restera hors de cette garde navigateur.
 
+Les routes publiques `login`, `signup` et `ping` sont limitées par IP via les
+bindings Cloudflare `AUTH_RATE_LIMITER` (10/min) et `PING_RATE_LIMITER`
+(120/min), avec échec ouvert si le binding est indisponible (voir
+[ADR 0002](docs/adr/0002-limitation-de-debit.md)). Le déploiement en production
+se fait sur une seule origine (voir
+[ADR 0001](docs/adr/0001-deploiement-meme-origine.md)).
+
 ## Commandes
 
 ```bash
