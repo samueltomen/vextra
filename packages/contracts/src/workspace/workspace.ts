@@ -55,6 +55,7 @@ export const preferencesSchema = z.strictObject({
   reminderIntervalMinutes: reminderIntervalSchema.nullable(),
   timeFormat: timeFormatSchema,
   timezone: z.string(),
+  weeklyReportEnabled: z.boolean(),
 })
 
 export const updatePreferencesRequestSchema = z
@@ -80,6 +81,7 @@ export const updatePreferencesRequestSchema = z
       .min(1)
       .max(64)
       .refine(isSupportedTimeZone, 'Unsupported time zone'),
+    weeklyReportEnabled: z.boolean(),
   })
   .partial()
   .refine((value) => Object.keys(value).length > 0, 'No change requested')

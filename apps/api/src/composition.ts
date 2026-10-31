@@ -90,7 +90,12 @@ import {
   ManageFolders,
   ManageMonitorDetails,
 } from './features/workspace/application/workspace.ts'
-import { ResendNotificationSender } from './features/notifications/adapters/outbound/resend-notification-sender.ts'
+import { SupabaseWeeklyReportQueue } from './features/notifications/adapters/outbound/supabase-weekly-report-queue.ts'
+import { SendWeeklyReports } from './features/notifications/application/send-weekly-reports.ts'
+import {
+  ResendNotificationSender,
+  ResendWeeklyReportSender,
+} from './features/notifications/adapters/outbound/resend-notification-sender.ts'
 import {
   SupabaseNotificationDeliveryQueue,
   type NotificationDeliveryRpcClient,
@@ -457,6 +462,23 @@ export async function runNotificationDelivery(
   })
 
   return deliver.execute(batchSize)
+}
+
+export async function runWeeklyReports(environment: WorkerEnvironment) {
+  if (!environment.RESEND_API_KEY || !environment.RESEND_FROM_EMAIL) {
+    return null
+  }
+
+  return new SendWeeklyReports({
+    queue: new SupabaseWeeklyReportQueue(
+      createServiceSupabaseClient(environment),
+    ),
+    sender: new ResendWeeklyReportSender({
+      apiKey: environment.RESEND_API_KEY,
+      appOrigin: environment.APP_ORIGIN,
+      from: environment.RESEND_FROM_EMAIL,
+    }),
+  }).execute(Date.now())
 }
 
 export async function runIncidentReminders(

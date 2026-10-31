@@ -29,6 +29,7 @@ type PreferencesRow = Readonly<{
   reminder_interval_minutes: PreferencesRecord['reminderIntervalMinutes']
   time_format: PreferencesRecord['timeFormat']
   timezone: string
+  weekly_report_enabled: boolean
 }>
 
 function throwFolderError(error: NonNullable<DbError>): never {
@@ -151,6 +152,7 @@ function toPreferences(row: PreferencesRow): PreferencesRecord {
     reminderIntervalMinutes: row.reminder_interval_minutes,
     timeFormat: row.time_format,
     timezone: row.timezone,
+    weeklyReportEnabled: row.weekly_report_enabled,
   }
 }
 
@@ -175,6 +177,9 @@ function toColumns(changes: Partial<PreferencesRecord>) {
     ...(changes.reminderIntervalMinutes !== undefined
       ? { reminder_interval_minutes: changes.reminderIntervalMinutes }
       : {}),
+    ...(changes.weeklyReportEnabled !== undefined
+      ? { weekly_report_enabled: changes.weeklyReportEnabled }
+      : {}),
     ...(changes.timeFormat !== undefined
       ? { time_format: changes.timeFormat }
       : {}),
@@ -198,7 +203,7 @@ export class SupabasePreferencesRepository implements PreferencesPort {
     const { data, error } = await this.client
       .from('account_preferences')
       .select(
-        'display_name, timezone, notify_on_open, notify_on_resolve, time_format, density, default_view, default_sort, default_interval_minutes, default_grace_minutes, default_folder_id, reminder_interval_minutes',
+        'display_name, timezone, notify_on_open, notify_on_resolve, time_format, density, default_view, default_sort, default_interval_minutes, default_grace_minutes, default_folder_id, reminder_interval_minutes, weekly_report_enabled',
       )
       .eq('tenant_id', tenantId)
       .maybeSingle()

@@ -74,6 +74,7 @@ export type PreferencesRecord = Readonly<{
   reminderIntervalMinutes: 60 | 360 | 1440 | 10080 | null
   timeFormat: '12h' | '24h'
   timezone: string
+  weeklyReportEnabled: boolean
 }>
 
 export const DEFAULT_PREFERENCES: PreferencesRecord = {
@@ -89,6 +90,7 @@ export const DEFAULT_PREFERENCES: PreferencesRecord = {
   reminderIntervalMinutes: null,
   timeFormat: '24h',
   timezone: 'Europe/Paris',
+  weeklyReportEnabled: true,
 }
 
 export interface PreferencesPort {

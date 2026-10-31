@@ -175,6 +175,7 @@ export function installApiMock(options: ApiMockOptions = {}) {
     reminderIntervalMinutes: null as number | null,
     timeFormat: '24h',
     timezone: 'Europe/Paris',
+    weeklyReportEnabled: true,
   }
   const monitors = [...(options.monitors ?? createMonitorRows())]
   const incidents = monitors

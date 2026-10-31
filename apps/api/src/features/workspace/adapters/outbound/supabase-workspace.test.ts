@@ -135,6 +135,7 @@ describe('SupabasePreferencesRepository', () => {
     reminder_interval_minutes: null,
     time_format: '24h',
     timezone: 'Asia/Tokyo',
+    weekly_report_enabled: true,
   }
 
   it('reads and maps preferences', async () => {
@@ -155,6 +156,7 @@ describe('SupabasePreferencesRepository', () => {
       reminderIntervalMinutes: null,
       timeFormat: '24h',
       timezone: 'Asia/Tokyo',
+      weeklyReportEnabled: true,
     })
     await expect(
       new SupabasePreferencesRepository(client({ data: null }).supabase).find(
@@ -190,6 +192,7 @@ describe('SupabasePreferencesRepository', () => {
       reminderIntervalMinutes: 360,
       timeFormat: '12h',
       timezone: 'Europe/Paris',
+      weeklyReportEnabled: false,
     })
     expect(inserted.calls).toContainEqual([
       'insert',
@@ -208,6 +211,7 @@ describe('SupabasePreferencesRepository', () => {
           tenant_id: 't',
           time_format: '12h',
           timezone: 'Europe/Paris',
+          weekly_report_enabled: false,
         },
       ],
     ])
@@ -239,6 +243,7 @@ describe('SupabasePreferencesRepository', () => {
         reminderIntervalMinutes: null,
         timeFormat: '24h',
         timezone: 'UTC',
+        weeklyReportEnabled: true,
       }),
     ).rejects.toThrow('preferences insert failed')
   })

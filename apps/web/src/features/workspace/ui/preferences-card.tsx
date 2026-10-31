@@ -94,6 +94,7 @@ function PreferencesForm({ initial }: Readonly<{ initial: Preferences }>) {
         reminderIntervalMinutes: draft.reminderIntervalMinutes,
         timeFormat: draft.timeFormat,
         timezone: draft.timezone,
+        weeklyReportEnabled: draft.weeklyReportEnabled,
       }),
     onSuccess: (next) => {
       applyDisplayPreferences(next)
@@ -254,6 +255,12 @@ function PreferencesForm({ initial }: Readonly<{ initial: Preferences }>) {
           description="Un e-mail quand le moniteur reçoit de nouveau un heartbeat."
           label="Incident résolu"
           onChange={(notifyOnResolve) => change({ notifyOnResolve })}
+        />
+        <Toggle
+          checked={draft.weeklyReportEnabled}
+          description="Un résumé des 7 derniers jours, chaque lundi à 9 h UTC."
+          label="Rapport hebdomadaire"
+          onChange={(weeklyReportEnabled) => change({ weeklyReportEnabled })}
         />
         <SelectField
           label="Rappel tant qu’un incident reste ouvert"

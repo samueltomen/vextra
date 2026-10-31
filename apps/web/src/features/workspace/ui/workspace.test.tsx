@@ -287,6 +287,30 @@ describe('alert channels', () => {
   })
 })
 
+describe('weekly report', () => {
+  it('lets the owner turn the Monday report off', async () => {
+    const { fetchMock } = await renderAppWithMock()
+
+    const toggle = await screen.findByLabelText(/Rapport hebdomadaire/)
+
+    expect(toggle).toBeChecked()
+    fireEvent.click(toggle)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Enregistrer les préférences' }),
+    )
+    expect(await screen.findByText('Préférences enregistrées.')).toBeVisible()
+
+    const patch = fetchMock.mock.calls.find(
+      ([input, init]) =>
+        String(input).endsWith('/api/preferences') && init?.method === 'PATCH',
+    )
+
+    expect(JSON.parse(String(patch?.[1]?.body))).toMatchObject({
+      weeklyReportEnabled: false,
+    })
+  })
+})
+
 describe('incident reminders', () => {
   it('saves the reminder interval', async () => {
     const { fetchMock } = await renderAppWithMock()
