@@ -36,3 +36,44 @@ describe('GET /api/health', () => {
     expect(response.status).toBe(403)
   })
 })
+
+describe('rate limiting wiring', () => {
+  function createLimitedApp(allow: () => Promise<boolean>) {
+    return createApiApp({
+      accountRoutes: new Hono(),
+      allowedOrigin: 'http://localhost:5173',
+      authRoutes: new Hono()
+        .post('/api/auth/login', (context) => context.json({ ok: 1 }))
+        .post('/api/auth/signup', (context) => context.json({ ok: 1 })),
+      monitorRoutes: new Hono(),
+      notificationRoutes: new Hono(),
+      pingRoutes: new Hono().post('/api/ping', (context) =>
+        context.json({ ok: 1 }),
+      ),
+      rateLimiters: { auth: { allow }, ping: { allow } },
+    })
+  }
+
+  it.each(['/api/auth/login', '/api/auth/signup', '/api/ping'])(
+    'limits %s',
+    async (path) => {
+      const app = createLimitedApp(async () => false)
+      const response = await app.request(path, {
+        headers: { origin: 'http://localhost:5173' },
+        method: 'POST',
+      })
+
+      expect(response.status).toBe(429)
+    },
+  )
+
+  it('does not limit logout', async () => {
+    const app = createLimitedApp(async () => false)
+    const response = await app.request('/api/auth/logout', {
+      headers: { origin: 'http://localhost:5173' },
+      method: 'POST',
+    })
+
+    expect(response.status).not.toBe(429)
+  })
+})

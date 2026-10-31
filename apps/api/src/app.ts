@@ -1,5 +1,9 @@
 import { Hono } from 'hono'
 
+import {
+  createRateLimitGuard,
+  type RateLimiter,
+} from './rate-limit/rate-limit-guard.ts'
 import { createOriginGuard } from './features/accounts/adapters/inbound/http/origin-guard.ts'
 
 export type ApiApplicationDependencies = Readonly<{
@@ -9,6 +13,7 @@ export type ApiApplicationDependencies = Readonly<{
   monitorRoutes: Hono
   notificationRoutes: Hono
   pingRoutes: Hono
+  rateLimiters?: Readonly<{ auth: RateLimiter; ping: RateLimiter }>
 }>
 
 export function createHealthRoutes(): Hono {
@@ -39,6 +44,23 @@ export function createApiApp(dependencies: ApiApplicationDependencies): Hono {
     context.header('X-Frame-Options', 'DENY')
   })
   const originGuard = createOriginGuard(dependencies.allowedOrigin)
+
+  if (dependencies.rateLimiters) {
+    const authLimit = createRateLimitGuard({
+      limiter: dependencies.rateLimiters.auth,
+      scope: 'auth',
+    })
+
+    app.use('/api/auth/login', authLimit)
+    app.use('/api/auth/signup', authLimit)
+    app.use(
+      '/api/ping',
+      createRateLimitGuard({
+        limiter: dependencies.rateLimiters.ping,
+        scope: 'ping',
+      }),
+    )
+  }
 
   app.use('/api/auth/*', originGuard)
   app.use('/api/account', originGuard)
